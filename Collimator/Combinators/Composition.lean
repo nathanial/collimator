@@ -179,4 +179,36 @@ then the affine focuses at most one element within that.
     fun puv => outer.toPrism (P := P) (inferInstance : Choice P)
       (inner.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P) puv)
 
+/-! ## Optic Conversions -/
+
+/--
+Convert a lens to a traversal. Every lens is a valid traversal that focuses
+on exactly one element.
+-/
+@[inline] def lensToTraversal
+    {s t a b : Type u}
+    (l : Lens s t a b) : Traversal s t a b :=
+  fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] =>
+    l.toLens (P := P) (inferInstance : Strong P)
+
+/--
+Convert a prism to a traversal. Every prism is a valid traversal that focuses
+on zero or one element.
+-/
+@[inline] def prismToTraversal
+    {s t a b : Type u}
+    (p : Prism s t a b) : Traversal s t a b :=
+  fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] =>
+    p.toPrism (P := P) (inferInstance : Choice P)
+
+/--
+Convert an affine traversal to a traversal. Every affine traversal is a valid
+traversal that focuses on zero or one element.
+-/
+@[inline] def affineToTraversal
+    {s t a b : Type u}
+    (aff : AffineTraversal s t a b) : Traversal s t a b :=
+  fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] =>
+    aff.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P)
+
 end Collimator.Combinators

@@ -75,85 +75,69 @@ def Company.nameLens : Lens' Company String :=
 def Company.departmentsLens : Lens' Company (List Department) :=
   lens' (·.departments) (fun c ds => { c with departments := ds })
 
-/-! ## Composed Optics using ⊚ operator -/
+/-! ## Composed Optics -/
 
--- Employee → city (Lens ⊚ Lens = Lens)
+-- Lens ⊚ Lens = Lens (works with the operator!)
 def Employee.cityLens : Lens' Employee String :=
   Employee.addressLens ⊚ Address.cityLens
 
--- Department → all employee salaries
--- (Use explicit composition for Lens ⊚ Traversal ⊚ Lens chains)
-def Department.allSalaries : Traversal' Department Int :=
-  composeTraversal (composeLensTraversal Department.employeesLens traversed) (lensToTraversal Employee.salaryLens)
+-- For heterogeneous composition, use explicit functions
+def Department.employeesTraversal : Traversal' Department Employee :=
+  composeLensTraversal Department.employeesLens traversed
 
--- Company → all employees
 def Company.allEmployees : Traversal' Company Employee :=
-  composeTraversal (composeLensTraversal Company.departmentsLens traversed) (composeLensTraversal Department.employeesLens traversed)
+  composeTraversal
+    (composeLensTraversal Company.departmentsLens traversed)
+    (composeLensTraversal Department.employeesLens traversed)
 
--- Company → all employee cities
-def Company.allCities : Traversal' Company String :=
-  composeTraversal Company.allEmployees (lensToTraversal Employee.cityLens)
+/-! ## Type-Safe Composition Tracing
+
+These use actual optics, not strings! The type system tells us what we're composing.
+-/
+
+-- Two lenses compose to a lens
+#eval traceCompose₂ Employee.addressLens Address.cityLens
+
+-- Lens + Traversal = Traversal
+#eval traceCompose₂ Department.employeesLens (traversed : Traversal' (List Employee) Employee)
+
+-- Three optics: Lens ⊚ Traversal ⊚ Lens = Traversal
+#eval traceCompose₃ Department.employeesLens (traversed : Traversal' (List Employee) Employee) Employee.salaryLens
+
+-- Four optics deep
+#eval traceCompose₄
+  Company.departmentsLens
+  (traversed : Traversal' (List Department) Department)
+  Department.employeesLens
+  (traversed : Traversal' (List Employee) Employee)
+
+-- Five optics: Company → all employee cities
+#eval traceCompose₅
+  Company.departmentsLens
+  (traversed : Traversal' (List Department) Department)
+  Department.employeesLens
+  (traversed : Traversal' (List Employee) Employee)
+  Employee.addressLens
+
+-- Describe what an optic can do
+#eval describeOpticInstance Employee.addressLens
+#eval describeOpticInstance (traversed : Traversal' (List Int) Int)
 
 /-! ## Optic Information Commands
 
 Hover over these to see output in the infoview panel.
 -/
 
--- What is a Lens? What can it do?
 #optic_info Lens
-
--- What is a Prism? (for sum types like Option, Result)
 #optic_info Prism
-
--- What happens when we compose Lens with Traversal?
 #optic_info Traversal
-
--- AffineTraversal: 0-or-1 focus (Lens ⊚ Prism)
 #optic_info AffineTraversal
 
--- The full composition matrix
 #optic_matrix
 
--- Capability comparison
 #optic_caps Lens
 #optic_caps Prism
 #optic_caps Traversal
-#optic_caps AffineTraversal
-
-/-! ## Tracing Compositions
-
-These show how optic types flow through composition chains.
--/
-
-#eval traceComposition [
-  ("Employee.addressLens", "Lens"),
-  ("Address.cityLens", "Lens")
-]
--- Result: Lens (Lens ∘ Lens = Lens)
-
-#eval traceComposition [
-  ("Department.employeesLens", "Lens"),
-  ("traversed", "Traversal"),
-  ("Employee.salaryLens", "Lens")
-]
--- Result: Traversal (once you compose with Traversal, you stay Traversal)
-
-#eval traceComposition [
-  ("Company.departmentsLens", "Lens"),
-  ("traversed", "Traversal"),
-  ("Department.employeesLens", "Lens"),
-  ("traversed", "Traversal"),
-  ("Employee.addressLens", "Lens"),
-  ("Address.zipLens", "Lens")
-]
--- Result: Traversal (6-level deep composition!)
-
-#eval traceComposition [
-  ("userLens", "Lens"),
-  ("maybeBioLens", "Lens"),
-  ("somePrism", "Prism")
-]
--- Result: AffineTraversal (Lens ∘ Prism = AffineTraversal, 0-or-1 focus)
 
 /-! ## Sample Data -/
 
@@ -183,9 +167,6 @@ def acme : Company := {
 
 -- View a direct field
 #eval view' Company.nameLens acme
-
--- Collect all cities in the company using the traversal
-#eval! Fold.toListTraversal Company.allCities acme
 
 -- Give everyone a 10% raise and show new salaries
 #eval! (Traversal.over' Company.allEmployees (fun e => { e with salary := e.salary + e.salary / 10 }) acme).departments.map (·.employees.map (·.salary))
