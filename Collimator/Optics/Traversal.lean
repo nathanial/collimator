@@ -11,8 +11,6 @@ open Batteries
 open Collimator.Core
 open Collimator.Concrete
 
-universe u
-
 /--
 Construct a traversal from a polymorphic walker that works for any applicative.
 
@@ -61,48 +59,48 @@ A lawful traversal satisfies:
 
 These laws ensure the traversal visits each element exactly once in a consistent order.
 -/
-def traversal {s t a b : Type _}
-    (walk : ∀ {F : Type u → Type u} [Applicative F], (a → F b) → s → F t) :
+def traversal {s t a b : Type}
+    (walk : ∀ {F : Type → Type} [Applicative F], (a → F b) → s → F t) :
     Traversal s t a b :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] w pab =>
+  ⟨fun {P} [Profunctor P] [Strong P] [Choice P] w pab =>
     let _ : Wandering P := w
-    Wandering.wander (P := P) walk pab
+    Wandering.wander (P := P) walk pab⟩
 
-private def traverseList {F : Type _ → Type _} [Applicative F]
-    {α β : Type u} (f : α → F β) : List α → F (List β)
+private def traverseList {F : Type → Type} [Applicative F]
+    {α β : Type} (f : α → F β) : List α → F (List β)
   | [] => pure []
   | x :: xs => pure List.cons <*> f x <*> traverseList f xs
 
-private def traverseOption {F : Type _ → Type _} [Applicative F]
-    {α β : Type u} (f : α → F β) : Option α → F (Option β)
+private def traverseOption {F : Type → Type} [Applicative F]
+    {α β : Type} (f : α → F β) : Option α → F (Option β)
   | none => pure none
   | some a => Option.some <$> f a
 
 namespace Traversal
 
 /-- Modify each focus of a traversal. -/
-def over' {s t a b : Type _}
+def over' {s t a b : Type}
     (tr : Collimator.Traversal s t a b) (f : a → b) : s → t :=
   let arrow := FunArrow.mk (α := a) (β := b) f
   let transformed := tr.toTraversal (P := fun α β => FunArrow α β) inferInstance arrow
   fun s => transformed s
 
 /-- Apply an effectful update to each focus of a traversal. -/
-def traverse' {s t a b : Type _}
+def traverse' {s t a b : Type}
     (tr : Collimator.Traversal s t a b)
-    {F : Type u → Type u} [Applicative F]
+    {F : Type → Type} [Applicative F]
     (f : a → F b) (s₀ : s) : F t :=
   let star := Star.mk (F := F) (α := a) (β := b) f
   let transformed := tr.toTraversal (P := fun α β => Star F α β) inferInstance star
   transformed s₀
 
 /-- Traversal focusing every element of a list. -/
-def eachList {α β : Type _} :
+def eachList {α β : Type} :
     Collimator.Traversal (List α) (List β) α β :=
   Collimator.traversal traverseList
 
 /-- Traversal focusing the value inside an `Option` when present. -/
-def eachOption {α β : Type _} :
+def eachOption {α β : Type} :
     Collimator.Traversal (Option α) (Option β) α β :=
   Collimator.traversal traverseOption
 

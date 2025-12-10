@@ -9,6 +9,6 @@ open Collimator
 -- We need a specialized class for Review since it's a 2-parameter type
 
 /-- Standalone review function for the Review optic -/
-def reviewR {t b : Type _} (r : Review t b) (x : b) : t := r.build x
+def reviewR {t b : Type} (r : Review t b) (x : b) : t := r.build x
 
 end Collimator.Poly

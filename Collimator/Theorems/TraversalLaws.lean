@@ -24,12 +24,11 @@ open Collimator
 open Collimator.Core
 open Collimator.Concrete
 
-universe u
 
 /--
 The identity functor - maps values to themselves.
 -/
-abbrev Id (α : Type u) : Type u := α
+abbrev Id (α : Type) : Type := α
 
 instance : Functor Id where
   map f := f
@@ -44,13 +43,13 @@ A lawful traversal requires the underlying walk function to satisfy two laws.
 Note: For the polymorphic case where s≠t or a≠b, we state the laws in terms
 of the monomorphic version where we restrict to s=t and a=b.
 -/
-class LawfulTraversal {s : Type u} {a : Type u}
-    (walk : ∀ {F : Type u → Type u} [Applicative F], (a → F a) → s → F s) where
+class LawfulTraversal {s : Type} {a : Type}
+    (walk : ∀ {F : Type → Type} [Applicative F], (a → F a) → s → F s) where
   /-- Traversing with the identity function returns the structure unchanged (identity law). -/
   traverse_identity : ∀ (x : s), walk (F := Id) (fun a => a) x = x
   /-- The naturality law: walk commutes with natural transformations. -/
   traverse_naturality :
-    ∀ {F G : Type u → Type u} [Applicative F] [Applicative G]
+    ∀ {F G : Type → Type} [Applicative F] [Applicative G]
       (η : ∀ {α}, F α → G α)
       (_h_pure : ∀ {α} (a : α), η (pure a : F α) = pure a)
       (_h_seq : ∀ {α β} (f : F (α → β)) (x : F α),
@@ -63,8 +62,8 @@ class LawfulTraversal {s : Type u} {a : Type u}
 /--
 Unfolding lemma: `Traversal.over` applied to a traversal.
 -/
-theorem traversal_over_eq {s a : Type u}
-    (walk : ∀ {F : Type u → Type u} [Applicative F], (a → F a) → s → F s)
+theorem traversal_over_eq {s a : Type}
+    (walk : ∀ {F : Type → Type} [Applicative F], (a → F a) → s → F s)
     (f : a → a) (x : s) :
     Traversal.over' (traversal walk) f x = walk (F := Id) f x := by
   unfold Traversal.over' traversal Wandering.wander
@@ -74,9 +73,9 @@ theorem traversal_over_eq {s a : Type u}
 /--
 Unfolding lemma: `Traversal.traverse` applied to a traversal.
 -/
-theorem traversal_traverse_eq {s a : Type u}
-    (walk : ∀ {F : Type u → Type u} [Applicative F], (a → F a) → s → F s)
-    {F : Type u → Type u} [Applicative F]
+theorem traversal_traverse_eq {s a : Type}
+    (walk : ∀ {F : Type → Type} [Applicative F], (a → F a) → s → F s)
+    {F : Type → Type} [Applicative F]
     (f : a → F a) (x : s) :
     Traversal.traverse' (traversal walk) f x = walk (F := F) f x := by
   unfold Traversal.traverse' traversal Wandering.wander
@@ -92,8 +91,8 @@ leaves the structure unchanged.
 If `t = traversal walk` and the walk function satisfies the identity law,
 then `Traversal.over t id x = x`.
 -/
-theorem traversal_identity {s a : Type u}
-    (walk : ∀ {F : Type u → Type u} [Applicative F], (a → F a) → s → F s)
+theorem traversal_identity {s a : Type}
+    (walk : ∀ {F : Type → Type} [Applicative F], (a → F a) → s → F s)
     (h : ∀ (x : s), walk (F := Id) (fun a => a) x = x) :
     ∀ (x : s), Traversal.over' (traversal walk) (fun a => a) x = x := by
   intro x
@@ -103,15 +102,15 @@ theorem traversal_identity {s a : Type u}
 /--
 **Naturality Law**: Traversals respect natural transformations between applicatives.
 -/
-theorem traversal_naturality {s a : Type u}
-    (walk : ∀ {F : Type u → Type u} [Applicative F], (a → F a) → s → F s)
-    (h : ∀ {F G : Type u → Type u} [Applicative F] [Applicative G]
+theorem traversal_naturality {s a : Type}
+    (walk : ∀ {F : Type → Type} [Applicative F], (a → F a) → s → F s)
+    (h : ∀ {F G : Type → Type} [Applicative F] [Applicative G]
       (η : ∀ {α}, F α → G α)
       (_h_pure : ∀ {α} (a : α), η (pure a : F α) = pure a)
       (_h_seq : ∀ {α β} (f : F (α → β)) (x : F α), η (f <*> x) = η f <*> η x)
       (f : a → F a) (x : s),
       η (walk f x) = walk (fun a => η (f a)) x) :
-    ∀ {F G : Type u → Type u} [Applicative F] [Applicative G]
+    ∀ {F G : Type → Type} [Applicative F] [Applicative G]
       (η : ∀ {α}, F α → G α)
       (_h_pure : ∀ {α} (a : α), η (pure a : F α) = pure a)
       (_h_seq : ∀ {α β} (f : F (α → β)) (x : F α), η (f <*> x) = η f <*> η x)
@@ -128,11 +127,11 @@ theorem traversal_naturality {s a : Type u}
 If the underlying walk function forms a lawful traversal, then both traversal laws hold
 for the profunctor traversal constructed from it.
 -/
-theorem lawful_traversal_satisfies_laws {s a : Type u}
-    (walk : ∀ {F : Type u → Type u} [Applicative F], (a → F a) → s → F s)
+theorem lawful_traversal_satisfies_laws {s a : Type}
+    (walk : ∀ {F : Type → Type} [Applicative F], (a → F a) → s → F s)
     [h : LawfulTraversal walk] :
     (∀ (x : s), Traversal.over' (traversal walk) (fun a => a) x = x) ∧
-    (∀ {F G : Type u → Type u} [Applicative F] [Applicative G]
+    (∀ {F G : Type → Type} [Applicative F] [Applicative G]
       (η : ∀ {α}, F α → G α)
       (_h_pure : ∀ {α} (a : α), η (pure a : F α) = pure a)
       (_h_seq : ∀ {α β} (f : F (α → β)) (x : F α), η (f <*> x) = η f <*> η x)
@@ -151,19 +150,19 @@ open Collimator.Combinators
 /--
 Helper: Extract walker from composed traversals.
 -/
-private def composed_walk {s u a : Type u}
-    (walk_outer : ∀ {F : Type u → Type u} [Applicative F], (u → F u) → s → F s)
-    (walk_inner : ∀ {F : Type u → Type u} [Applicative F], (a → F a) → u → F u) :
-    ∀ {F : Type u → Type u} [Applicative F], (a → F a) → s → F s :=
+private def composed_walk {s u a : Type}
+    (walk_outer : ∀ {F : Type → Type} [Applicative F], (u → F u) → s → F s)
+    (walk_inner : ∀ {F : Type → Type} [Applicative F], (a → F a) → u → F u) :
+    ∀ {F : Type → Type} [Applicative F], (a → F a) → s → F s :=
   fun {F} [Applicative F] f => walk_outer (walk_inner f)
 
 /--
 **Composition Preserves Identity**: If two traversals are lawful,
 their composition preserves the identity law.
 -/
-theorem composeTraversal_preserves_identity {s u a : Type u}
-    (walk_o : ∀ {F : Type u → Type u} [Applicative F], (u → F u) → s → F s)
-    (walk_i : ∀ {F : Type u → Type u} [Applicative F], (a → F a) → u → F u)
+theorem composeTraversal_preserves_identity {s u a : Type}
+    (walk_o : ∀ {F : Type → Type} [Applicative F], (u → F u) → s → F s)
+    (walk_i : ∀ {F : Type → Type} [Applicative F], (a → F a) → u → F u)
     [ho : LawfulTraversal walk_o] [hi : LawfulTraversal walk_i] :
     ∀ (x : s), composed_walk walk_o walk_i (F := Id) (fun a => a) x = x := by
   intro x
@@ -178,11 +177,11 @@ theorem composeTraversal_preserves_identity {s u a : Type u}
 **Composition Preserves Naturality**: If two traversals are lawful,
 their composition preserves the naturality law.
 -/
-theorem composeTraversal_preserves_naturality {s u a : Type u}
-    (walk_o : ∀ {F : Type u → Type u} [Applicative F], (u → F u) → s → F s)
-    (walk_i : ∀ {F : Type u → Type u} [Applicative F], (a → F a) → u → F u)
+theorem composeTraversal_preserves_naturality {s u a : Type}
+    (walk_o : ∀ {F : Type → Type} [Applicative F], (u → F u) → s → F s)
+    (walk_i : ∀ {F : Type → Type} [Applicative F], (a → F a) → u → F u)
     [ho : LawfulTraversal walk_o] [hi : LawfulTraversal walk_i] :
-    ∀ {F G : Type u → Type u} [Applicative F] [Applicative G]
+    ∀ {F G : Type → Type} [Applicative F] [Applicative G]
       (η : ∀ {α}, F α → G α)
       (_h_pure : ∀ {α} (a : α), η (pure a : F α) = pure a)
       (_h_seq : ∀ {α β} (f : F (α → β)) (x : F α), η (f <*> x) = η f <*> η x)
@@ -199,9 +198,9 @@ theorem composeTraversal_preserves_naturality {s u a : Type u}
 /--
 **Composition is Lawful**: If two traversals are lawful, their composition is lawful.
 -/
-instance composedTraversal_isLawful {s u a : Type u}
-    (walk_o : ∀ {F : Type u → Type u} [Applicative F], (u → F u) → s → F s)
-    (walk_i : ∀ {F : Type u → Type u} [Applicative F], (a → F a) → u → F u)
+instance composedTraversal_isLawful {s u a : Type}
+    (walk_o : ∀ {F : Type → Type} [Applicative F], (u → F u) → s → F s)
+    (walk_i : ∀ {F : Type → Type} [Applicative F], (a → F a) → u → F u)
     [ho : LawfulTraversal walk_o] [hi : LawfulTraversal walk_i] :
     LawfulTraversal (composed_walk walk_o walk_i) where
   traverse_identity := composeTraversal_preserves_identity walk_o walk_i
@@ -212,12 +211,12 @@ instance composedTraversal_isLawful {s u a : Type u}
 /--
 Example: List traversal is lawful.
 -/
-private def traverseList'Mon {α : Type u} {F : Type u → Type u} [Applicative F]
+private def traverseList'Mon {α : Type} {F : Type → Type} [Applicative F]
     (f : α → F α) : List α → F (List α)
   | [] => pure []
   | x :: xs => pure List.cons <*> f x <*> traverseList'Mon f xs
 
-instance {α : Type u} : LawfulTraversal (@traverseList'Mon α) where
+instance {α : Type} : LawfulTraversal (@traverseList'Mon α) where
   traverse_identity := by
     intro x
     induction x with
@@ -243,12 +242,12 @@ Example: Option traversal is lawful.
 Note: We use a direct encoding with applicative operations instead of (<$>)
 to make the naturality proof simpler.
 -/
-private def traverseOption'Mon {α : Type u} {F : Type u → Type u} [Applicative F]
+private def traverseOption'Mon {α : Type} {F : Type → Type} [Applicative F]
     (f : α → F α) : Option α → F (Option α)
   | none => pure none
   | some a => pure Option.some <*> f a
 
-instance {α : Type u} : LawfulTraversal (@traverseOption'Mon α) where
+instance {α : Type} : LawfulTraversal (@traverseOption'Mon α) where
   traverse_identity := by
     intro x
     cases x <;> rfl

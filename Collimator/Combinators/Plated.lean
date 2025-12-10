@@ -44,7 +44,6 @@ namespace Collimator.Combinators.Plated
 
 open Collimator
 
-universe u
 
 /--
 Typeclass for types with a self-similar recursive structure.
@@ -57,7 +56,7 @@ This enables generic recursive operations like `transform` and `universe`.
 - `plate` should only focus on immediate children, not deeper descendants
 - `plate` should preserve the structure when the function is `pure`
 -/
-class Plated (α : Type u) where
+class Plated (α : Type) where
   /-- Traversal focusing on immediate children of the same type. -/
   plate : Traversal' α α
 
@@ -66,19 +65,19 @@ Access the immediate children of a plated structure.
 
 This is just the `plate` traversal from the typeclass.
 -/
-@[inline] def children {α : Type u} [Plated α] : Traversal' α α :=
+@[inline] def children {α : Type} [Plated α] : Traversal' α α :=
   Plated.plate
 
 /--
 Collect all immediate children into a list.
 -/
-def childrenOf {α : Type u} [Plated α] (x : α) : List α :=
+def childrenOf {α : Type} [Plated α] (x : α) : List α :=
   Fold.toListTraversal Plated.plate x
 
 /--
 Apply a transformation to all immediate children.
 -/
-def overChildren {α : Type u} [Plated α] (f : α → α) (x : α) : α :=
+def overChildren {α : Type} [Plated α] (f : α → α) (x : α) : α :=
   Traversal.over' Plated.plate f x
 
 /--
@@ -100,7 +99,7 @@ def simplify : Expr → Expr
 transform simplify expr  -- applies simplify to all subexpressions
 ```
 -/
-partial def transform {α : Type u} [Plated α] (f : α → α) (x : α) : α :=
+partial def transform {α : Type} [Plated α] (f : α → α) (x : α) : α :=
   f (overChildren (transform f) x)
 
 /--
@@ -108,7 +107,7 @@ Transform a structure top-down.
 
 Applies the transformation first, then recursively transforms children.
 -/
-partial def transformDown {α : Type u} [Plated α] (f : α → α) (x : α) : α :=
+partial def transformDown {α : Type} [Plated α] (f : α → α) (x : α) : α :=
   overChildren (transformDown f) (f x)
 
 /--
@@ -129,7 +128,7 @@ def trySimplify : Expr → Option Expr
 rewrite trySimplify expr
 ```
 -/
-partial def rewrite {α : Type u} [Plated α] (f : α → Option α) (x : α) : α :=
+partial def rewrite {α : Type} [Plated α] (f : α → Option α) (x : α) : α :=
   let x' := overChildren (rewrite f) x
   match f x' with
   | some y => rewrite f y  -- Keep rewriting if f succeeds
@@ -138,7 +137,7 @@ partial def rewrite {α : Type u} [Plated α] (f : α → Option α) (x : α) : 
 /--
 Rewrite top-down: try to rewrite at each node before recursing.
 -/
-partial def rewriteDown {α : Type u} [Plated α] (f : α → Option α) (x : α) : α :=
+partial def rewriteDown {α : Type} [Plated α] (f : α → Option α) (x : α) : α :=
   let x' := match f x with
     | some y => y
     | none => x
@@ -149,7 +148,7 @@ Descend one level into children, applying a monadic action.
 
 This is the effectful version of `overChildren`.
 -/
-def descendM {α : Type u} {M : Type u → Type u} [Plated α] [Monad M]
+def descendM {α : Type} {M : Type → Type} [Plated α] [Monad M]
     (f : α → M α) (x : α) : M α :=
   Traversal.traverse' Plated.plate f x
 
@@ -166,38 +165,38 @@ Includes the root value itself.
 toListOf universe expr
 ```
 -/
-partial def universeList {α : Type u} [Plated α] (x : α) : List α :=
+partial def universeList {α : Type} [Plated α] (x : α) : List α :=
   x :: (childrenOf x).flatMap universeList
 
 /--
 Count the total number of nodes in a recursive structure.
 -/
-partial def cosmosCount {α : Type u} [Plated α] (x : α) : Nat :=
+partial def cosmosCount {α : Type} [Plated α] (x : α) : Nat :=
   1 + (childrenOf x).foldl (fun acc child => acc + cosmosCount child) 0
 
 /--
 Find the maximum depth of a recursive structure.
 -/
-partial def depth {α : Type u} [Plated α] (x : α) : Nat :=
+partial def depth {α : Type} [Plated α] (x : α) : Nat :=
   let childDepths := (childrenOf x).map depth
   1 + (childDepths.foldl max 0)
 
 /--
 Check if a predicate holds for all nodes in the structure.
 -/
-partial def allOf {α : Type u} [Plated α] (p : α → Bool) (x : α) : Bool :=
+partial def allOf {α : Type} [Plated α] (p : α → Bool) (x : α) : Bool :=
   p x && (childrenOf x).all (allOf p)
 
 /--
 Check if a predicate holds for any node in the structure.
 -/
-partial def anyOf {α : Type u} [Plated α] (p : α → Bool) (x : α) : Bool :=
+partial def anyOf {α : Type} [Plated α] (p : α → Bool) (x : α) : Bool :=
   p x || (childrenOf x).any (anyOf p)
 
 /--
 Find the first node matching a predicate (depth-first).
 -/
-partial def findOf {α : Type u} [Plated α] (p : α → Bool) (x : α) : Option α :=
+partial def findOf {α : Type} [Plated α] (p : α → Bool) (x : α) : Option α :=
   if p x then some x
   else (childrenOf x).findSome? (findOf p)
 
@@ -205,18 +204,18 @@ partial def findOf {α : Type u} [Plated α] (p : α → Bool) (x : α) : Option
 
 /-- Lists are plated: the children of a list are its tail sublists.
     Note: This is one interpretation. Another would be no children (leaves only). -/
-instance instPlatedList {α : Type u} : Plated (List α) where
+instance instPlatedList {α : Type} : Plated (List α) where
   plate := Collimator.traversal
-    (fun {F : Type u → Type u} [Applicative F]
+    (fun {F : Type → Type} [Applicative F]
       (f : List α → F (List α)) (xs : List α) =>
         match xs with
         | [] => pure []
         | x :: rest => Functor.map (List.cons x) (f rest))
 
 /-- Option has no recursive structure (no children). -/
-instance instPlatedOption {α : Type u} : Plated (Option α) where
+instance instPlatedOption {α : Type} : Plated (Option α) where
   plate := Collimator.traversal
-    (fun {F : Type u → Type u} [Applicative F]
+    (fun {F : Type → Type} [Applicative F]
       (_f : Option α → F (Option α)) (x : Option α) =>
         pure x)
 

@@ -9,7 +9,6 @@ namespace Collimator.Concrete
 open Collimator.Core
 open Batteries
 
-universe u
 
 /--
 `Star F α β` is the profunctor `α → F β` for some applicative functor `F`.

@@ -2,7 +2,6 @@ import Collimator.Core.Profunctor
 
 namespace Collimator.Core
 
-universe u v
 
 /--
 Strong profunctors can manipulate products.

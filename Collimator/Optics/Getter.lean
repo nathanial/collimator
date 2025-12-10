@@ -26,13 +26,12 @@ namespace Collimator
 open Collimator.Core
 open Collimator.Concrete
 
-universe u
 
 /--
 A Getter is a read-only optic for exactly one focus.
 It's simply a getter function wrapped in a structure.
 -/
-structure Getter (s : Type _) (a : Type _) where
+structure Getter (s : Type) (a : Type) : Type 1 where
   get : s → a
 
 /-- Coercion to apply a Getter as a function -/
@@ -42,23 +41,23 @@ instance : CoeFun (Getter s a) (fun _ => s → a) where
 /--
 Construct a Getter from a getter function.
 -/
-def getter {s a : Type _} (get : s → a) : Getter s a :=
+def getter {s a : Type} (get : s → a) : Getter s a :=
   ⟨get⟩
 
 /-- Alias for `getter` -/
-abbrev getter' {s a : Type _} := @getter s a
+abbrev getter' {s a : Type} := @getter s a
 
 /--
 View the focus of a Getter.
 -/
-def Getter.view {s a : Type _} (g : Getter s a) (x : s) : a :=
+def Getter.view {s a : Type} (g : Getter s a) (x : s) : a :=
   g.get x
 
 /--
 Every Lens can be used as a Getter (forgetful conversion).
 Uses the Forget profunctor to extract just the getter.
 -/
-def Getter.ofLens {s t a b : Type _} (l : Lens s t a b) : Getter s a :=
+def Getter.ofLens {s t a b : Type} (l : Lens s t a b) : Getter s a :=
   ⟨fun s =>
     let forget : Forget a a a := fun a => a
     @l.toLens (Forget a) (instProfunctorForget a) (instStrongForget a) forget s⟩
@@ -66,7 +65,7 @@ def Getter.ofLens {s t a b : Type _} (l : Lens s t a b) : Getter s a :=
 /--
 Compose two Getters.
 -/
-def Getter.compose {s a b : Type _}
+def Getter.compose {s a b : Type}
     (outer : Getter s a) (inner : Getter a b) : Getter s b :=
   ⟨fun s => inner.get (outer.get s)⟩
 

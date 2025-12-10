@@ -9,18 +9,17 @@ open Batteries
 open Collimator
 open Collimator.Indexed
 
-universe u
 
 private def traverseArray
-    {F : Type u → Type u} [Applicative F]
-    {α β : Type u} (f : α → F β) (arr : Array α) : F (Array β) :=
+    {F : Type → Type} [Applicative F]
+    {α β : Type} (f : α → F β) (arr : Array α) : F (Array β) :=
   let step (acc : F (Array β)) (a : α) : F (Array β) :=
     pure (fun (accArr : Array β) (b : β) => accArr.push b) <*> acc <*> f a
   arr.foldl step (pure (Array.mkEmpty (α := β) arr.size))
 
 private def traverseArrayWithIndex
-    {F : Type u → Type u} [Applicative F]
-    {α : Type u}
+    {F : Type → Type} [Applicative F]
+    {α : Type}
     (f : Nat × α → F (Nat × α)) (arr : Array α) : F (Array α) :=
   let step
       (state : Nat × F (Array α)) (a : α) : Nat × F (Array α) :=
@@ -33,7 +32,7 @@ private def traverseArrayWithIndex
   (arr.foldl step (0, pure (Array.mkEmpty (α := α) arr.size))).2
 
 private def setAt?
-    {α : Type u} (arr : Array α) (idx : Nat) (replacement : Option α) : Array α :=
+    {α : Type} (arr : Array α) (idx : Nat) (replacement : Option α) : Array α :=
   match replacement with
   | some v =>
       if h : idx < arr.size then
@@ -43,33 +42,33 @@ private def setAt?
   | none => arr
 
 /-- Traversal visiting every element of an array. -/
-@[inline] def traversed {α β : Type u} :
+@[inline] def traversed {α β : Type} :
     Traversal (Array α) (Array β) α β :=
   Collimator.traversal
-    (fun {F : Type u → Type u} [Applicative F]
+    (fun {F : Type → Type} [Applicative F]
       (f : α → F β) (arr : Array α) =>
         traverseArray f arr)
 
 /-- Indexed traversal exposing array indices alongside each element. -/
-@[inline] def itraversed {α : Type u} :
+@[inline] def itraversed {α : Type} :
     Traversal' (Array α) (Nat × α) :=
   Collimator.traversal
-    (fun {F : Type u → Type u} [Applicative F]
+    (fun {F : Type → Type} [Applicative F]
       (f : (Nat × α) → F (Nat × α)) (arr : Array α) =>
         traverseArrayWithIndex f arr)
 
 /-- Lens exposing an optional element at a given array index. -/
-instance instHasAtArray {α : Type u} : HasAt Nat (Array α) α where
+instance instHasAtArray {α : Type} : HasAt Nat (Array α) α where
   focus i :=
     lens'
       (fun arr => arr[i]? )
       (fun arr r? => setAt? arr i r?)
 
 /-- Traversal focusing a specific array index when present. -/
-instance instHasIxArray {α : Type u} : HasIx Nat (Array α) α where
+instance instHasIxArray {α : Type} : HasIx Nat (Array α) α where
   ix target :=
     Collimator.traversal
-      (fun {F : Type u → Type u} [Applicative F]
+      (fun {F : Type → Type} [Applicative F]
         (f : α → F α) (arr : Array α) =>
           let step
               (state : Nat × F (Array α)) (a : α) : Nat × F (Array α) :=

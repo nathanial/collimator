@@ -44,7 +44,6 @@ open Collimator
 open Collimator.Theorems
 open Collimator.Concrete
 
-universe u v w
 
 /-! ## HasView Instance -/
 
@@ -56,7 +55,7 @@ For an iso `i : Iso' s a`, `view i s` extracts the `a` value from `s`.
 Implementation: Uses the Forget profunctor to extract the forward direction.
 -/
 @[instance 10000] -- Higher priority than Lens instance (default is 1000)
-instance : HasView (fun (s a : Type u) => Iso s s a a) where
+instance : HasView (fun (s a : Type) => Iso s s a a) where
   view {_s a} i x :=
     let forget : Forget a a a := fun y => y
     let result := i.toIso (P := fun α β => Forget a α β) forget
@@ -103,7 +102,7 @@ For an iso `i : Iso' s a`:
 Unlike prisms or affine traversals which may fail, isos always succeed.
 -/
 @[instance 10000] -- Higher priority than Lens/Prism instances (default is 1000)
-instance : HasPreview (fun (s a : Type u) => Iso s s a a) where
+instance : HasPreview (fun (s a : Type) => Iso s s a a) where
   preview {_s a} i x :=
     let forget : Forget a a a := fun y => y
     let result := i.toIso (P := fun α β => Forget a α β) forget

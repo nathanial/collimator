@@ -19,7 +19,6 @@ A lawful Strong profunctor must satisfy:
 
 namespace Collimator.Core
 
-universe u v
 
 variable {P : Type u → Type u → Type v}
 

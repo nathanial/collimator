@@ -25,12 +25,11 @@ open Collimator
 open Collimator.Core
 open Collimator.Concrete
 
-universe u
 
 /--
 A lawful lens requires the underlying get and set functions to satisfy three laws.
 -/
-class LawfulLens {s : Type u} {a : Type u}
+class LawfulLens {s : Type} {a : Type}
     (get : s → a) (set : s → a → s) where
   /-- Getting after setting returns the value that was set. -/
   getput : ∀ (s : s) (v : a), get (set s v) = v
@@ -44,7 +43,7 @@ class LawfulLens {s : Type u} {a : Type u}
 /--
 Unfolding lemma: `view` applied to a lens constructed from get/set is equivalent to get.
 -/
-theorem view_lens_eq {s a : Type u} (get : s → a) (set : s → a → s) (x : s) :
+theorem view_lens_eq {s a : Type} (get : s → a) (set : s → a → s) (x : s) :
     view' (lens' get set) x = get x := by
   unfold view' lens'
   -- view unfolds to applying the lens to the Forget profunctor
@@ -53,7 +52,7 @@ theorem view_lens_eq {s a : Type u} (get : s → a) (set : s → a → s) (x : s
 /--
 Unfolding lemma: `set` applied to a lens constructed from get/set is equivalent to the set function.
 -/
-theorem set_lens_eq {s a : Type u} (get : s → a) (set : s → a → s) (v : a) (x : s) :
+theorem set_lens_eq {s a : Type} (get : s → a) (set : s → a → s) (v : a) (x : s) :
     set' (lens' get set) v x = set x v := by
   unfold set' over' lens'
   simp [Profunctor.dimap, Strong.first]
@@ -66,7 +65,7 @@ theorem set_lens_eq {s a : Type u} (get : s → a) (set : s → a → s) (v : a)
 If `l = lens get set` and the underlying functions satisfy `get (set s v) = v`,
 then `view l (set l v s) = v`.
 -/
-theorem lens_getput {s a : Type u} (get : s → a) (set : s → a → s)
+theorem lens_getput {s a : Type} (get : s → a) (set : s → a → s)
     (h : ∀ (s : s) (v : a), get (set s v) = v) :
     ∀ (s : s) (v : a), view' (lens' get set) (set' (lens' get set) v s) = v := by
   intro s v
@@ -79,7 +78,7 @@ theorem lens_getput {s a : Type u} (get : s → a) (set : s → a → s)
 If `l = lens get set` and the underlying functions satisfy `set s (get s) = s`,
 then `set l (view l s) s = s`.
 -/
-theorem lens_putget {s a : Type u} (get : s → a) (set : s → a → s)
+theorem lens_putget {s a : Type} (get : s → a) (set : s → a → s)
     (h : ∀ (s : s), set s (get s) = s) :
     ∀ (s : s), set' (lens' get set) (view' (lens' get set) s) s = s := by
   intro s
@@ -92,7 +91,7 @@ theorem lens_putget {s a : Type u} (get : s → a) (set : s → a → s)
 If `l = lens get set` and the underlying functions satisfy `set (set s v) v' = set s v'`,
 then `set l v (set l v' s) = set l v s`.
 -/
-theorem lens_putput {s a : Type u} (get : s → a) (set : s → a → s)
+theorem lens_putput {s a : Type} (get : s → a) (set : s → a → s)
     (h : ∀ (s : s) (v v' : a), set (set s v) v' = set s v') :
     ∀ (s : s) (v v' : a), set' (lens' get set) v (set' (lens' get set) v' s) = set' (lens' get set) v s := by
   intro s v v'
@@ -105,7 +104,7 @@ theorem lens_putput {s a : Type u} (get : s → a) (set : s → a → s)
 If the underlying get/set functions form a lawful lens, then all three lens laws hold
 for the profunctor lens constructed from them.
 -/
-theorem lawful_lens_satisfies_laws {s a : Type u} (get : s → a) (set : s → a → s)
+theorem lawful_lens_satisfies_laws {s a : Type} (get : s → a) (set : s → a → s)
     [h : LawfulLens get set] :
     (∀ (s : s) (v : a), view' (lens' get set) (set' (lens' get set) v s) = v) ∧
     (∀ (s : s), set' (lens' get set) (view' (lens' get set) s) s = s) ∧
@@ -123,14 +122,14 @@ open Collimator.Combinators
 /--
 Helper: Extract getter from composed lenses.
 -/
-private def composed_get {s a u : Type u}
+private def composed_get {s a u : Type}
     (get_outer : s → a) (get_inner : a → u) : s → u :=
   get_inner ∘ get_outer
 
 /--
 Helper: Extract setter from composed lenses.
 -/
-private def composed_set {s a u : Type u}
+private def composed_set {s a u : Type}
     (get_outer : s → a) (set_outer : s → a → s)
     (set_inner : a → u → a) : s → u → s :=
   fun s u => set_outer s (set_inner (get_outer s) u)
@@ -139,7 +138,7 @@ private def composed_set {s a u : Type u}
 **Composition Preserves GetPut**: If two lenses are lawful, their composition is also lawful.
 The getput law holds for composed lenses.
 -/
-theorem composeLens_preserves_getput {s a u : Type u}
+theorem composeLens_preserves_getput {s a u : Type}
     (get_o : s → a) (set_o : s → a → s)
     (get_i : a → u) (set_i : a → u → a)
     [ho : LawfulLens get_o set_o] [hi : LawfulLens get_i set_i] :
@@ -154,7 +153,7 @@ theorem composeLens_preserves_getput {s a u : Type u}
 /--
 **Composition Preserves PutGet**: The putget law holds for composed lenses.
 -/
-theorem composeLens_preserves_putget {s a u : Type u}
+theorem composeLens_preserves_putget {s a u : Type}
     (get_o : s → a) (set_o : s → a → s)
     (get_i : a → u) (set_i : a → u → a)
     [ho : LawfulLens get_o set_o] [hi : LawfulLens get_i set_i] :
@@ -169,7 +168,7 @@ theorem composeLens_preserves_putget {s a u : Type u}
 /--
 **Composition Preserves PutPut**: The putput law holds for composed lenses.
 -/
-theorem composeLens_preserves_putput {s a u : Type u}
+theorem composeLens_preserves_putput {s a u : Type}
     (get_o : s → a) (set_o : s → a → s)
     (get_i : a → u) (set_i : a → u → a)
     [ho : LawfulLens get_o set_o] [hi : LawfulLens get_i set_i] :
@@ -191,7 +190,7 @@ theorem composeLens_preserves_putput {s a u : Type u}
 /--
 **Composition is Lawful**: If two lenses are lawful, their composition forms a lawful lens.
 -/
-instance composedLens_isLawful {s a u : Type u}
+instance composedLens_isLawful {s a u : Type}
     (get_o : s → a) (set_o : s → a → s)
     (get_i : a → u) (set_i : a → u → a)
     [ho : LawfulLens get_o set_o] [hi : LawfulLens get_i set_i] :

@@ -2,7 +2,6 @@ import Collimator.Optics.Types
 
 namespace Collimator.Poly
 
-universe u v
 
 /-!
 # Polymorphic Optic Type Classes
@@ -29,13 +28,13 @@ import Collimator.Poly
 open Collimator.Poly
 
 -- Works with any optic that supports viewing
-def getValue {optic : Type u → Type u → Type v} [HasView optic]
-    {s a : Type u} (o : optic s a) (x : s) : a :=
+def getValue {optic : Type → Type → Type 1} [HasView optic]
+    {s a : Type} (o : optic s a) (x : s) : a :=
   view o x
 
 -- Works with any optic that supports over
-def increment {optic : Type u → Type u → Type u → Type u → Type v} [HasOver optic]
-    {s t : Type u} (o : optic s t Int Int) : s → t :=
+def increment {optic : Type → Type → Type → Type → Type 1} [HasOver optic]
+    {s t : Type} (o : optic s t Int Int) : s → t :=
   over o (· + 1)
 ```
 
@@ -76,9 +75,9 @@ When combined with `HasSet`:
 - GetPut: `set o (view o s) s = s`
 - PutGet: `view o (set o v s) = v`
 -/
-class HasView (optic : Type u → Type u → Type v) where
+class HasView (optic : Type → Type → Type 1) where
   /-- Extract the focused value from a structure. -/
-  view : ∀ {s a : Type u}, optic s a → s → a
+  view : ∀ {s a : Type}, optic s a → s → a
 
 /--
 Type class for optics that support modifying focused values.
@@ -89,9 +88,9 @@ Instances: Iso, Lens, Prism, AffineTraversal, Traversal, Setter
 - Identity: `over o id = id`
 - Composition: `over o (f ∘ g) = over o f ∘ over o g`
 -/
-class HasOver (optic : Type u → Type u → Type u → Type u → Type v) where
+class HasOver (optic : Type → Type → Type → Type → Type 1) where
   /-- Apply a function to all focused values. -/
-  over : ∀ {s t a b : Type u}, optic s t a b → (a → b) → s → t
+  over : ∀ {s t a b : Type}, optic s t a b → (a → b) → s → t
 
 /--
 Type class for optics that support setting focused values.
@@ -101,9 +100,9 @@ Instances: Iso, Lens, Prism, AffineTraversal, Traversal, Setter
 # Laws
 - SetSet: `set o v2 (set o v1 s) = set o v2 s`
 -/
-class HasSet (optic : Type u → Type u → Type u → Type u → Type v) where
+class HasSet (optic : Type → Type → Type → Type → Type 1) where
   /-- Replace all focused values with a constant. -/
-  set : ∀ {s t a b : Type u}, optic s t a b → b → s → t
+  set : ∀ {s t a b : Type}, optic s t a b → b → s → t
 
 /--
 Type class for optics that support optional viewing.
@@ -112,9 +111,9 @@ Instances: Iso, Lens, Prism, AffineTraversal
 
 Returns `some a` if the focus exists, `none` otherwise.
 -/
-class HasPreview (optic : Type u → Type u → Type v) where
+class HasPreview (optic : Type → Type → Type 1) where
   /-- Optionally extract a focused value. -/
-  preview : ∀ {s a : Type u}, optic s a → s → Option a
+  preview : ∀ {s a : Type}, optic s a → s → Option a
 
 /--
 Type class for optics that support construction (building the whole from a part).
@@ -125,9 +124,9 @@ Instances: Iso, Prism
 When combined with `HasPreview`:
 - Preview-Review: `preview o (review o b) = some b`
 -/
-class HasReview (optic : Type u → Type u → Type u → Type u → Type v) where
+class HasReview (optic : Type → Type → Type → Type → Type 1) where
   /-- Construct a structure from a focused value. -/
-  review : ∀ {s t a b : Type u}, optic s t a b → b → t
+  review : ∀ {s t a b : Type}, optic s t a b → b → t
 
 /--
 Type class for optics that support effectful traversal.
@@ -138,9 +137,9 @@ Instances: Iso, Lens, Prism, AffineTraversal, Traversal
 - Identity: `traverse o pure = pure`
 - Composition: `Compose (fmap (traverse o g) (traverse o f s)) = traverse o (Compose ∘ fmap g ∘ f) s`
 -/
-class HasTraverse (optic : Type u → Type u → Type u → Type u → Type v) where
+class HasTraverse (optic : Type → Type → Type → Type → Type 1) where
   /-- Traverse focused values with an effectful function. -/
-  traverse : ∀ {s t a b : Type u} {F : Type u → Type u} [Applicative F],
+  traverse : ∀ {s t a b : Type} {F : Type → Type} [Applicative F],
     optic s t a b → (a → F b) → s → F t
 
 -- Export all methods for convenient use

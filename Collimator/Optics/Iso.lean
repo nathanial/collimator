@@ -5,8 +5,6 @@ namespace Collimator
 
 open Collimator.Core
 
-universe u v w
-
 /--
 Create an isomorphism from forward and backward maps.
 
@@ -48,13 +46,13 @@ A lawful isomorphism satisfies:
 
 These laws ensure the transformation is truly bidirectional and lossless.
 -/
-def iso {s t a b : Type _}
+def iso {s t a b : Type}
     (forward : s → a) (back : b → t) : Iso s t a b :=
-  fun {P : Type u → Type v → Type w} [Profunctor P] =>
-    Profunctor.dimap (P := P) forward back
+  ⟨fun {P : Type → Type → Type} [Profunctor P] =>
+    Profunctor.dimap (P := P) forward back⟩
 
 /-- Identity optic. -/
-def id {α : Type _} : Iso' α α :=
+def id {α : Type} : Iso' α α :=
   iso (s := α) (t := α) (a := α) (b := α)
     (forward := fun x => x) (back := fun x => x)
 

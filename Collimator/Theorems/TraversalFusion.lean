@@ -34,13 +34,12 @@ open Collimator
 open Collimator.Core
 open Collimator.Concrete
 
-universe u
 
 /--
 The Compose functor - composition of two functors.
 This is needed to properly state the general fusion law with composed effects.
 -/
-structure Compose (F G : Type u → Type u) (α : Type u) : Type u where
+structure Compose (F G : Type → Type) (α : Type) where
   getCompose : F (G α)
 
 instance [Functor F] [Functor G] : Functor (Compose F G) where
@@ -50,7 +49,7 @@ instance [Functor F] [Functor G] : Functor (Compose F G) where
 Applicative instance for Compose - composition of applicative functors.
 This is assumed to satisfy the applicative laws when F and G are lawful.
 -/
-axiom instApplicativeCompose (F G : Type u → Type u) [Applicative F] [Applicative G] :
+axiom instApplicativeCompose (F G : Type → Type) [Applicative F] [Applicative G] :
   Applicative (Compose F G)
 
 /--
@@ -59,7 +58,7 @@ The basic traversal fusion law for simple (monomorphic) traversals.
 Two sequential `over` applications fuse into a single traversal with composed functions.
 This is the key optimization that allows traversal chains to be compiled efficiently.
 -/
-axiom traversal_fusion_simple {s a : Type u}
+axiom traversal_fusion_simple {s a : Type}
     (t : Traversal' s a)
     (f g : a → a) (x : s) :
     Traversal.over' t g (Traversal.over' t f x) = Traversal.over' t (g ∘ f) x
@@ -69,7 +68,7 @@ Fusion law for composed traversals: operations through a composition fuse proper
 
 Note: This is the same as the simple fusion law but stated for composed traversals.
 -/
-axiom traversal_fusion_composed {s t a : Type u}
+axiom traversal_fusion_composed {s t a : Type}
     (t₁ : Traversal' s t) (t₂ : Traversal' t a)
     (f g : a → a) (x : s) :
     -- Composition of t₁ and t₂ should fuse: over (t₁ ∘ t₂) g (over (t₁ ∘ t₂) f x) = over (t₁ ∘ t₂) (g ∘ f) x
@@ -81,7 +80,7 @@ The fusion law generalizes to chains: any sequence of traversals can fuse into o
 A list of operations applied sequentially is equivalent to composing them and
 traversing once.
 -/
-axiom traversal_fusion_chain {s a : Type u}
+axiom traversal_fusion_chain {s a : Type}
     (t : Traversal' s a)
     (ops : List (a → a))
     (x : s) :
@@ -99,10 +98,10 @@ with `g` in functor `G` should be equivalent to a single traversal in `Compose F
 
 This is a key optimization property that enables efficient chaining of effectful operations.
 -/
-axiom traversal_fusion_effectful {s a : Type u}
-    (walk : ∀ {F : Type u → Type u} [Applicative F], (a → F a) → s → F s)
+axiom traversal_fusion_effectful {s a : Type}
+    (walk : ∀ {F : Type → Type} [Applicative F], (a → F a) → s → F s)
     [LawfulTraversal walk]
-    {F G : Type u → Type u} [Applicative F] [Applicative G]
+    {F G : Type → Type} [Applicative F] [Applicative G]
     (f : a → F a) (g : a → G a)
     (x : s) :
     -- Traversing with f then with g can be fused into a single traversal in Compose F G

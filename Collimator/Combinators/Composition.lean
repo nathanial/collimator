@@ -10,13 +10,12 @@ namespace Collimator.Combinators
 open Collimator
 open Collimator.Core
 
-universe u
 
 /--
 Compose two isomorphisms.
 -/
 @[inline] def composeIso
-    {s t a b u v : Type u} (outer : Iso s t a b) (inner : Iso a b u v) :
+    {s t a b u v : Type} (outer : Iso s t a b) (inner : Iso a b u v) :
     Iso s t u v :=
   fun {P} [Profunctor P] =>
     outer.toIso (P := P) ∘ inner.toIso (P := P)
@@ -25,7 +24,7 @@ Compose two isomorphisms.
 Compose two lenses to focus through nested product-like structures.
 -/
 @[inline] def composeLens
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : Lens s t a b) (inner : Lens a b u v) : Lens s t u v :=
   fun {P} [Profunctor P] hStrong =>
     fun puv => outer.toLens (P := P) hStrong (inner.toLens (P := P) hStrong puv)
@@ -34,7 +33,7 @@ Compose two lenses to focus through nested product-like structures.
 Compose two prisms to focus through nested sum-like structures.
 -/
 @[inline] def composePrism
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : Prism s t a b) (inner : Prism a b u v) : Prism s t u v :=
   fun {P} [Profunctor P] hChoice =>
     fun puv => outer.toPrism (P := P) hChoice (inner.toPrism (P := P) hChoice puv)
@@ -44,7 +43,7 @@ Compose a lens with a traversal. The resulting traversal iterates the inner
 focus for every focus selected by the outer lens.
 -/
 @[inline] def composeLensTraversal
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : Lens s t a b) (inner : Traversal a b u v) :
     Traversal s t u v :=
   fun {P} [Profunctor P] [Strong P] [Choice P] w =>
@@ -56,7 +55,7 @@ Compose a traversal with a lens. The resulting traversal focuses the inner
 lens for every element selected by the outer traversal.
 -/
 @[inline] def composeTraversalLens
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : Traversal s t a b) (inner : Lens a b u v) :
     Traversal s t u v :=
   fun {P} [Profunctor P] [Strong P] [Choice P] w =>
@@ -67,7 +66,7 @@ Compose two traversals, applying the inner traversal to every focus yielded by
 the outer traversal.
 -/
 @[inline] def composeTraversal
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : Traversal s t a b) (inner : Traversal a b u v) :
     Traversal s t u v :=
   fun {P} [Profunctor P] [Strong P] [Choice P] w =>
@@ -78,7 +77,7 @@ Compose an isomorphism with a traversal. The iso transforms the type, then the
 traversal focuses multiple elements.
 -/
 @[inline] def composeIsoTraversal
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : Iso s t a b) (inner : Traversal a b u v) :
     Traversal s t u v :=
   fun {P} [Profunctor P] [Strong P] [Choice P] w =>
@@ -89,7 +88,7 @@ Compose a lens with a prism. The lens focuses exactly one element, then the
 prism optionally matches a pattern within that element.
 -/
 @[inline] def composeLensPrism
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : Lens s t a b) (inner : Prism a b u v) :
     AffineTraversal s t u v :=
   fun {P} [Profunctor P] [Strong P] [Choice P] =>
@@ -101,7 +100,7 @@ Compose a traversal with a prism. The traversal focuses many elements, then the
 prism filters by pattern matching.
 -/
 @[inline] def composeTraversalPrism
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : Traversal s t a b) (inner : Prism a b u v) :
     Traversal s t u v :=
   fun {P} [Profunctor P] [Strong P] [Choice P] w =>
@@ -112,7 +111,7 @@ Compose a traversal with an affine traversal. The traversal focuses many element
 then the affine focuses at most one element within each.
 -/
 @[inline] def composeTraversalAffine
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : Traversal s t a b) (inner : AffineTraversal a b u v) :
     Traversal s t u v :=
   fun {P} [Profunctor P] [Strong P] [Choice P] w =>
@@ -124,7 +123,7 @@ Compose a lens with an affine traversal. The lens focuses exactly one element,
 then the affine focuses at most one element within that.
 -/
 @[inline] def composeLensAffine
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : Lens s t a b) (inner : AffineTraversal a b u v) :
     AffineTraversal s t u v :=
   fun {P} [Profunctor P] [Strong P] [Choice P] =>
@@ -136,7 +135,7 @@ Compose an affine traversal with a lens. The affine focuses at most one element,
 then the lens focuses exactly one element within that.
 -/
 @[inline] def composeAffineLens
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : AffineTraversal s t a b) (inner : Lens a b u v) :
     AffineTraversal s t u v :=
   fun {P} [Profunctor P] [Strong P] [Choice P] =>
@@ -148,7 +147,7 @@ Compose two affine traversals. Each focuses at most one element,
 so the composition also focuses at most one element.
 -/
 @[inline] def composeAffine
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : AffineTraversal s t a b) (inner : AffineTraversal a b u v) :
     AffineTraversal s t u v :=
   fun {P} [Profunctor P] [Strong P] [Choice P] =>
@@ -160,7 +159,7 @@ Compose an affine traversal with a prism. The affine focuses at most one element
 then the prism optionally matches a pattern within that.
 -/
 @[inline] def composeAffinePrism
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : AffineTraversal s t a b) (inner : Prism a b u v) :
     AffineTraversal s t u v :=
   fun {P} [Profunctor P] [Strong P] [Choice P] =>
@@ -172,7 +171,7 @@ Compose a prism with an affine traversal. The prism optionally matches,
 then the affine focuses at most one element within that.
 -/
 @[inline] def composePrismAffine
-    {s t a b u v : Type u}
+    {s t a b u v : Type}
     (outer : Prism s t a b) (inner : AffineTraversal a b u v) :
     AffineTraversal s t u v :=
   fun {P} [Profunctor P] [Strong P] [Choice P] =>
@@ -186,7 +185,7 @@ Convert a lens to a traversal. Every lens is a valid traversal that focuses
 on exactly one element.
 -/
 @[inline] def lensToTraversal
-    {s t a b : Type u}
+    {s t a b : Type}
     (l : Lens s t a b) : Traversal s t a b :=
   fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] =>
     l.toLens (P := P) (inferInstance : Strong P)
@@ -196,7 +195,7 @@ Convert a prism to a traversal. Every prism is a valid traversal that focuses
 on zero or one element.
 -/
 @[inline] def prismToTraversal
-    {s t a b : Type u}
+    {s t a b : Type}
     (p : Prism s t a b) : Traversal s t a b :=
   fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] =>
     p.toPrism (P := P) (inferInstance : Choice P)
@@ -206,7 +205,7 @@ Convert an affine traversal to a traversal. Every affine traversal is a valid
 traversal that focuses on zero or one element.
 -/
 @[inline] def affineToTraversal
-    {s t a b : Type u}
+    {s t a b : Type}
     (aff : AffineTraversal s t a b) : Traversal s t a b :=
   fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] =>
     aff.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P)

@@ -7,7 +7,6 @@ namespace Collimator.Concrete
 open Collimator.Core
 open Batteries
 
-universe u
 
 /--
 `Costar F α β` is the profunctor `F α → β` for a functor `F`.

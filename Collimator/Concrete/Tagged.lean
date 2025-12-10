@@ -5,7 +5,6 @@ namespace Collimator.Concrete
 
 open Collimator.Core
 
-universe u
 
 /--
 `Tagged α β` stores only the output value `β` and ignores `α`.

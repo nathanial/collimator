@@ -21,7 +21,6 @@ namespace Collimator.Instances.String
 open Collimator
 open Collimator.Indexed
 
-universe u
 
 /-- Isomorphism between String and List Char. -/
 @[inline] def chars : Iso' String (List Char) :=

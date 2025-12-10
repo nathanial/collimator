@@ -7,7 +7,6 @@ namespace Collimator.Core
 
 open Batteries
 
-universe u v
 
 /--
 `Wandering` profunctors support traversing structures through applicatives.

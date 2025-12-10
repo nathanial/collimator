@@ -53,7 +53,6 @@ namespace Collimator.Theorems
 open Collimator
 open Collimator.Core
 
-universe u
 
 /-! ## Subtyping Axioms -/
 
@@ -71,7 +70,7 @@ This satisfies the lens laws because:
 - PutGet: Getting then setting uses `back ∘ forward = id`
 - PutPut: Setting twice uses the last value (back ignores previous state)
 -/
-theorem iso_to_lens_preserves_laws {s a : Type u}
+theorem iso_to_lens_preserves_laws {s a : Type}
     (forward : s → a) (back : a → s)
     [h : LawfulIso forward back] :
     ∃ (get : s → a) (set : s → a → s), LawfulLens get set := by
@@ -113,7 +112,7 @@ This satisfies the prism laws because:
 - Preview-Review: `preview (review b) = some b` follows from `forward ∘ back = id`
 - Review-Preview: `preview s = some a → review a = s` follows from `back ∘ forward = id`
 -/
-theorem iso_to_prism_preserves_laws {s a : Type u}
+theorem iso_to_prism_preserves_laws {s a : Type}
     (forward : s → a) (back : a → s)
     [h : LawfulIso forward back] :
     ∃ (build : a → s) (split : s → Sum s a), LawfulPrism build split := by
@@ -163,7 +162,7 @@ When a lens is viewed as an affine traversal:
 - `preview` always succeeds, returning `Some (get s)` (exactly one focus)
 - `set` works identically to the lens setter
 -/
-theorem lens_to_affine_preserves_laws {s a : Type u}
+theorem lens_to_affine_preserves_laws {s a : Type}
     (get : s → a) (set_lens : s → a → s)
     [h : LawfulLens get set_lens] :
     ∃ (preview : s → Option a) (set_aff : s → a → s),
@@ -215,7 +214,7 @@ A prism focuses on at most one element (it may fail to match), which directly
 corresponds to an affine traversal. The prism laws ensure the affine traversal
 laws are satisfied.
 -/
-theorem prism_to_affine_preserves_laws {s a : Type u}
+theorem prism_to_affine_preserves_laws {s a : Type}
     (build : a → s) (split : s → Sum s a)
     [h : LawfulPrism build split] :
     ∃ (preview : s → Option a) (set : s → a → s),
@@ -275,14 +274,14 @@ The traversal of a single element using a lens satisfies:
 - Identity: Applying `id` returns the structure unchanged
 - Naturality: Natural transformations commute with the traversal
 -/
-theorem lens_to_traversal_preserves_laws {s a : Type u}
+theorem lens_to_traversal_preserves_laws {s a : Type}
     (get : s → a) (set : s → a → s)
     [h : LawfulLens get set] :
-    ∃ (walk : ∀ {F : Type u → Type u} [Applicative F], (a → F a) → s → F s),
+    ∃ (walk : ∀ {F : Type → Type} [Applicative F], (a → F a) → s → F s),
       LawfulTraversal walk := by
   -- Define the traversal from the lens
   -- Walk gets the focus, applies f, and sets the result back
-  let walk {F : Type u → Type u} [Applicative F] (f : a → F a) (x : s) : F s :=
+  let walk {F : Type → Type} [Applicative F] (f : a → F a) (x : s) : F s :=
     pure (fun a => set x a) <*> f (get x)
 
   -- Construct the lawful traversal instance
@@ -323,15 +322,15 @@ A prism focuses on at most one element (may fail to match), which is a special
 case of a traversal. When the prism matches, it traverses one element; when it
 doesn't match, it leaves the structure unchanged.
 -/
-theorem prism_to_traversal_preserves_laws {s a : Type u}
+theorem prism_to_traversal_preserves_laws {s a : Type}
     (build : a → s) (split : s → Sum s a)
     [h : LawfulPrism build split] :
-    ∃ (walk : ∀ {F : Type u → Type u} [Applicative F], (a → F a) → s → F s),
+    ∃ (walk : ∀ {F : Type → Type} [Applicative F], (a → F a) → s → F s),
       LawfulTraversal walk := by
   -- Define the traversal from the prism
   -- When split fails (Sum.inl), return the structure unchanged (pure x)
   -- When split succeeds (Sum.inr a), apply f and rebuild with build
-  let walk {F : Type u → Type u} [Applicative F] (f : a → F a) (x : s) : F s :=
+  let walk {F : Type → Type} [Applicative F] (f : a → F a) (x : s) : F s :=
     match split x with
     | Sum.inl _ => pure x
     | Sum.inr a => pure build <*> f a

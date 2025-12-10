@@ -15,7 +15,6 @@ namespace Collimator.Combinators
 open Collimator
 open Collimator.Core
 
-universe u
 
 /--
 Safely access the head of a list.
@@ -30,7 +29,7 @@ over _head (· * 10) [1, 2, 3]  -- [10, 2, 3]
 over _head (· * 10) []         -- []
 ```
 -/
-def _head {a : Type u} : AffineTraversal' (List a) a :=
+def _head {a : Type} : AffineTraversal' (List a) a :=
   ⟨fun {P} [Profunctor P] hStrong hChoice pab =>
     let _ : Strong P := hStrong
     let _ : Choice P := hChoice
@@ -55,7 +54,7 @@ preview _last []         -- none
 over _last (· * 10) [1, 2, 3]  -- [1, 2, 30]
 ```
 -/
-def _last {a : Type u} : AffineTraversal' (List a) a :=
+def _last {a : Type} : AffineTraversal' (List a) a :=
   ⟨fun {P} [Profunctor P] hStrong hChoice pab =>
     let _ : Strong P := hStrong
     let _ : Choice P := hChoice
@@ -87,9 +86,9 @@ over (taking 0) (· * 10) [1, 2, 3]     -- [1, 2, 3]
 over (taking 10) (· * 10) [1, 2]       -- [10, 20]
 ```
 -/
-def taking {a : Type u} (n : Nat) : Traversal' (List a) a :=
+def taking {a : Type} (n : Nat) : Traversal' (List a) a :=
   Collimator.traversal
-    (fun {F : Type u → Type u} [Applicative F]
+    (fun {F : Type → Type} [Applicative F]
       (f : a → F a) (xs : List a) =>
         let (prefix_, suffix) := xs.splitAt n
         let rec traverseList : List a → F (List a)
@@ -108,9 +107,9 @@ over (dropping 0) (· * 10) [1, 2, 3]     -- [10, 20, 30]
 over (dropping 10) (· * 10) [1, 2]       -- [1, 2]
 ```
 -/
-def dropping {a : Type u} (n : Nat) : Traversal' (List a) a :=
+def dropping {a : Type} (n : Nat) : Traversal' (List a) a :=
   Collimator.traversal
-    (fun {F : Type u → Type u} [Applicative F]
+    (fun {F : Type → Type} [Applicative F]
       (f : a → F a) (xs : List a) =>
         let (prefix_, suffix) := xs.splitAt n
         let rec traverseList : List a → F (List a)

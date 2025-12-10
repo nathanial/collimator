@@ -30,7 +30,6 @@ namespace Collimator.Combinators.Bitraversal
 
 open Collimator
 
-universe u
 
 /--
 Traverse both components of a homogeneous pair.
@@ -49,14 +48,14 @@ toListOf both (1, 2)
 -- [1, 2]
 ```
 -/
-def both {α β : Type u} : Traversal (α × α) (β × β) α β :=
+def both {α β : Type} : Traversal (α × α) (β × β) α β :=
   Collimator.traversal
-    (fun {F : Type u → Type u} [Applicative F]
+    (fun {F : Type → Type} [Applicative F]
       (f : α → F β) (pair : α × α) =>
         pure Prod.mk <*> f pair.1 <*> f pair.2)
 
 /-- Monomorphic version of `both`. -/
-def both' (α : Type u) : Traversal' (α × α) α := both
+def both' (α : Type) : Traversal' (α × α) α := both
 
 /--
 Traverse two components using separate traversals combined.
@@ -71,10 +70,10 @@ that visits all foci of both.
 beside _1 _2 : Traversal' ((Int × String) × (Bool × Int)) Int
 ```
 -/
-def beside {s t a b : Type u}
+def beside {s t a b : Type}
     (l : Traversal s t a b) (r : Traversal s t a b) : Traversal s t a b :=
   Collimator.traversal
-    (fun {F : Type u → Type u} [Applicative F]
+    (fun {F : Type → Type} [Applicative F]
       (f : a → F b) (s₀ : s) =>
         -- First traverse with l, then with r
         let afterL := Traversal.traverse' l f s₀
@@ -101,16 +100,16 @@ over chosen (* 2) (Sum.inr 7)   -- Sum.inr 14
 preview chosen (Sum.inl "hi")   -- some "hi"
 ```
 -/
-def chosen {α β : Type u} : Traversal (Sum α α) (Sum β β) α β :=
+def chosen {α β : Type} : Traversal (Sum α α) (Sum β β) α β :=
   Collimator.traversal
-    (fun {F : Type u → Type u} [Applicative F]
+    (fun {F : Type → Type} [Applicative F]
       (f : α → F β) (s : Sum α α) =>
         match s with
         | Sum.inl a => Functor.map Sum.inl (f a)
         | Sum.inr a => Functor.map Sum.inr (f a))
 
 /-- Monomorphic version of `chosen`. -/
-def chosen' (α : Type u) : Traversal' (Sum α α) α := chosen
+def chosen' (α : Type) : Traversal' (Sum α α) α := chosen
 
 /--
 Swap the components of a homogeneous pair.
@@ -118,13 +117,13 @@ Swap the components of a homogeneous pair.
 This is an isomorphism, but provided here for completeness with
 bifunctor operations.
 -/
-def swapped {α : Type u} : Iso' (α × α) (α × α) :=
+def swapped {α : Type} : Iso' (α × α) (α × α) :=
   Collimator.iso (forward := fun (a, b) => (b, a)) (back := fun (a, b) => (b, a))
 
 /--
 Swap the branches of a homogeneous sum.
 -/
-def swappedSum {α : Type u} : Iso' (Sum α α) (Sum α α) :=
+def swappedSum {α : Type} : Iso' (Sum α α) (Sum α α) :=
   Collimator.iso
     (forward := fun
       | Sum.inl a => Sum.inr a

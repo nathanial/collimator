@@ -15,7 +15,6 @@ open Collimator
 open Collimator.Setter
 open Collimator.Combinators
 
-universe u v w
 
 /-!
 ## Universal Composition Operator
@@ -35,59 +34,59 @@ class Composable (α : Sort*) (β : Sort*) (γ : outParam (Sort*)) where
 
 -- Homogeneous compositions
 
-instance {s t a b x y : Type u} : Composable (Iso s t a b) (Iso a b x y) (Iso s t x y) where
+instance {s t a b x y : Type} : Composable (Iso s t a b) (Iso a b x y) (Iso s t x y) where
   comp := composeIso
 
-instance {s t a b x y : Type u} : Composable (Lens s t a b) (Lens a b x y) (Lens s t x y) where
+instance {s t a b x y : Type} : Composable (Lens s t a b) (Lens a b x y) (Lens s t x y) where
   comp := composeLens
 
-instance {s t a b x y : Type u} : Composable (Prism s t a b) (Prism a b x y) (Prism s t x y) where
+instance {s t a b x y : Type} : Composable (Prism s t a b) (Prism a b x y) (Prism s t x y) where
   comp := composePrism
 
-instance {s t a b x y : Type u} : Composable (Traversal s t a b) (Traversal a b x y) (Traversal s t x y) where
+instance {s t a b x y : Type} : Composable (Traversal s t a b) (Traversal a b x y) (Traversal s t x y) where
   comp := composeTraversal
 
 -- Heterogeneous compositions
 
-instance {s t a b x y : Type u} : Composable (Lens s t a b) (Traversal a b x y) (Traversal s t x y) where
+instance {s t a b x y : Type} : Composable (Lens s t a b) (Traversal a b x y) (Traversal s t x y) where
   comp := composeLensTraversal
 
-instance {s t a b x y : Type u} : Composable (Traversal s t a b) (Lens a b x y) (Traversal s t x y) where
+instance {s t a b x y : Type} : Composable (Traversal s t a b) (Lens a b x y) (Traversal s t x y) where
   comp := composeTraversalLens
 
-instance {s t a b x y : Type u} : Composable (Iso s t a b) (Traversal a b x y) (Traversal s t x y) where
+instance {s t a b x y : Type} : Composable (Iso s t a b) (Traversal a b x y) (Traversal s t x y) where
   comp := composeIsoTraversal
 
-instance {s t a b x y : Type u} : Composable (Lens s t a b) (Prism a b x y) (AffineTraversal s t x y) where
+instance {s t a b x y : Type} : Composable (Lens s t a b) (Prism a b x y) (AffineTraversal s t x y) where
   comp := composeLensPrism
 
-instance {s t a b x y : Type u} : Composable (Traversal s t a b) (Prism a b x y) (Traversal s t x y) where
+instance {s t a b x y : Type} : Composable (Traversal s t a b) (Prism a b x y) (Traversal s t x y) where
   comp := composeTraversalPrism
 
-instance {s t a b x y : Type u} : Composable (Traversal s t a b) (AffineTraversal a b x y) (Traversal s t x y) where
+instance {s t a b x y : Type} : Composable (Traversal s t a b) (AffineTraversal a b x y) (Traversal s t x y) where
   comp := composeTraversalAffine
 
-instance {s t a b x y : Type u} : Composable (Lens s t a b) (AffineTraversal a b x y) (AffineTraversal s t x y) where
+instance {s t a b x y : Type} : Composable (Lens s t a b) (AffineTraversal a b x y) (AffineTraversal s t x y) where
   comp := composeLensAffine
 
-instance {s t a b x y : Type u} : Composable (AffineTraversal s t a b) (Lens a b x y) (AffineTraversal s t x y) where
+instance {s t a b x y : Type} : Composable (AffineTraversal s t a b) (Lens a b x y) (AffineTraversal s t x y) where
   comp := composeAffineLens
 
-instance {s t a b x y : Type u} : Composable (AffineTraversal s t a b) (AffineTraversal a b x y) (AffineTraversal s t x y) where
+instance {s t a b x y : Type} : Composable (AffineTraversal s t a b) (AffineTraversal a b x y) (AffineTraversal s t x y) where
   comp := composeAffine
 
-instance {s t a b x y : Type u} : Composable (AffineTraversal s t a b) (Prism a b x y) (AffineTraversal s t x y) where
+instance {s t a b x y : Type} : Composable (AffineTraversal s t a b) (Prism a b x y) (AffineTraversal s t x y) where
   comp := composeAffinePrism
 
-instance {s t a b x y : Type u} : Composable (Prism s t a b) (AffineTraversal a b x y) (AffineTraversal s t x y) where
+instance {s t a b x y : Type} : Composable (Prism s t a b) (AffineTraversal a b x y) (AffineTraversal s t x y) where
   comp := composePrismAffine
 
 -- Fold compositions
 
-instance {s t a b x y : Type u} : Composable (Lens s t a b) (Fold a b x y) (Fold s t x y) where
+instance {s t a b x y : Type} : Composable (Lens s t a b) (Fold a b x y) (Fold s t x y) where
   comp := Fold.composeLensFold
 
-instance {s t a b x y : Type u} : Composable (Fold s t a b) (Fold a b x y) (Fold s t x y) where
+instance {s t a b x y : Type} : Composable (Fold s t a b) (Fold a b x y) (Fold s t x y) where
   comp := Fold.composeFold
 
 /--

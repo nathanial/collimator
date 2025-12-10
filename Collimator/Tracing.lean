@@ -67,10 +67,8 @@ instance : ToString OpticType where
     | .unknown => "Unknown"
 
 /-- Typeclass for identifying the kind of an optic -/
-class OpticKind.{u} (α : Type u) where
+class OpticKind (α : Type 1) where
   kind : OpticType
-
-universe u
 
 instance : OpticKind (Iso s t a b) where kind := .iso
 instance : OpticKind (Lens s t a b) where kind := .lens
@@ -81,11 +79,11 @@ instance : OpticKind (Fold s t a b) where kind := .fold
 instance : OpticKind (Setter s t a b) where kind := .setter
 
 /-- Get the kind of an optic -/
-def opticKind.{v} {α : Type v} [OpticKind α] (_optic : α) : OpticType :=
+def opticKind {α : Type 1} [OpticKind α] (_optic : α) : OpticType :=
   OpticKind.kind (α := α)
 
 /-- Get the kind name as a string -/
-def opticKindName.{v} {α : Type v} [OpticKind α] (optic : α) : String :=
+def opticKindName {α : Type 1} [OpticKind α] (optic : α) : String :=
   toString (opticKind optic)
 
 /-! ## Optic Type Descriptions -/
@@ -305,7 +303,7 @@ def composeTypes (outer inner : String) : String :=
 /-! ## Type-Safe Composition Tracing -/
 
 /-- Trace composition of two optics, returning the result type -/
-def traceCompose₂.{u1, u2} {α : Type u1} {β : Type u2} [OpticKind α] [OpticKind β]
+def traceCompose₂ {α β : Type 1} [OpticKind α] [OpticKind β]
     (o1 : α) (o2 : β) : IO OpticType := do
   let k1 := opticKind o1
   let k2 := opticKind o2
@@ -314,8 +312,7 @@ def traceCompose₂.{u1, u2} {α : Type u1} {β : Type u2} [OpticKind α] [Optic
   return result
 
 /-- Trace composition of three optics -/
-def traceCompose₃.{u1, u2, u3} {α : Type u1} {β : Type u2} {γ : Type u3}
-    [OpticKind α] [OpticKind β] [OpticKind γ]
+def traceCompose₃ {α β γ : Type 1} [OpticKind α] [OpticKind β] [OpticKind γ]
     (o1 : α) (o2 : β) (o3 : γ) : IO OpticType := do
   let k1 := opticKind o1
   let k2 := opticKind o2
@@ -328,8 +325,7 @@ def traceCompose₃.{u1, u2, u3} {α : Type u1} {β : Type u2} {γ : Type u3}
   return r2
 
 /-- Trace composition of four optics -/
-def traceCompose₄.{u1, u2, u3, u4} {α : Type u1} {β : Type u2} {γ : Type u3} {δ : Type u4}
-    [OpticKind α] [OpticKind β] [OpticKind γ] [OpticKind δ]
+def traceCompose₄ {α β γ δ : Type 1} [OpticKind α] [OpticKind β] [OpticKind γ] [OpticKind δ]
     (o1 : α) (o2 : β) (o3 : γ) (o4 : δ) : IO OpticType := do
   let k1 := opticKind o1
   let k2 := opticKind o2
@@ -345,9 +341,7 @@ def traceCompose₄.{u1, u2, u3, u4} {α : Type u1} {β : Type u2} {γ : Type u3
   return r3
 
 /-- Trace composition of five optics -/
-def traceCompose₅.{u1, u2, u3, u4, u5}
-    {α : Type u1} {β : Type u2} {γ : Type u3} {δ : Type u4} {ε : Type u5}
-    [OpticKind α] [OpticKind β] [OpticKind γ] [OpticKind δ] [OpticKind ε]
+def traceCompose₅ {α β γ δ ε : Type 1} [OpticKind α] [OpticKind β] [OpticKind γ] [OpticKind δ] [OpticKind ε]
     (o1 : α) (o2 : β) (o3 : γ) (o4 : δ) (o5 : ε) : IO OpticType := do
   let k1 := opticKind o1
   let k2 := opticKind o2
@@ -366,7 +360,7 @@ def traceCompose₅.{u1, u2, u3, u4, u5}
   return r4
 
 /-- Describe an optic with its kind -/
-def describeOpticInstance.{v} {α : Type v} [OpticKind α] (optic : α) : IO Unit := do
+def describeOpticInstance {α : Type 1} [OpticKind α] (optic : α) : IO Unit := do
   let k := opticKind optic
   IO.println (describeOpticType k)
   IO.println ""

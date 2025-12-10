@@ -23,7 +23,6 @@ open Collimator
 open Collimator.Core
 open Collimator.Concrete
 
-universe u v w
 
 /-! ## Accessor Functions -/
 
@@ -31,7 +30,7 @@ universe u v w
 Apply an isomorphism in the forward direction.
 Uses the Forget profunctor which only applies the pre-processing function.
 -/
-def isoForward {s a : Type u} (i : Iso' s a) (x : s) : a :=
+def isoForward {s a : Type} (i : Iso' s a) (x : s) : a :=
   let forget : Forget a a a := fun y => y
   let result := i.toIso (P := fun α β => Forget a α β) forget
   result x
@@ -40,7 +39,7 @@ def isoForward {s a : Type u} (i : Iso' s a) (x : s) : a :=
 Apply an isomorphism in the backward direction.
 Uses the Tagged profunctor which only applies the post-processing function.
 -/
-def isoBackward {s a : Type u} (i : Iso' s a) (x : a) : s :=
+def isoBackward {s a : Type} (i : Iso' s a) (x : a) : s :=
   i.toIso (P := fun α β => Tagged α β) x
 
 /-! ## Lawful Isomorphism Class -/
@@ -52,7 +51,7 @@ For an isomorphism to be lawful, the two functions must satisfy:
 1. Going forward then backward returns the original value (back-forward law)
 2. Going backward then forward returns the original value (forward-back law)
 -/
-class LawfulIso {s : Type u} {a : Type u}
+class LawfulIso {s : Type} {a : Type}
     (forward : s → a) (back : a → s) where
   /-- Applying back after forward gives the identity (round-trip law). -/
   back_forward : ∀ (x : s), back (forward x) = x
@@ -64,7 +63,7 @@ class LawfulIso {s : Type u} {a : Type u}
 /--
 Unfolding lemma: `isoForward` applied to an iso constructed from forward/back.
 -/
-theorem isoForward_iso_eq {s a : Type u} (forward : s → a) (back : a → s) (x : s) :
+theorem isoForward_iso_eq {s a : Type} (forward : s → a) (back : a → s) (x : s) :
     isoForward (iso forward back) x = forward x := by
   unfold isoForward iso
   rfl
@@ -72,7 +71,7 @@ theorem isoForward_iso_eq {s a : Type u} (forward : s → a) (back : a → s) (x
 /--
 Unfolding lemma: `isoBackward` applied to an iso constructed from forward/back.
 -/
-theorem isoBackward_iso_eq {s a : Type u} (forward : s → a) (back : a → s) (x : a) :
+theorem isoBackward_iso_eq {s a : Type} (forward : s → a) (back : a → s) (x : a) :
     isoBackward (iso forward back) x = back x := by
   unfold isoBackward iso
   rfl
@@ -86,7 +85,7 @@ returns the original value.
 If `i = iso forward back` and the underlying functions satisfy `back ∘ forward = id`,
 then `isoBackward i ∘ isoForward i = id`.
 -/
-theorem iso_back_forward {s a : Type u} (forward : s → a) (back : a → s)
+theorem iso_back_forward {s a : Type} (forward : s → a) (back : a → s)
     (h : ∀ (x : s), back (forward x) = x) :
     ∀ (x : s), isoBackward (iso forward back) (isoForward (iso forward back) x) = x := by
   intro x
@@ -100,7 +99,7 @@ returns the original value.
 If `i = iso forward back` and the underlying functions satisfy `forward ∘ back = id`,
 then `isoForward i ∘ isoBackward i = id`.
 -/
-theorem iso_forward_back {s a : Type u} (forward : s → a) (back : a → s)
+theorem iso_forward_back {s a : Type} (forward : s → a) (back : a → s)
     (h : ∀ (x : a), forward (back x) = x) :
     ∀ (x : a), isoForward (iso forward back) (isoBackward (iso forward back) x) = x := by
   intro x
@@ -113,7 +112,7 @@ theorem iso_forward_back {s a : Type u} (forward : s → a) (back : a → s)
 If the underlying forward/back functions form a lawful isomorphism, then both iso laws hold
 for the profunctor iso constructed from them.
 -/
-theorem lawful_iso_satisfies_laws {s a : Type u} (forward : s → a) (back : a → s)
+theorem lawful_iso_satisfies_laws {s a : Type} (forward : s → a) (back : a → s)
     [h : LawfulIso forward back] :
     (∀ (x : s), isoBackward (iso forward back) (isoForward (iso forward back) x) = x) ∧
     (∀ (x : a), isoForward (iso forward back) (isoBackward (iso forward back) x) = x) := by
@@ -128,14 +127,14 @@ open Collimator.Combinators
 /--
 Helper: Extract forward function from composed isos.
 -/
-private def composed_forward {s u a : Type u}
+private def composed_forward {s u a : Type}
     (forward_outer : s → u) (forward_inner : u → a) : s → a :=
   forward_inner ∘ forward_outer
 
 /--
 Helper: Extract backward function from composed isos.
 -/
-private def composed_back {s u a : Type u}
+private def composed_back {s u a : Type}
     (back_outer : u → s) (back_inner : a → u) : a → s :=
   back_outer ∘ back_inner
 
@@ -143,7 +142,7 @@ private def composed_back {s u a : Type u}
 **Composition Preserves Back-Forward**: If two isos are lawful, their composition
 preserves the back-forward law.
 -/
-theorem composeIso_preserves_back_forward {s u a : Type u}
+theorem composeIso_preserves_back_forward {s u a : Type}
     (forward_o : s → u) (back_o : u → s)
     (forward_i : u → a) (back_i : a → u)
     [ho : LawfulIso forward_o back_o] [hi : LawfulIso forward_i back_i] :
@@ -158,7 +157,7 @@ theorem composeIso_preserves_back_forward {s u a : Type u}
 **Composition Preserves Forward-Back**: If two isos are lawful, their composition
 preserves the forward-back law.
 -/
-theorem composeIso_preserves_forward_back {s u a : Type u}
+theorem composeIso_preserves_forward_back {s u a : Type}
     (forward_o : s → u) (back_o : u → s)
     (forward_i : u → a) (back_i : a → u)
     [ho : LawfulIso forward_o back_o] [hi : LawfulIso forward_i back_i] :
@@ -172,7 +171,7 @@ theorem composeIso_preserves_forward_back {s u a : Type u}
 /--
 **Composition is Lawful**: If two isos are lawful, their composition forms a lawful iso.
 -/
-instance composedIso_isLawful {s u a : Type u}
+instance composedIso_isLawful {s u a : Type}
     (forward_o : s → u) (back_o : u → s)
     (forward_i : u → a) (back_i : a → u)
     [ho : LawfulIso forward_o back_o] [hi : LawfulIso forward_i back_i] :
@@ -192,7 +191,7 @@ instance : LawfulIso (not : Bool → Bool) (not : Bool → Bool) where
 /--
 Example: Tuple swap is a lawful isomorphism.
 -/
-instance {α β : Type u} : LawfulIso
+instance {α β : Type} : LawfulIso
     (fun (p : α × β) => (p.2, p.1))
     (fun (p : β × α) => (p.2, p.1)) where
   back_forward := by intro ⟨a, b⟩; rfl
@@ -208,7 +207,7 @@ instance : LawfulIso (fun x : Int => -x) (fun x : Int => -x) where
 /--
 Example: The identity function is a lawful isomorphism with itself.
 -/
-instance {α : Type u} : LawfulIso (fun x : α => x) (fun x : α => x) where
+instance {α : Type} : LawfulIso (fun x : α => x) (fun x : α => x) where
   back_forward := by intro x; rfl
   forward_back := by intro x; rfl
 

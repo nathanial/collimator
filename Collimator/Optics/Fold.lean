@@ -16,17 +16,17 @@ open Collimator.Concrete
 namespace Fold
 
 /-- Every lens gives a fold that observes its focus. -/
-def ofLens {s t a b : Type _}
+def ofLens {s t a b : Type}
     (l : Lens s t a b) : Collimator.Fold s t a b :=
   ⟨fun {P} [Profunctor P] hStrong _ pab => l.toLens (P := P) hStrong pab⟩
 
 /-- Every affine traversal can be used as a fold. -/
-def ofAffine {s t a b : Type _}
+def ofAffine {s t a b : Type}
     (aff : Collimator.AffineTraversal s t a b) : Collimator.Fold s t a b :=
   ⟨fun {P} [Profunctor P] hStrong hChoice pab => aff.toAffineTraversal (P := P) hStrong hChoice pab⟩
 
 /-- Collect all focuses of a fold into a list. -/
-def toList {s a : Type _} [Inhabited (List a)]
+def toList {s a : Type} [Inhabited (List a)]
     (fld : Fold' s a) (s₀ : s) : List a :=
   let forget : Forget (List a) a a := fun x => [x]
   let lifted :=
@@ -34,7 +34,7 @@ def toList {s a : Type _} [Inhabited (List a)]
   lifted s₀
 
 /-- Collect all focuses of a traversal into a list using Forget's Wandering instance. -/
-def toListTraversal {s a : Type _} [Inhabited (List a)]
+def toListTraversal {s a : Type} [Inhabited (List a)]
     (tr : Traversal' s a) (s₀ : s) : List a :=
   let forget : Forget (List a) a a := fun x => [x]
   let lifted := tr.toTraversal (P := Forget (List a)) inferInstance forget
@@ -42,7 +42,7 @@ def toListTraversal {s a : Type _} [Inhabited (List a)]
 
 /-- Compose a lens with a fold to focus deeper. -/
 @[inline] def composeLensFold
-    {s t a b u v : Type _}
+    {s t a b u v : Type}
     (outer : Lens s t a b) (inner : Collimator.Fold a b u v) :
     Collimator.Fold s t u v :=
   fun {P} [Profunctor P] hStrong hChoice puv =>
@@ -50,7 +50,7 @@ def toListTraversal {s a : Type _} [Inhabited (List a)]
 
 /-- Compose two folds to read through nested structures. -/
 @[inline] def composeFold
-    {s t a b u v : Type _}
+    {s t a b u v : Type}
     (outer : Collimator.Fold s t a b) (inner : Collimator.Fold a b u v) :
     Collimator.Fold s t u v :=
   fun {P} [Profunctor P] hStrong hChoice puv =>
@@ -67,7 +67,7 @@ anyOf traversed (· > 3) [1, 2, 5]  -- true
 anyOf traversed (· > 10) [1, 2, 5] -- false
 ```
 -/
-def anyOf {s a : Type _} [Inhabited (List a)]
+def anyOf {s a : Type} [Inhabited (List a)]
     (fld : Fold' s a) (pred : a → Bool) (s₀ : s) : Bool :=
   (toList fld s₀).any pred
 
@@ -79,7 +79,7 @@ allOf traversed (· > 0) [1, 2, 3]  -- true
 allOf traversed (· > 2) [1, 2, 3]  -- false
 ```
 -/
-def allOf {s a : Type _} [Inhabited (List a)]
+def allOf {s a : Type} [Inhabited (List a)]
     (fld : Fold' s a) (pred : a → Bool) (s₀ : s) : Bool :=
   (toList fld s₀).all pred
 
@@ -91,7 +91,7 @@ findOf traversed (· > 2) [1, 2, 3, 4]  -- some 3
 findOf traversed (· > 10) [1, 2, 3]    -- none
 ```
 -/
-def findOf {s a : Type _} [Inhabited (List a)]
+def findOf {s a : Type} [Inhabited (List a)]
     (fld : Fold' s a) (pred : a → Bool) (s₀ : s) : Option a :=
   (toList fld s₀).find? pred
 
@@ -103,7 +103,7 @@ lengthOf traversed [1, 2, 3, 4, 5]  -- 5
 lengthOf traversed []               -- 0
 ```
 -/
-def lengthOf {s a : Type _} [Inhabited (List a)]
+def lengthOf {s a : Type} [Inhabited (List a)]
     (fld : Fold' s a) (s₀ : s) : Nat :=
   (toList fld s₀).length
 
@@ -114,7 +114,7 @@ Sum all numeric foci.
 sumOf traversed [1, 2, 3, 4, 5]  -- 15
 ```
 -/
-def sumOf {s a : Type _} [Inhabited (List a)] [Add a] [OfNat a 0]
+def sumOf {s a : Type} [Inhabited (List a)] [Add a] [OfNat a 0]
     (fld : Fold' s a) (s₀ : s) : a :=
   (toList fld s₀).foldl (· + ·) 0
 
@@ -126,7 +126,7 @@ nullOf traversed []       -- true
 nullOf traversed [1, 2]   -- false
 ```
 -/
-def nullOf {s a : Type _} [Inhabited (List a)]
+def nullOf {s a : Type} [Inhabited (List a)]
     (fld : Fold' s a) (s₀ : s) : Bool :=
   (toList fld s₀).isEmpty
 

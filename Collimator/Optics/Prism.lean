@@ -9,8 +9,6 @@ namespace Collimator
 open Collimator.Core
 open Collimator.Concrete
 
-universe u
-
 /--
 Construct a prism from a builder and a matcher.
 
@@ -54,24 +52,24 @@ A lawful prism satisfies:
 1. **Preview-Review**: `preview p (review p b) = some b` - reviewing then previewing succeeds
 2. **Review-Preview**: `preview p s = some a → review p a = s` - if preview succeeds, review reconstructs
 -/
-def prism {s t a b : Type _}
+def prism {s t a b : Type}
     (build : b → t) (split : s → Sum t a) : Prism s t a b :=
-  fun {P} [Profunctor P] hChoice pab =>
+  ⟨fun {P} [Profunctor P] hChoice pab =>
     let _ : Choice P := hChoice
     let right := Choice.right (P := P) (γ := t) pab
     let post : Sum t b → t :=
       Sum.elim (fun t' => t') (fun b' => build b')
-    Profunctor.dimap (P := P) split post right
+    Profunctor.dimap (P := P) split post right⟩
 
 /-- Attempt to extract a focused value with a prism. -/
-def preview' {s a : Type _}
+def preview' {s a : Type}
     (p : Prism' s a) (x : s) : Option a :=
   let forget : Forget (Option a) a a := fun a => some a
   let result := p.toPrism (P := fun α β => Forget (Option a) α β) inferInstance forget
   result x
 
 /-- Inject a value through a prism. -/
-def review' {s t a b : Type _}
+def review' {s t a b : Type}
     (p : Prism s t a b) (b₀ : b) : t :=
   p.toPrism (P := fun α β => Tagged α β) inferInstance b₀
 
@@ -87,7 +85,7 @@ preview failing 42  -- none (never matches)
 
 Note: `review` on a failing prism will return the default value.
 -/
-def failing {s a : Type _} [Inhabited s] : Prism' s a :=
+def failing {s a : Type} [Inhabited s] : Prism' s a :=
   prism
     (build := fun _ => default)
     (split := fun s => Sum.inl s)
@@ -107,7 +105,7 @@ preview evenPrism 4  -- some 4
 preview evenPrism 3  -- none
 ```
 -/
-def prismFromPartial {s a : Type _}
+def prismFromPartial {s a : Type}
     (match_ : s → Option a) (build : a → s) : Prism' s a :=
   prism
     (build := build)

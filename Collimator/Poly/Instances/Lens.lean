@@ -40,7 +40,6 @@ namespace Collimator.Poly
 open Collimator
 open Collimator.Concrete
 
-universe u v w
 
 /-! ## HasView Instance -/
 
@@ -52,7 +51,7 @@ For a lens `l : Lens' s a`, `view l s` extracts the `a` value from `s`.
 Implementation: Uses the existing monomorphic `Collimator.view` function.
 -/
 @[instance 10001] -- Higher priority than Iso (10000) to prefer Lens when argument is a Lens
-instance : HasView (fun (s a : Type u) => Lens s s a a) where
+instance : HasView (fun (s a : Type) => Lens s s a a) where
   view := Collimator.view'
 
 /-! ## HasOver Instance -/
@@ -91,7 +90,7 @@ For a lens `l : Lens' s a`:
 
 Unlike prisms which may fail, lenses always succeed.
 -/
-instance : HasPreview (fun (s a : Type u) => Lens s s a a) where
+instance : HasPreview (fun (s a : Type) => Lens s s a a) where
   preview l s := some (Collimator.view' l s)
 
 /-! ## HasTraverse Instance -/

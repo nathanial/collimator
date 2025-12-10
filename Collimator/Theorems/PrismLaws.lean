@@ -24,12 +24,11 @@ open Collimator
 open Collimator.Core
 open Collimator.Concrete
 
-universe u
 
 /--
 A lawful prism requires the underlying build and split functions to satisfy two laws.
 -/
-class LawfulPrism {s : Type u} {a : Type u}
+class LawfulPrism {s : Type} {a : Type}
     (build : a → s) (split : s → Sum s a) where
   /-- Previewing after reviewing returns the value that was reviewed. -/
   preview_review : ∀ (b : a), split (build b) = Sum.inr b
@@ -38,12 +37,12 @@ class LawfulPrism {s : Type u} {a : Type u}
 
 /-! ## Helper Lemmas -/
 
-private theorem default_option_none {α : Type u} : (default : Option α) = none := rfl
+private theorem default_option_none {α : Type} : (default : Option α) = none := rfl
 
 /--
 Unfolding lemma: `preview` applied to a prism constructed from build/split.
 -/
-theorem preview_prism_eq {s a : Type u} (build : a → s) (split : s → Sum s a) (x : s) :
+theorem preview_prism_eq {s a : Type} (build : a → s) (split : s → Sum s a) (x : s) :
     preview' (prism build split) x =
       match split x with
       | Sum.inl _ => none
@@ -55,7 +54,7 @@ theorem preview_prism_eq {s a : Type u} (build : a → s) (split : s → Sum s a
 /--
 Unfolding lemma: `review` applied to a prism constructed from build/split.
 -/
-theorem review_prism_eq {s a : Type u} (build : a → s) (split : s → Sum s a) (b : a) :
+theorem review_prism_eq {s a : Type} (build : a → s) (split : s → Sum s a) (b : a) :
     review' (prism build split) b = build b := by
   unfold review' prism
   rfl
@@ -68,7 +67,7 @@ theorem review_prism_eq {s a : Type u} (build : a → s) (split : s → Sum s a)
 If `p = prism build split` and the underlying functions satisfy
 `split (build b) = Sum.inr b`, then `preview p (review p b) = some b`.
 -/
-theorem prism_preview_review {s a : Type u} (build : a → s) (split : s → Sum s a)
+theorem prism_preview_review {s a : Type} (build : a → s) (split : s → Sum s a)
     (h : ∀ (b : a), split (build b) = Sum.inr b) :
     ∀ (b : a), preview' (prism build split) (review' (prism build split) b) = some b := by
   intro b
@@ -83,7 +82,7 @@ If `p = prism build split` and the underlying functions satisfy
 `split s = Sum.inr a → build a = s`, then
 `preview p s = some a → review p a = s`.
 -/
-theorem prism_review_preview {s a : Type u} (build : a → s) (split : s → Sum s a)
+theorem prism_review_preview {s a : Type} (build : a → s) (split : s → Sum s a)
     (h : ∀ (s : s) (a : a), split s = Sum.inr a → build a = s) :
     ∀ (s : s) (a : a), preview' (prism build split) s = some a → review' (prism build split) a = s := by
   intro s a hprev
@@ -102,7 +101,7 @@ theorem prism_review_preview {s a : Type u} (build : a → s) (split : s → Sum
 If the underlying build/split functions form a lawful prism, then both prism laws hold
 for the profunctor prism constructed from them.
 -/
-theorem lawful_prism_satisfies_laws {s a : Type u} (build : a → s) (split : s → Sum s a)
+theorem lawful_prism_satisfies_laws {s a : Type} (build : a → s) (split : s → Sum s a)
     [h : LawfulPrism build split] :
     (∀ (b : a), preview' (prism build split) (review' (prism build split) b) = some b) ∧
     (∀ (s : s) (a : a), preview' (prism build split) s = some a → review' (prism build split) a = s) := by
@@ -117,14 +116,14 @@ open Collimator.Combinators
 /--
 Helper: Extract builder from composed prisms.
 -/
-private def composed_build {s a u : Type u}
+private def composed_build {s a u : Type}
     (build_outer : a → s) (build_inner : u → a) : u → s :=
   build_outer ∘ build_inner
 
 /--
 Helper: Extract splitter from composed prisms.
 -/
-private def composed_split {s a u : Type u}
+private def composed_split {s a u : Type}
     (split_outer : s → Sum s a) (split_inner : a → Sum a u) : s → Sum s u :=
   fun s => match split_outer s with
     | Sum.inl s' => Sum.inl s'
@@ -136,7 +135,7 @@ private def composed_split {s a u : Type u}
 **Composition Preserves Preview-Review**: If two prisms are lawful, their composition
 preserves the preview-review law.
 -/
-theorem composePrism_preserves_preview_review {s a u : Type u}
+theorem composePrism_preserves_preview_review {s a u : Type}
     (build_o : a → s) (split_o : s → Sum s a)
     (build_i : u → a) (split_i : a → Sum a u)
     [ho : LawfulPrism build_o split_o] [hi : LawfulPrism build_i split_i] :
@@ -153,7 +152,7 @@ theorem composePrism_preserves_preview_review {s a u : Type u}
 **Composition Preserves Review-Preview**: If two prisms are lawful, their composition
 preserves the review-preview law.
 -/
-theorem composePrism_preserves_review_preview {s a u : Type u}
+theorem composePrism_preserves_review_preview {s a u : Type}
     (build_o : a → s) (split_o : s → Sum s a)
     (build_i : u → a) (split_i : a → Sum a u)
     [ho : LawfulPrism build_o split_o] [hi : LawfulPrism build_i split_i] :
@@ -180,7 +179,7 @@ theorem composePrism_preserves_review_preview {s a u : Type u}
 /--
 **Composition is Lawful**: If two prisms are lawful, their composition forms a lawful prism.
 -/
-instance composedPrism_isLawful {s a u : Type u}
+instance composedPrism_isLawful {s a u : Type}
     (build_o : a → s) (split_o : s → Sum s a)
     (build_i : u → a) (split_i : a → Sum a u)
     [ho : LawfulPrism build_o split_o] [hi : LawfulPrism build_i split_i] :

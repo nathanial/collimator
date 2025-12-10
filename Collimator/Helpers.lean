@@ -36,7 +36,6 @@ namespace Collimator.Helpers
 open Collimator
 open Collimator.Core
 
-universe u
 
 /-! ## Tuple Lens Helpers -/
 
@@ -47,7 +46,7 @@ universe u
 -- Use: first' Nat String
 ```
 -/
-@[inline] def first' (α β : Type u) : Lens' (α × β) α := _1
+@[inline] def first' (α β : Type) : Lens' (α × β) α := _1
 
 /-- Second element lens when you know both element types.
 
@@ -56,7 +55,7 @@ universe u
 -- Use: second' Nat String
 ```
 -/
-@[inline] def second' (α β : Type u) : Lens' (α × β) β := _2
+@[inline] def second' (α β : Type) : Lens' (α × β) β := _2
 
 /-! ## Inference-Friendly Builders -/
 
@@ -74,11 +73,11 @@ def xLens : Lens' Point Int := lensOf Point Int
   (set := fun p v => { p with x := v })
 ```
 -/
-@[inline] def lensOf (S A : Type u) (get : S → A) (set : S → A → S) : Lens' S A :=
+@[inline] def lensOf (S A : Type) (get : S → A) (set : S → A → S) : Lens' S A :=
   lens' get set
 
 /-- Build a polymorphic lens with all types explicit. -/
-@[inline] def lensOfPoly (S T A B : Type u) (get : S → A) (set : S → B → T) : Lens S T A B :=
+@[inline] def lensOfPoly (S T A B : Type) (get : S → A) (set : S → B → T) : Lens S T A B :=
   lens' get set
 
 /-- Build a monomorphic prism with explicit source and focus types.
@@ -89,7 +88,7 @@ def evenPrism : Prism' Int Int := prismOf Int Int
   (match_ := fun n => if n % 2 == 0 then some n else none)
 ```
 -/
-@[inline] def prismOf (S A : Type u) (build : A → S) (match_ : S → Option A) : Prism' S A :=
+@[inline] def prismOf (S A : Type) (build : A → S) (match_ : S → Option A) : Prism' S A :=
   prism (build := build) (split := fun s =>
     match match_ s with
     | some a => Sum.inr a
@@ -105,7 +104,7 @@ def evenPrism : Prism' Int Int := prismOf Int Int
 -- Use: some' Int
 ```
 -/
-@[inline] def some' (α : Type u) : Prism' (Option α) α :=
+@[inline] def some' (α : Type) : Prism' (Option α) α :=
   Collimator.Instances.Option.somePrism' α
 
 /-- List element traversal with element type specified.
@@ -115,7 +114,7 @@ def evenPrism : Prism' Int Int := prismOf Int Int
 -- Use: each' Int
 ```
 -/
-@[inline] def each' (α : Type u) : Traversal' (List α) α :=
+@[inline] def each' (α : Type) : Traversal' (List α) α :=
   Collimator.Instances.List.traversed
 
 /-! ## Re-exports for Convenience -/

@@ -38,7 +38,6 @@ namespace Collimator.Poly
 open Collimator
 open Collimator.Concrete
 
-universe u v w
 
 /-! ## HasPreview Instance -/
 
@@ -51,7 +50,7 @@ For an affine traversal `aff : AffineTraversal' s a`, `preview aff s` returns:
 
 Implementation: Uses the existing monomorphic `Collimator.AffineTraversalOps.preview` function.
 -/
-instance : HasPreview (fun (s a : Type u) => AffineTraversal s s a a) where
+instance : HasPreview (fun (s a : Type) => AffineTraversal s s a a) where
   preview := AffineTraversalOps.preview'
 
 /-! ## HasOver Instance -/

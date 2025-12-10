@@ -44,7 +44,6 @@ namespace Collimator.Poly
 open Collimator
 open Collimator.Concrete
 
-universe u v w
 
 /-! ## HasPreview Instance -/
 
@@ -57,7 +56,7 @@ For a prism `p : Prism' s a`, `preview p s` returns:
 
 Implementation: Uses the existing monomorphic `Collimator.preview` function.
 -/
-instance : HasPreview (fun (s a : Type u) => Prism s s a a) where
+instance : HasPreview (fun (s a : Type) => Prism s s a a) where
   preview := Collimator.preview'
 
 /-! ## HasReview Instance -/

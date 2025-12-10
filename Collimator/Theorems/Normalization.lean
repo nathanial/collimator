@@ -33,7 +33,6 @@ open Collimator
 open Collimator.Core
 open Collimator.Combinators
 
-universe u v w
 
 /-! ## Associativity Theorems -/
 
@@ -46,9 +45,9 @@ in different groupings yields the same result.
 Since `composeIso` is defined as function composition, this follows from the
 associativity of function composition.
 -/
-theorem iso_comp_assoc : ∀ {s t a b u v x y : Type u}
+theorem iso_comp_assoc : ∀ {s t a b u v x y : Type}
     (l₁ : Iso s t a b) (l₂ : Iso a b u v) (l₃ : Iso u v x y),
-    ∀ {P : Type u → Type u → Type v} [Profunctor P] (pxy : P x y),
+    ∀ {P : Type → Type → Type} [Profunctor P] (pxy : P x y),
     composeIso (composeIso l₁ l₂) l₃ pxy = composeIso l₁ (composeIso l₂ l₃) pxy := by
   intro s t a b u v x y l₁ l₂ l₃ P _ pxy
   -- Both sides reduce to l₁ (l₂ (l₃ pxy)) by function composition
@@ -61,9 +60,9 @@ theorem iso_comp_assoc : ∀ {s t a b u v x y : Type u}
 The composition of lenses is associative: composing three lenses
 in different groupings yields the same result.
 -/
-theorem lens_comp_assoc : ∀ {s t a b u v x y : Type u}
+theorem lens_comp_assoc : ∀ {s t a b u v x y : Type}
     (l₁ : Lens s t a b) (l₂ : Lens a b u v) (l₃ : Lens u v x y),
-    ∀ {P : Type u → Type u → Type v} [Profunctor P] (str : Strong P) (pxy : P x y),
+    ∀ {P : Type → Type → Type} [Profunctor P] (str : Strong P) (pxy : P x y),
     composeLens (composeLens l₁ l₂) l₃ str pxy = composeLens l₁ (composeLens l₂ l₃) str pxy := by
   intro s t a b u v x y l₁ l₂ l₃ P _ str pxy
   -- Both sides reduce to l₁ str (l₂ str (l₃ str pxy))
@@ -76,9 +75,9 @@ theorem lens_comp_assoc : ∀ {s t a b u v x y : Type u}
 The composition of prisms is associative: composing three prisms
 in different groupings yields the same result.
 -/
-theorem prism_comp_assoc : ∀ {s t a b u v x y : Type u}
+theorem prism_comp_assoc : ∀ {s t a b u v x y : Type}
     (l₁ : Prism s t a b) (l₂ : Prism a b u v) (l₃ : Prism u v x y),
-    ∀ {P : Type u → Type u → Type v} [Profunctor P] (ch : Choice P) (pxy : P x y),
+    ∀ {P : Type → Type → Type} [Profunctor P] (ch : Choice P) (pxy : P x y),
     composePrism (composePrism l₁ l₂) l₃ ch pxy = composePrism l₁ (composePrism l₂ l₃) ch pxy := by
   intro s t a b u v x y l₁ l₂ l₃ P _ ch pxy
   -- Both sides reduce to l₁ ch (l₂ ch (l₃ ch pxy))
@@ -91,9 +90,9 @@ theorem prism_comp_assoc : ∀ {s t a b u v x y : Type u}
 The composition of traversals is associative: composing three traversals
 in different groupings yields the same result.
 -/
-theorem traversal_comp_assoc : ∀ {s t a b u v x y : Type u}
+theorem traversal_comp_assoc : ∀ {s t a b u v x y : Type}
     (l₁ : Traversal s t a b) (l₂ : Traversal a b u v) (l₃ : Traversal u v x y),
-    ∀ {P : Type u → Type u → Type v} [Profunctor P] [Strong P] [Choice P]
+    ∀ {P : Type → Type → Type} [Profunctor P] [Strong P] [Choice P]
       (w : Wandering P) (pxy : P x y),
     composeTraversal (composeTraversal l₁ l₂) l₃ w pxy =
     composeTraversal l₁ (composeTraversal l₂ l₃) w pxy := by
@@ -126,8 +125,8 @@ left and right identity under composition.
 This follows from the profunctor law that `dimap id id` is the identity function.
 Note: Requires `LawfulProfunctor` to ensure `dimap id id = id`.
 -/
-theorem iso_comp_id : ∀ {α : Type u} (l : Iso' α α),
-    ∀ {P : Type u → Type u → Type v} [Profunctor P] [LawfulProfunctor P] (pαα : P α α),
+theorem iso_comp_id : ∀ {α : Type} (l : Iso' α α),
+    ∀ {P : Type → Type → Type} [Profunctor P] [LawfulProfunctor P] (pαα : P α α),
     composeIso (id (α := α)) l pαα = l pαα ∧
     composeIso l (id (α := α)) pαα = l pαα := by
   intro α l P _ _ pαα

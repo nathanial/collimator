@@ -26,13 +26,12 @@ namespace Collimator
 open Collimator.Core
 open Collimator.Concrete
 
-universe u
 
 /--
 A Review is a write-only optic for constructing values.
 It's simply a constructor function wrapped in a structure.
 -/
-structure Review (t : Type _) (b : Type _) where
+structure Review (t : Type) (b : Type) where
   build : b → t
 
 /-- Coercion to apply a Review as a function -/
@@ -42,20 +41,20 @@ instance : CoeFun (Review t b) (fun _ => b → t) where
 /--
 Construct a Review from a constructor function.
 -/
-def mkReview {t b : Type _} (build : b → t) : Review t b :=
+def mkReview {t b : Type} (build : b → t) : Review t b :=
   ⟨build⟩
 
 /--
 Use a Review to construct a value.
 -/
-def Review.review {t b : Type _} (r : Review t b) (x : b) : t :=
+def Review.review {t b : Type} (r : Review t b) (x : b) : t :=
   r.build x
 
 /--
 Every Prism can be used as a Review (forgetful conversion).
 Uses the Tagged profunctor to extract just the constructor.
 -/
-def Review.ofPrism {s t a b : Type _} (p : Prism s t a b) : Review t b :=
+def Review.ofPrism {s t a b : Type} (p : Prism s t a b) : Review t b :=
   ⟨fun b =>
     @p.toPrism Tagged instProfunctorTagged instChoiceTagged b⟩
 
@@ -63,14 +62,14 @@ def Review.ofPrism {s t a b : Type _} (p : Prism s t a b) : Review t b :=
 Every Iso can be used as a Review (forgetful conversion).
 Uses the Tagged profunctor to extract just the backward function.
 -/
-def Review.ofIso {s t a b : Type _} (i : Iso s t a b) : Review t b :=
+def Review.ofIso {s t a b : Type} (i : Iso s t a b) : Review t b :=
   ⟨fun b =>
     @i.toIso Tagged instProfunctorTagged b⟩
 
 /--
 Compose two Reviews.
 -/
-def Review.compose {t u v : Type _}
+def Review.compose {t u v : Type}
     (outer : Review t u) (inner : Review u v) : Review t v :=
   ⟨fun v => outer.build (inner.build v)⟩
 

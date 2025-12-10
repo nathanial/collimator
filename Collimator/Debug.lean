@@ -27,7 +27,6 @@ namespace Collimator.Debug
 
 open Collimator
 
-universe u
 
 /--
 Wrap a lens to trace view and set operations.
@@ -54,7 +53,7 @@ set' traced 99 p
 -- Prints: [xLens] set ← 99
 ```
 -/
-def tracedLens {s a : Type u} (name : String) (l : Lens' s a) [Repr a] : Lens' s a :=
+def tracedLens {s a : Type} (name : String) (l : Lens' s a) [Repr a] : Lens' s a :=
   lens'
     (fun s =>
       let result := view' l s
@@ -86,7 +85,7 @@ review' traced 99
 -- Prints: [somePrism] review 99 → some 99
 ```
 -/
-def tracedPrism {s a : Type u} (name : String) (p : Prism' s a) [Repr a] [Repr s] : Prism' s a :=
+def tracedPrism {s a : Type} (name : String) (p : Prism' s a) [Repr a] [Repr s] : Prism' s a :=
   prismFromPartial
     (fun s =>
       let result := preview' p s

@@ -10,7 +10,6 @@ namespace Collimator.Concrete
 open Batteries
 open Collimator.Core
 
-universe u
 
 /--
 `FunArrow` wraps Lean's function profunctor with explicit structure.

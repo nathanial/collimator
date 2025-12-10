@@ -15,7 +15,6 @@ namespace Collimator.Combinators
 open Collimator
 open Collimator.Core
 
-universe u
 
 /--
 Try the first prism, and if it fails, try the second.
@@ -34,7 +33,7 @@ preview evenOrDiv3 9   -- some 9 (div by 3)
 preview evenOrDiv3 7   -- none (neither)
 ```
 -/
-def orElse {s a : Type u}
+def orElse {s a : Type}
     (p1 : Prism' s a) (p2 : Prism' s a) : AffineTraversal' s a :=
   ⟨fun {P} [Profunctor P] hStrong hChoice pab =>
     let _ : Strong P := hStrong
@@ -73,7 +72,7 @@ def headAffine : AffineTraversal' (List a) a :=
       | _ :: rest => a :: rest)
 ```
 -/
-def affineFromPartial {s a : Type u}
+def affineFromPartial {s a : Type}
     (preview_ : s → Option a)
     (set_ : s → a → s) : AffineTraversal' s a :=
   ⟨fun {P} [Profunctor P] hStrong hChoice pab =>

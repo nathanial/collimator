@@ -116,7 +116,7 @@ match result with
 | none => -- handle missing
 ```
 -/
-def viewSafe {optic : Type _ → Type _ → Type _} {s a : Type _}
+def viewSafe {optic : Type → Type → Type 1} {s a : Type}
     [HasPreview optic] (o : optic s a) (s₀ : s) : Option a :=
   preview o s₀
 
@@ -130,7 +130,7 @@ View with a default value when the optic doesn't match.
 let value := viewOrElse myPrism myValue 0
 ```
 -/
-def viewOrElse {optic : Type _ → Type _ → Type _} {s a : Type _}
+def viewOrElse {optic : Type → Type → Type 1} {s a : Type}
     [HasPreview optic] (o : optic s a) (s₀ : s) (default : a) : a :=
   match preview o s₀ with
   | some a => a
@@ -146,7 +146,7 @@ View with a lazy default (only evaluated on failure).
 let value := viewOrElseLazy myPrism myValue (fun _ => computeDefault ())
 ```
 -/
-def viewOrElseLazy {optic : Type _ → Type _ → Type _} {s a : Type _}
+def viewOrElseLazy {optic : Type → Type → Type 1} {s a : Type}
     [HasPreview optic] (o : optic s a) (s₀ : s) (default : Unit → a) : a :=
   match preview o s₀ with
   | some a => a
@@ -165,7 +165,7 @@ but want a clear error if it doesn't.
 let value := viewOrPanic myPrism myValue "Expected Some but got None"
 ```
 -/
-def viewOrPanic {optic : Type _ → Type _ → Type _} {s a : Type _}
+def viewOrPanic {optic : Type → Type → Type 1} {s a : Type}
     [HasPreview optic] [Inhabited a] (o : optic s a) (s₀ : s) (errMsg : String) : a :=
   match preview o s₀ with
   | some a => a
@@ -183,7 +183,7 @@ else
   -- handle missing
 ```
 -/
-def hasFocus {optic : Type _ → Type _ → Type _} {s a : Type _}
+def hasFocus {optic : Type → Type → Type 1} {s a : Type}
     [HasPreview optic] (o : optic s a) (s₀ : s) : Bool :=
   (preview o s₀).isSome
 

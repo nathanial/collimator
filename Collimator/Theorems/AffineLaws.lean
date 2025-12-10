@@ -34,7 +34,6 @@ open Collimator
 open Collimator.Core
 open Collimator.Concrete
 
-universe u
 
 /-! ## Lawful Affine Traversal Class -/
 
@@ -46,7 +45,7 @@ An affine traversal focuses on **at most one** element (may have 0 or 1 focus).
 - When derived from a lens: preview always succeeds (exactly 1 focus)
 - When derived from a prism: preview may fail (0 or 1 focus)
 -/
-class LawfulAffineTraversal {s : Type u} {a : Type u}
+class LawfulAffineTraversal {s : Type} {a : Type}
     (preview : s → Option a) (set : s → a → s) where
   /-- Setting then previewing gives Some of the set value (when focus exists). -/
   set_preview : ∀ (s : s) (v : a),
@@ -64,7 +63,7 @@ class LawfulAffineTraversal {s : Type u} {a : Type u}
 Unfolding lemma: `AffineTraversalOps.preview` applied to an affine traversal
 constructed from preview/set functions.
 -/
-theorem affine_preview_eq {s a : Type u}
+theorem affine_preview_eq {s a : Type}
     (preview : s → Option a) (set : s → a → s)
     (x : s) :
     ∃ (aff : AffineTraversal' s a),
@@ -124,7 +123,7 @@ constructed from preview/set functions.
 Note: This only holds when there is a focus (preview x ≠ none). When there's
 no focus, an affine traversal correctly returns the structure unchanged.
 -/
-theorem affine_set_eq {s a : Type u}
+theorem affine_set_eq {s a : Type}
     (preview : s → Option a) (set : s → a → s)
     (v : a) (x : s)
     (h_focus : preview x ≠ none) :
@@ -180,7 +179,7 @@ the value that was set (when the focus exists).
 
 This theorem simply extracts the `set_preview` field from the LawfulAffineTraversal instance.
 -/
-theorem affine_set_preview {s a : Type u}
+theorem affine_set_preview {s a : Type}
     (preview : s → Option a) (set : s → a → s)
     [h : LawfulAffineTraversal preview set] :
     ∀ (s : s) (v : a),
@@ -193,7 +192,7 @@ doesn't change the structure.
 
 This theorem simply extracts the `preview_set` field from the LawfulAffineTraversal instance.
 -/
-theorem affine_preview_set {s a : Type u}
+theorem affine_preview_set {s a : Type}
     (preview : s → Option a) (set : s → a → s)
     [h : LawfulAffineTraversal preview set] :
     ∀ (s : s) (a : a),
@@ -206,7 +205,7 @@ once with the last value.
 
 This theorem simply extracts the `set_set` field from the LawfulAffineTraversal instance.
 -/
-theorem affine_set_set {s a : Type u}
+theorem affine_set_set {s a : Type}
     (preview : s → Option a) (set : s → a → s)
     [h : LawfulAffineTraversal preview set] :
     ∀ (s : s) (v v' : a),
@@ -222,7 +221,7 @@ then all three affine laws hold.
 This theorem bundles the three laws together by extracting all three fields
 from the LawfulAffineTraversal instance.
 -/
-theorem lawful_affine_satisfies_laws {s a : Type u}
+theorem lawful_affine_satisfies_laws {s a : Type}
     (preview : s → Option a) (set : s → a → s)
     [h : LawfulAffineTraversal preview set] :
     (∀ (s : s) (v : a), preview s ≠ none → preview (set s v) = some v) ∧
@@ -238,7 +237,7 @@ open Collimator.Combinators
 Helper: Extract preview function from composed affine traversals.
 Composes two preview functions: first applies outer, then inner if outer succeeds.
 -/
-private def composed_affine_preview {s u a : Type u}
+private def composed_affine_preview {s u a : Type}
     (preview_outer : s → Option u)
     (preview_inner : u → Option a) :
     s → Option a :=
@@ -252,7 +251,7 @@ Helper: Extract set function from composed affine traversals.
 If outer preview fails, returns unchanged structure.
 If outer preview succeeds, applies inner set then outer set.
 -/
-private def composed_affine_set {s u a : Type u}
+private def composed_affine_set {s u a : Type}
     (preview_outer : s → Option u) (set_outer : s → u → s)
     (set_inner : u → a → u) :
     s → a → s :=
@@ -269,7 +268,7 @@ The proof works by chaining the SetPreview laws of both the outer and inner
 affine traversals. When the composition has a focus, both levels must have
 a focus, allowing us to apply both laws sequentially.
 -/
-theorem composeAffine_preserves_set_preview {s u a : Type u}
+theorem composeAffine_preserves_set_preview {s u a : Type}
     (preview_o : s → Option u) (set_o : s → u → s)
     (preview_i : u → Option a) (set_i : u → a → u)
     [ho : LawfulAffineTraversal preview_o set_o]
@@ -313,7 +312,7 @@ The proof works by applying both PreviewSet laws in sequence: first the inner
 law to show that setting the inner value doesn't change it, then the outer law
 to show that setting to the unchanged value doesn't change the structure.
 -/
-theorem composeAffine_preserves_preview_set {s u a : Type u}
+theorem composeAffine_preserves_preview_set {s u a : Type}
     (preview_o : s → Option u) (set_o : s → u → s)
     (preview_i : u → Option a) (set_i : u → a → u)
     [ho : LawfulAffineTraversal preview_o set_o]
@@ -356,7 +355,7 @@ their composition preserves the SetSet law.
 The proof works by applying both SetSet laws: first the inner law to collapse
 consecutive inner sets, then the outer law to collapse consecutive outer sets.
 -/
-theorem composeAffine_preserves_set_set {s u a : Type u}
+theorem composeAffine_preserves_set_set {s u a : Type}
     (preview_o : s → Option u) (set_o : s → u → s)
     (preview_i : u → Option a) (set_i : u → a → u)
     [ho : LawfulAffineTraversal preview_o set_o]
@@ -402,7 +401,7 @@ their composition forms a lawful affine traversal.
 This is the capstone theorem that bundles all three composition preservation
 theorems together, showing that lawfulness is preserved through composition.
 -/
-instance composedAffine_isLawful {s u a : Type u}
+instance composedAffine_isLawful {s u a : Type}
     (preview_o : s → Option u) (set_o : s → u → s)
     (preview_i : u → Option a) (set_i : u → a → u)
     [ho : LawfulAffineTraversal preview_o set_o]
@@ -424,7 +423,7 @@ This models Option as an affine traversal where:
 - `none` represents no focus (affine traversal with 0 elements)
 - `some a` represents a focus on `a` (affine traversal with 1 element)
 -/
-instance option_affine_is_lawful {α : Type u} :
+instance option_affine_is_lawful {α : Type} :
     LawfulAffineTraversal
       (fun (x : Option α) => x)
       (fun (_ : Option α) (a : α) => some a) where

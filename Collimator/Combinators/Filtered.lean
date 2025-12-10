@@ -6,17 +6,16 @@ namespace Collimator.Combinators
 open Collimator
 open Collimator.Traversal
 
-universe u
 
 /--
 Restrict a traversal to focuses that satisfy a predicate. The traversal is
 monomorphic because the predicate must be evaluated on both the input and the
 output type.
 -/
-def filtered {s : Type u} {a : Type u}
+def filtered {s : Type} {a : Type}
     (tr : Traversal' s a) (pred : a → Bool) : Traversal' s a :=
   Collimator.traversal
-    (fun {F : Type u → Type u} [Applicative F]
+    (fun {F : Type → Type} [Applicative F]
       (f : a → F a) (s₀ : s) =>
         Traversal.traverse' (tr := tr)
           (fun a => if pred a then f a else pure a)
@@ -33,9 +32,9 @@ over (filteredList (· > 0)) (· * 2) [-1, 2, -3, 4]
 -- Result: [-1, 4, -3, 8]
 ```
 -/
-def filteredList {a : Type u} (pred : a → Bool) : Traversal' (List a) a :=
+def filteredList {a : Type} (pred : a → Bool) : Traversal' (List a) a :=
   Collimator.traversal
-    (fun {F : Type u → Type u} [Applicative F]
+    (fun {F : Type → Type} [Applicative F]
       (f : a → F a) (xs : List a) =>
         let rec go : List a → F (List a)
           | [] => pure []
@@ -57,9 +56,9 @@ over (ifilteredList fun i _ => i % 2 == 0) (· ++ "!") ["a", "b", "c", "d"]
 -- Result: ["a!", "b", "c!", "d"]
 ```
 -/
-def ifilteredList {a : Type u} (pred : Nat → a → Bool) : Traversal' (List a) a :=
+def ifilteredList {a : Type} (pred : Nat → a → Bool) : Traversal' (List a) a :=
   Collimator.traversal
-    (fun {F : Type u → Type u} [Applicative F]
+    (fun {F : Type → Type} [Applicative F]
       (f : a → F a) (xs : List a) =>
         let rec go : Nat → List a → F (List a)
           | _, [] => pure []

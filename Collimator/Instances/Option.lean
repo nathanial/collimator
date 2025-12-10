@@ -8,10 +8,9 @@ open Collimator
 open Collimator.Indexed
 open Collimator.Core
 
-universe u
 
 /-- Prism focusing the value of an option when present (polymorphic version). -/
-@[inline] def somePrism {α β : Type u} : Prism (Option α) (Option β) α β :=
+@[inline] def somePrism {α β : Type} : Prism (Option α) (Option β) α β :=
   fun {P} [Profunctor P] hChoice pab =>
     let _ : Choice P := hChoice
     let right := Choice.right (P := P) (γ := Option β) pab
@@ -36,10 +35,10 @@ ofPrism (somePrism' Employee)
 ofPrism (somePrism (α := Employee) (β := Employee))
 ```
 -/
-@[inline] def somePrism' (α : Type u) : Prism' (Option α) α :=
+@[inline] def somePrism' (α : Type) : Prism' (Option α) α :=
   somePrism
 
-instance instHasAtOption {α : Type u} : HasAt Unit (Option α) α where
+instance instHasAtOption {α : Type} : HasAt Unit (Option α) α where
   focus _ :=
     lens' (fun o => o) (fun _ replacement => replacement)
 

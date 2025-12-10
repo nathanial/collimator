@@ -2,7 +2,6 @@ import Collimator.Core.Profunctor
 
 namespace Collimator.Core
 
-universe u v
 
 /--
 Closed profunctors can operate on function spaces.

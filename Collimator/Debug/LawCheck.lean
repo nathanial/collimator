@@ -40,7 +40,6 @@ namespace Collimator.Debug.LawCheck
 
 open Collimator
 
-universe u
 
 /-! ## Lens Law Checks -/
 
@@ -49,7 +48,7 @@ Check the GetPut law: `view l (set l v s) = v`
 
 After setting a value `v` into structure `s`, viewing should return `v`.
 -/
-def checkGetPut {s a : Type u} [BEq a] (l : Lens' s a) (s₀ : s) (v : a) : Bool :=
+def checkGetPut {s a : Type} [BEq a] (l : Lens' s a) (s₀ : s) (v : a) : Bool :=
   view' l (set' l v s₀) == v
 
 /--
@@ -57,7 +56,7 @@ Check the PutGet law: `set l (view l s) s = s`
 
 Setting the currently-viewed value should be a no-op.
 -/
-def checkPutGet {s a : Type u} [BEq s] (l : Lens' s a) (s₀ : s) : Bool :=
+def checkPutGet {s a : Type} [BEq s] (l : Lens' s a) (s₀ : s) : Bool :=
   set' l (view' l s₀) s₀ == s₀
 
 /--
@@ -65,7 +64,7 @@ Check the PutPut law: `set l v (set l v' s) = set l v s`
 
 Setting twice with different values is equivalent to setting once with the final value.
 -/
-def checkPutPut {s a : Type u} [BEq s] (l : Lens' s a) (s₀ : s) (v v' : a) : Bool :=
+def checkPutPut {s a : Type} [BEq s] (l : Lens' s a) (s₀ : s) (v v' : a) : Bool :=
   set' l v (set' l v' s₀) == set' l v s₀
 
 /--
@@ -89,7 +88,7 @@ let samples := [
 let passed ← verifyLensLaws "xLens" xLens samples
 ```
 -/
-def verifyLensLaws {s a : Type u} [BEq s] [BEq a] [Repr s] [Repr a]
+def verifyLensLaws {s a : Type} [BEq s] [BEq a] [Repr s] [Repr a]
     (name : String) (l : Lens' s a) (samples : List (s × a × a)) : IO Bool := do
   let mut allPassed := true
   for (s₀, v, v') in samples do
@@ -111,7 +110,7 @@ Quick check all lens laws with a single sample.
 
 Useful for simple sanity checks.
 -/
-def quickCheckLens {s a : Type u} [BEq s] [BEq a]
+def quickCheckLens {s a : Type} [BEq s] [BEq a]
     (l : Lens' s a) (s₀ : s) (v v' : a) : Bool :=
   checkGetPut l s₀ v && checkPutGet l s₀ && checkPutPut l s₀ v v'
 
@@ -122,7 +121,7 @@ Check the Preview-Review law: `preview p (review p b) = some b`
 
 Reviewing a value and then previewing should return the original value.
 -/
-def checkPreviewReview {s a : Type u} [BEq a] (p : Prism' s a) (b : a) : Bool :=
+def checkPreviewReview {s a : Type} [BEq a] (p : Prism' s a) (b : a) : Bool :=
   preview' p (review' p b) == some b
 
 /--
@@ -132,7 +131,7 @@ If `preview p s = some a`, then `review p a = s`.
 
 Note: This only makes sense when we know preview succeeds.
 -/
-def checkReviewPreview {s a : Type u} [BEq s] (p : Prism' s a) (s₀ : s) : Bool :=
+def checkReviewPreview {s a : Type} [BEq s] (p : Prism' s a) (s₀ : s) : Bool :=
   match preview' p s₀ with
   | some a => review' p a == s₀
   | none => true  -- Law doesn't apply when preview fails
@@ -152,7 +151,7 @@ let samples := [1, 2, 3, 0, -5]
 let passed ← verifyPrismLaws "somePrism" (somePrism' Int) samples
 ```
 -/
-def verifyPrismLaws {s a : Type u} [BEq s] [BEq a] [Repr s] [Repr a]
+def verifyPrismLaws {s a : Type} [BEq s] [BEq a] [Repr s] [Repr a]
     (name : String) (p : Prism' s a) (samples : List a) : IO Bool := do
   let mut allPassed := true
   for b in samples do
@@ -166,7 +165,7 @@ def verifyPrismLaws {s a : Type u} [BEq s] [BEq a] [Repr s] [Repr a]
 /--
 Quick check prism laws with a single sample.
 -/
-def quickCheckPrism {s a : Type u} [BEq s] [BEq a]
+def quickCheckPrism {s a : Type} [BEq s] [BEq a]
     (p : Prism' s a) (b : a) : Bool :=
   checkPreviewReview p b
 
@@ -177,7 +176,7 @@ Check the Back-Forward law: `back (forward s) = s`
 
 Round-tripping through the iso and back should preserve the source.
 -/
-def checkBackForward {s a : Type u} [BEq s] (i : Iso' s a) (s₀ : s) : Bool :=
+def checkBackForward {s a : Type} [BEq s] (i : Iso' s a) (s₀ : s) : Bool :=
   let forward := Collimator.Poly.view i s₀
   let back := Collimator.Poly.review i forward
   back == s₀
@@ -187,7 +186,7 @@ Check the Forward-Back law: `forward (back a) = a`
 
 Round-tripping through the iso in reverse should preserve the focus.
 -/
-def checkForwardBack {s a : Type u} [BEq a] (i : Iso' s a) (a₀ : a) : Bool :=
+def checkForwardBack {s a : Type} [BEq a] (i : Iso' s a) (a₀ : a) : Bool :=
   let back := Collimator.Poly.review i a₀
   let forward := Collimator.Poly.view i back
   forward == a₀
@@ -201,7 +200,7 @@ Verify iso laws with sample data.
 - `sourceSamples`: Source values to test Back-Forward
 - `focusSamples`: Focus values to test Forward-Back
 -/
-def verifyIsoLaws {s a : Type u} [BEq s] [BEq a] [Repr s] [Repr a]
+def verifyIsoLaws {s a : Type} [BEq s] [BEq a] [Repr s] [Repr a]
     (name : String) (i : Iso' s a)
     (sourceSamples : List s) (focusSamples : List a) : IO Bool := do
   let mut allPassed := true

@@ -36,7 +36,6 @@ namespace Collimator.Poly
 open Collimator
 open Collimator.Concrete
 
-universe u v w
 
 /-! ## HasOver Instance -/
 
