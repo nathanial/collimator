@@ -20,6 +20,7 @@ import CollimatorTests.NewCombinators
 import CollimatorTests.Debug
 import CollimatorTests.AdvancedFeatures
 import CollimatorTests.Integration
+import CollimatorTests.Tooling
 
 /-!
 # Test Runner for Collimator
@@ -68,6 +69,7 @@ def main : IO UInt32 := do
   exitCode := exitCode + (← runTests "Debug Utilities" CollimatorTests.Debug.cases)
   exitCode := exitCode + (← runTests "Advanced Features" CollimatorTests.AdvancedFeatures.cases)
   exitCode := exitCode + (← runTests "Integration Patterns" CollimatorTests.Integration.cases)
+  exitCode := exitCode + (← runTests "Tooling" CollimatorTests.Tooling.cases)
 
   IO.println ""
   if exitCode == 0 then

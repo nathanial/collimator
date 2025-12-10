@@ -89,3 +89,8 @@ import Collimator.Poly.Guidance
 
 -- Integration patterns
 import Collimator.Integration
+
+-- Tooling
+import Collimator.Testing
+import Collimator.Tracing
+import Collimator.Commands
