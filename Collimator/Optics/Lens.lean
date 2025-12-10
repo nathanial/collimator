@@ -13,6 +13,42 @@ universe u
 
 /--
 Construct a lens from getter and setter functions.
+
+A lens focuses on exactly one part of a larger structure, allowing you to
+view, modify, or replace that part.
+
+## Parameters
+- `get`: Extract the focused value from the source
+- `set`: Replace the focused value in the source with a new value
+
+## Example
+
+```lean
+structure Point where
+  x : Int
+  y : Int
+
+-- Create a lens focusing on the x coordinate
+def xLens : Lens' Point Int :=
+  lens' (fun p => p.x) (fun p x' => { p with x := x' })
+
+-- Or more concisely:
+def yLens : Lens' Point Int :=
+  lens' (·.y) (fun p y' => { p with y := y' })
+
+-- Usage:
+let p := Point.mk 10 20
+view' xLens p           -- 10
+set' xLens 99 p         -- { x := 99, y := 20 }
+over' xLens (· + 1) p   -- { x := 11, y := 20 }
+```
+
+## Laws
+
+A lawful lens satisfies:
+1. **GetPut**: `view l (set l v s) = v` - setting then viewing returns what was set
+2. **PutGet**: `set l (view l s) s = s` - setting the current value is a no-op
+3. **PutPut**: `set l v (set l v' s) = set l v s` - setting twice is same as setting once
 -/
 def lens' {s : Type u} {t : Type u} {a : Type u} {b : Type u}
     (get : s → a) (set : s → b → t) : Lens s t a b :=

@@ -15,6 +15,51 @@ universe u
 
 /--
 Construct a traversal from a polymorphic walker that works for any applicative.
+
+A traversal focuses on zero or more parts of a structure, allowing you to
+view all of them, modify all of them, or apply effectful transformations.
+
+## Parameters
+- `walk`: A function that applies an effectful transformation `(a → F b)` to all
+  focused elements in the structure, threading the applicative effect `F` through.
+
+## Example
+
+```lean
+-- Traversal over all elements of a list
+def listTraversal : Traversal' (List α) α :=
+  traversal fun {F} [Applicative F] f xs =>
+    let rec go : List α → F (List α)
+      | [] => pure []
+      | x :: rest => (· :: ·) <$> f x <*> go rest
+    go xs
+
+-- Usage:
+let nums := [1, 2, 3, 4]
+
+-- Modify all elements
+over listTraversal (· * 2) nums  -- [2, 4, 6, 8]
+
+-- Collect all elements
+Fold.toListTraversal listTraversal nums  -- [1, 2, 3, 4]
+
+-- Effectful traversal (e.g., validation)
+Traversal.traverse' listTraversal
+  (fun n => if n > 0 then some n else none)
+  nums  -- some [1, 2, 3, 4]
+
+Traversal.traverse' listTraversal
+  (fun n => if n > 0 then some n else none)
+  [1, -2, 3]  -- none (short-circuits on first failure)
+```
+
+## Laws
+
+A lawful traversal satisfies:
+1. **Identity**: `traverse id = id` - traversing with identity is a no-op
+2. **Composition**: `traverse (Compose . fmap g . f) = Compose . fmap (traverse g) . traverse f`
+
+These laws ensure the traversal visits each element exactly once in a consistent order.
 -/
 def traversal {s t a b : Type _}
     (walk : ∀ {F : Type u → Type u} [Applicative F], (a → F b) → s → F t) :

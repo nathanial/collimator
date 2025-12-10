@@ -26,10 +26,21 @@ lake build
 
 **Requirements:** Lean 4.15.0 or compatible version.
 
+## Documentation
+
+- **[Tutorial](docs/tutorial.md)** - Progressive introduction to profunctor optics
+- **[Cheat Sheet](docs/cheatsheet.md)** - Quick reference for operations, types, and operators
+- **[Examples](examples/)** - Real-world usage patterns:
+  - [JSON Navigation](examples/JsonLens.lean)
+  - [Configuration Management](examples/ConfigUpdate.lean)
+  - [Form Validation](examples/FormValidation.lean)
+  - [Tree Traversal](examples/TreeTraversal.lean)
+  - [Database Records](examples/DatabaseRecords.lean)
+
 ## Quick Start
 
 ```lean
-import Collimator
+import Collimator.Prelude  -- Batteries-included import
 
 -- Define a simple structure
 structure Person where
@@ -46,6 +57,14 @@ def birthday (p : Person) : Person :=
 
 def getAge (p : Person) : Nat :=
   view ageLens p
+
+-- Or use operator syntax
+open scoped Collimator.Operators
+
+def example (p : Person) : Person :=
+  p & ageLens %~ (· + 1)  -- increment age
+
+#eval (Person.mk "Alice" 30) ^. ageLens  -- 30
 ```
 
 ## Optic Types
@@ -154,7 +173,7 @@ Collimator/
 # Build the library
 lake build
 
-# Run all tests (111 tests across 11 suites)
+# Run all tests (265+ tests)
 lake build collimator_tests && .lake/build/bin/collimator_tests
 ```
 

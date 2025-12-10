@@ -13,6 +13,46 @@ universe u
 
 /--
 Construct a prism from a builder and a matcher.
+
+A prism focuses on one case of a sum type (variant), allowing you to
+pattern-match to extract a value or construct that variant.
+
+## Parameters
+- `build`: Construct a value of the sum type from the focused case
+- `split`: Pattern-match on the sum type, returning `Sum.inr a` if the
+  focused case is present, or `Sum.inl t` (the unchanged value) otherwise
+
+## Example
+
+```lean
+-- Prism for the Some case of Option
+def somePrism : Prism' (Option α) α :=
+  prism
+    (build := some)
+    (split := fun opt => match opt with
+      | some a => Sum.inr a
+      | none => Sum.inl none)
+
+-- Usage:
+preview' somePrism (some 42)  -- some 42
+preview' somePrism none       -- none
+review' somePrism 42          -- some 42
+```
+
+## Simpler Alternative
+
+For most cases, `prismFromPartial` is easier to use:
+
+```lean
+def somePrism : Prism' (Option α) α :=
+  prismFromPartial (match_ := id) (build := some)
+```
+
+## Laws
+
+A lawful prism satisfies:
+1. **Preview-Review**: `preview p (review p b) = some b` - reviewing then previewing succeeds
+2. **Review-Preview**: `preview p s = some a → review p a = s` - if preview succeeds, review reconstructs
 -/
 def prism {s t a b : Type _}
     (build : b → t) (split : s → Sum t a) : Prism s t a b :=
