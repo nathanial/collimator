@@ -1,4 +1,4 @@
-import Collimator.Optics.Prism
+import Collimator.Optics
 import Collimator.Instances.Sum
 import Collimator.Instances.Option
 import Collimator.Combinators

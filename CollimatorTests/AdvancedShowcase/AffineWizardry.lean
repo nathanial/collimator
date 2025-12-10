@@ -1,6 +1,4 @@
-import Collimator.Optics.Affine
-import Collimator.Optics.Lens
-import Collimator.Optics.Prism
+import Collimator.Optics
 import Collimator.Combinators
 import Collimator.Operators
 import Collimator.Poly

@@ -1,10 +1,6 @@
 import Batteries
 import Collimator.Poly
-import Collimator.Optics.Iso
-import Collimator.Optics.Lens
-import Collimator.Optics.Prism
-import Collimator.Optics.Traversal
-import Collimator.Optics.Affine
+import Collimator.Optics
 import Collimator.Theorems.IsoLaws
 import Collimator.Instances.Prod
 import Collimator.Instances.Option

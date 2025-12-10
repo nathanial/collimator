@@ -1,7 +1,4 @@
-import Collimator.Optics.Lens
-import Collimator.Optics.Prism
-import Collimator.Optics.Iso
-import Collimator.Optics.Traversal
+import Collimator.Optics
 import Collimator.Theorems.IsoLaws
 
 open Collimator.Theorems

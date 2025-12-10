@@ -1,5 +1,5 @@
 import Collimator.Poly
-import Collimator.Optics.Fold
+import Collimator.Optics
 import Collimator.Combinators
 import Collimator.Helpers
 

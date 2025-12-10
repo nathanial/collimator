@@ -1,4 +1,4 @@
-import Collimator.Optics.Lens
+import Collimator.Optics
 import Collimator.Poly.Classes
 import Collimator.Concrete.Forget
 import Collimator.Concrete.FunArrow

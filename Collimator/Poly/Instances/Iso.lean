@@ -1,4 +1,4 @@
-import Collimator.Optics.Iso
+import Collimator.Optics
 import Collimator.Theorems.IsoLaws
 import Collimator.Poly.Classes
 import Collimator.Concrete.Forget

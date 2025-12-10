@@ -1,8 +1,4 @@
-import Collimator.Optics.Getter
-import Collimator.Optics.Review
-import Collimator.Optics.Lens
-import Collimator.Optics.Prism
-import Collimator.Optics.Iso
+import Collimator.Optics
 import Collimator.Core.Profunctor
 import Collimator.Poly
 import CollimatorTests.Framework

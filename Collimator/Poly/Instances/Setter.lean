@@ -1,4 +1,4 @@
-import Collimator.Optics.Setter
+import Collimator.Optics
 import Collimator.Poly.Classes
 
 namespace Collimator.Poly

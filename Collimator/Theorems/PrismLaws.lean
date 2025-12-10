@@ -1,5 +1,4 @@
-import Collimator.Optics.Prism
-import Collimator.Optics.Types
+import Collimator.Optics
 import Collimator.Core.Profunctor
 import Collimator.Core.Choice
 import Collimator.Concrete.Forget

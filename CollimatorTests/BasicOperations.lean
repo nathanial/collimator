@@ -2,10 +2,7 @@ import Batteries
 import Collimator.Core.Profunctor
 import Collimator.Core.Strong
 import Collimator.Core.Choice
-import Collimator.Optics.Types
-import Collimator.Optics.Iso
-import Collimator.Optics.Lens
-import Collimator.Optics.Prism
+import Collimator.Optics
 import Collimator.Concrete.FunArrow
 import CollimatorTests.Framework
 

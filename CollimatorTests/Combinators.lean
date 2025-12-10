@@ -6,10 +6,7 @@ import Collimator.Instances.Sum
 import Collimator.Instances.Option
 import Collimator.Instances.List
 import Collimator.Instances.Array
-import Collimator.Optics.Lens
-import Collimator.Optics.Prism
-import Collimator.Optics.Traversal
-import Collimator.Optics.Setter
+import Collimator.Optics
 import Collimator.Concrete.FunArrow
 import CollimatorTests.Framework
 

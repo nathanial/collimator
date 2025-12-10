@@ -1,7 +1,4 @@
-import Collimator.Optics.Types
-import Collimator.Optics.Lens
-import Collimator.Optics.Prism
-import Collimator.Optics.Traversal
+import Collimator.Optics
 import Collimator.Instances.Option
 import Collimator.Instances.List
 

@@ -1,4 +1,4 @@
-import Collimator.Optics.Traversal
+import Collimator.Optics
 import Collimator.Concrete.FunArrow
 import Collimator.Instances.List
 import Collimator.Poly

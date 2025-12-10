@@ -1,4 +1,4 @@
-import Collimator.Optics.Prism
+import Collimator.Optics
 
 namespace Collimator.Instances.Sum
 

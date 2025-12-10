@@ -1,5 +1,5 @@
 import Lean
-import Collimator.Optics.Lens
+import Collimator.Optics
 
 /-!
 # Automatic Lens Generation

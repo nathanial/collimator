@@ -1,7 +1,4 @@
-import Collimator.Optics.Types
-import Collimator.Optics.Iso
-import Collimator.Optics.Lens
-import Collimator.Optics.Traversal
+import Collimator.Optics
 import Collimator.Combinators
 import Collimator.Operators
 import Collimator.Poly

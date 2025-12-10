@@ -1,5 +1,4 @@
-import Collimator.Optics.Iso
-import Collimator.Optics.Types
+import Collimator.Optics
 import Collimator.Core.Profunctor
 import Collimator.Concrete.Forget
 import Collimator.Concrete.Tagged

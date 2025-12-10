@@ -1,6 +1,5 @@
 import Batteries
-import Collimator.Optics.Lens
-import Collimator.Optics.Traversal
+import Collimator.Optics
 import Collimator.Combinators
 
 namespace Collimator.Instances.Array

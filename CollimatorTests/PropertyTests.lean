@@ -1,7 +1,5 @@
 import Batteries
-import Collimator.Optics.Lens
-import Collimator.Optics.Iso
-import Collimator.Optics.Traversal
+import Collimator.Optics
 import Collimator.Poly.Classes
 import Collimator.Combinators
 import Collimator.Instances.Prod

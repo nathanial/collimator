@@ -1,4 +1,4 @@
-import Collimator.Optics.Affine
+import Collimator.Optics
 import Collimator.Poly.Classes
 import Collimator.Concrete.Star
 

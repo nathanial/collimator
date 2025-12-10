@@ -1,4 +1,4 @@
-import Collimator.Optics.Types
+import Collimator.Optics
 
 namespace Collimator.Poly
 

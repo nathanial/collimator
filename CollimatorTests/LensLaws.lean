@@ -1,6 +1,5 @@
 import Batteries
-import Collimator.Optics.Lens
-import Collimator.Optics.Types
+import Collimator.Optics
 import Collimator.Theorems.LensLaws
 import Collimator.Combinators
 import CollimatorTests.Framework

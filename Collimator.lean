@@ -53,16 +53,7 @@ import Collimator.Concrete.FunArrow
 import Collimator.Concrete.Tagged
 
 -- Optic type definitions
-import Collimator.Optics.Types
-import Collimator.Optics.Iso
-import Collimator.Optics.Lens
-import Collimator.Optics.Prism
-import Collimator.Optics.Affine
-import Collimator.Optics.Traversal
-import Collimator.Optics.Fold
-import Collimator.Optics.Setter
-import Collimator.Optics.Getter
-import Collimator.Optics.Review
+import Collimator.Optics
 
 -- Polymorphic API
 import Collimator.Poly

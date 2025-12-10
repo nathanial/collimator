@@ -1,6 +1,5 @@
 import Batteries
-import Collimator.Optics.Traversal
-import Collimator.Optics.Types
+import Collimator.Optics
 import Collimator.Theorems.TraversalLaws
 import Collimator.Combinators
 import CollimatorTests.Framework

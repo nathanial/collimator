@@ -1,7 +1,6 @@
 import Batteries
 import Collimator.Theorems.Subtyping
-import Collimator.Optics.Lens
-import Collimator.Optics.Prism
+import Collimator.Optics
 import CollimatorTests.Framework
 
 /-!

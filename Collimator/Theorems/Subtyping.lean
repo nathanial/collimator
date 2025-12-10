@@ -1,4 +1,4 @@
-import Collimator.Optics.Types
+import Collimator.Optics
 import Collimator.Theorems.IsoLaws
 import Collimator.Theorems.LensLaws
 import Collimator.Theorems.PrismLaws
