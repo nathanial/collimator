@@ -1,0 +1,24 @@
+# Lake build artifacts
+.lake/
+lake-packages/
+
+# Build outputs
+build/
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Lean build artifacts
+*.olean
+*.ilean
+*.trace
+*.c
+*.o
+
+# Lake manifest lock (optional - some prefer to commit this)
+# lake-manifest.json
