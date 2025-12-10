@@ -16,5 +16,6 @@ lean_lib CollimatorTests where
   globs := #[.submodules `CollimatorTests]
 
 -- Test runner executable
+@[test_driver]
 lean_exe collimator_tests where
   root := `CollimatorTests.Main

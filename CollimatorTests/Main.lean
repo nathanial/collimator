@@ -5,6 +5,7 @@ import CollimatorTests.IsoLaws
 import CollimatorTests.LensLaws
 import CollimatorTests.PrismLaws
 import CollimatorTests.TraversalLaws
+import CollimatorTests.AffineLaws
 import CollimatorTests.Combinators
 import CollimatorTests.Traversals
 import CollimatorTests.Poly
@@ -12,6 +13,9 @@ import CollimatorTests.PhaseFiveNormalization
 import CollimatorTests.PhaseFiveSubtyping
 import CollimatorTests.AdvancedShowcase
 import CollimatorTests.GetterReview
+import CollimatorTests.PropertyTests
+import CollimatorTests.ConcreteProfunctors
+import CollimatorTests.EdgeCases
 
 /-!
 # Test Runner for Collimator
@@ -34,6 +38,7 @@ def main : IO UInt32 := do
   exitCode := exitCode + (← runTests "Lens Laws" CollimatorTests.LensLaws.cases)
   exitCode := exitCode + (← runTests "Prism Laws" CollimatorTests.PrismLaws.cases)
   exitCode := exitCode + (← runTests "Traversal Laws" CollimatorTests.TraversalLaws.cases)
+  exitCode := exitCode + (← runTests "Affine Laws" CollimatorTests.AffineLaws.cases)
   exitCode := exitCode + (← runTests "Combinators" CollimatorTests.Combinators.cases)
   exitCode := exitCode + (← runTests "Traversals" CollimatorTests.Traversals.cases)
   exitCode := exitCode + (← runTests "Polymorphic API" CollimatorTests.Poly.cases)
@@ -50,6 +55,11 @@ def main : IO UInt32 := do
   exitCode := exitCode + (← runTests "Affine Wizardry" CollimatorTests.AdvancedShowcase.AffineWizardry.cases)
   exitCode := exitCode + (← runTests "Prism Magic" CollimatorTests.AdvancedShowcase.PrismMagic.cases)
   exitCode := exitCode + (← runTests "Mind Bending" CollimatorTests.AdvancedShowcase.MindBending.cases)
+
+  -- New test suites
+  exitCode := exitCode + (← runTests "Property Tests" CollimatorTests.PropertyTests.cases)
+  exitCode := exitCode + (← runTests "Concrete Profunctors" CollimatorTests.ConcreteProfunctors.cases)
+  exitCode := exitCode + (← runTests "Edge Cases" CollimatorTests.EdgeCases.cases)
 
   IO.println ""
   if exitCode == 0 then
