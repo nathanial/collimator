@@ -11,8 +11,7 @@ Open this file in VS Code with the Lean extension to see output in the infoview.
 
 open Collimator
 open Collimator.Tracing
-open Collimator.Instances.List
-open Collimator.Combinators
+open Collimator.Instances.List  -- For traversed
 open scoped Collimator.Operators
 
 /-! ## Data Model -/

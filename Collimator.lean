@@ -3,6 +3,23 @@
 
 A comprehensive optics library based on profunctor encodings.
 
+## Quick Start
+
+```lean
+import Collimator.Prelude
+
+open Collimator
+open scoped Collimator.Operators
+
+-- Define a lens
+def xLens : Lens' Point Int := lens' (·.x) (fun p x => { p with x := x })
+
+-- Use it
+#eval point ^. xLens              -- view
+#eval point & xLens .~ 10         -- set
+#eval point & xLens %~ (· + 1)    -- over
+```
+
 ## Main modules
 
 - `Collimator.Core`: Profunctor abstractions (Profunctor, Strong, Choice, Wandering, Closed)
@@ -14,6 +31,9 @@ A comprehensive optics library based on profunctor encodings.
 - `Collimator.Theorems`: Formal proofs of optic laws
 - `Collimator.Derive`: Metaprogramming for automatic lens derivation
 -/
+
+-- Re-exports for simplified usage
+import Collimator.Exports
 
 -- Core profunctor abstractions
 import Collimator.Core.Profunctor

@@ -9,8 +9,6 @@ matching a condition.
 -/
 
 open Collimator
-open Collimator.Poly
-open Collimator.Combinators
 open scoped Collimator.Operators
 
 /-! ## Tree Types -/
@@ -301,4 +299,4 @@ def examples : IO Unit := do
   let childCount := Fold.lengthOfTraversal RoseTree.immediateChildren sampleRoseTree
   IO.println s!"  Rose tree immediate children: {childCount}"
 
--- #eval examples
+#eval examples

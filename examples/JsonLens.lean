@@ -1,7 +1,4 @@
 import Collimator.Prelude
-import Collimator.Core.Profunctor
-import Collimator.Core.Strong
-import Collimator.Core.Choice
 
 /-!
 # JSON Navigation with Optics
@@ -11,9 +8,7 @@ and modify JSON-like data structures in a type-safe manner.
 -/
 
 open Collimator
-open Collimator.Poly
-open Collimator.Core
-open Collimator.Combinators
+open Collimator.Core  -- For Profunctor, Strong, Choice (advanced usage)
 open scoped Collimator.Operators
 
 /-! ## JSON Value Type -/

@@ -9,8 +9,6 @@ and collection relationships.
 -/
 
 open Collimator
-open Collimator.Poly
-open Collimator.Combinators
 open scoped Collimator.Operators
 
 /-! ## Domain Model -/

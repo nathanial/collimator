@@ -24,9 +24,8 @@ Use indexed optics when you need to:
 -/
 
 open Collimator
-open Collimator.Instances.List
-open Collimator.Indexed
-open Collimator.Combinators
+open Collimator.Instances.List  -- For traversed, itraversed
+open Collimator.Indexed         -- For HasAt, HasIx
 
 /-! ## Basic Indexed Traversal -/
 

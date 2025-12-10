@@ -1,3 +1,6 @@
+-- Re-exports for simplified usage
+import Collimator.Exports
+
 -- Core types and optics
 import Collimator.Optics.Types
 import Collimator.Optics.Iso
@@ -35,37 +38,50 @@ import Collimator.Derive.Lenses
 # Collimator Prelude
 
 A "batteries included" import for common Collimator usage. This module imports
-everything most users need and opens the commonly used namespaces.
+everything most users need and re-exports commonly used functions.
 
 ## Usage
 
 ```lean
 import Collimator.Prelude
 
+open Collimator                    -- Core types + polymorphic API
+open scoped Collimator.Operators   -- Infix operators (⊚, ^., %~, .~, &)
+
 -- You now have access to:
 -- - All optic types (Lens, Prism, Iso, Traversal, etc.)
 -- - Polymorphic API (view, over, set, preview, review, traverse)
--- - Operators (⊚, ^., ^?, %~, .~, &)
+-- - Fold functions (toListOf, sumOf, lengthOf, anyOf, allOf, etc.)
+-- - Combinators (filtered, filteredList, composition functions)
+-- - Helpers (first', second', lensOf, prismOf, some', each')
 -- - Instance optics for List, Array, Option, Prod, Sum
 -- - Derive macros (makeLenses)
 ```
 
 ## What's Included
 
-- `Collimator` - Core types and constructors
-- `Collimator.Poly` - Polymorphic API
-- `Collimator.Operators` - Infix operators (scoped)
-- All instance modules (List, Array, Option, Prod, Sum)
-- Derive macros
+With `open Collimator` you get:
+- Core optic types and constructors
+- Polymorphic API (`view`, `over`, `set`, `preview`, `review`, `traverse`)
+- Fold functions (`toListOf`, `sumOf`, `lengthOf`, etc.)
+- Combinators (`filtered`, `filteredList`, composition functions)
+- Type inference helpers (`first'`, `second'`, `lensOf`, etc.)
 
-## Alternative: Selective Imports
+With `open scoped Collimator.Operators` you get:
+- `⊚` - composition
+- `^.` / `^.'` - view
+- `^?` / `^?'` - preview
+- `%~` / `%~'` - over
+- `.~` / `.~'` - set
+- `&` - reverse application
 
-If you prefer more control, import modules individually:
-```lean
-import Collimator                 -- Just core types
-import Collimator.Poly            -- Add polymorphic API
-import Collimator.Instances.List  -- Add specific instances
-```
+## Advanced Namespaces (opt-in)
+
+For advanced use cases, these namespaces require explicit opening:
+- `Collimator.Core` - Low-level profunctor abstractions
+- `Collimator.Instances.*` - Per-type instance optics (traversed, somePrism', etc.)
+- `Collimator.Theorems` - Proofs of optic laws
+- `Collimator.Debug` - Debugging utilities
 -/
 
 -- Open operators with scoped so they're available but don't pollute global namespace

@@ -9,7 +9,6 @@ or fail with the original input.
 -/
 
 open Collimator
-open Collimator.Poly
 open scoped Collimator.Operators
 
 /-! ## Validation Prisms -/

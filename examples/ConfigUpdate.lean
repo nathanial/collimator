@@ -8,7 +8,6 @@ structures, a common pattern in application development.
 -/
 
 open Collimator
-open Collimator.Poly
 open scoped Collimator.Operators
 
 /-! ## Configuration Types -/
