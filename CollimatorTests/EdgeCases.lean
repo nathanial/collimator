@@ -2,10 +2,7 @@ import Batteries
 import Collimator.Optics
 import Collimator.Poly.Classes
 import Collimator.Combinators
-import Collimator.Instances.Prod
-import Collimator.Instances.Sum
-import Collimator.Instances.Option
-import Collimator.Instances.List
+import Collimator.Instances
 import CollimatorTests.Framework
 
 /-!

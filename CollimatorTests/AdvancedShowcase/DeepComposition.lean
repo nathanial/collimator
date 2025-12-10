@@ -7,10 +7,7 @@ import Collimator.Combinators
 import Collimator.Operators
 import Collimator.Concrete.FunArrow
 import Collimator.Concrete.Forget
-import Collimator.Instances.List
-import Collimator.Instances.Option
-import Collimator.Instances.Prod
-import Collimator.Instances.Sum
+import Collimator.Instances
 import Collimator.Poly
 import CollimatorTests.Framework
 

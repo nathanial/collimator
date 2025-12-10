@@ -2,7 +2,7 @@ import Batteries
 import Collimator.Optics
 import Collimator.Poly.Classes
 import Collimator.Combinators
-import Collimator.Instances.Prod
+import Collimator.Instances
 import CollimatorTests.Framework
 
 /-!

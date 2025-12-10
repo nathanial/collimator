@@ -1,6 +1,6 @@
 import Collimator.Optics
 import Collimator.Concrete.FunArrow
-import Collimator.Instances.List
+import Collimator.Instances
 import Collimator.Poly
 import CollimatorTests.Framework
 import Mathlib.Control.Monad.Writer

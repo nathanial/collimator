@@ -2,7 +2,7 @@ import Collimator.Optics
 import Collimator.Combinators
 import Collimator.Operators
 import Collimator.Poly
-import Collimator.Instances.List
+import Collimator.Instances
 import CollimatorTests.Framework
 
 namespace CollimatorTests.AdvancedShowcase.HeterogeneousCompositions

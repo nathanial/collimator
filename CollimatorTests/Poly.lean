@@ -2,9 +2,7 @@ import Batteries
 import Collimator.Poly
 import Collimator.Optics
 import Collimator.Theorems.IsoLaws
-import Collimator.Instances.Prod
-import Collimator.Instances.Option
-import Collimator.Instances.List
+import Collimator.Instances
 import CollimatorTests.Framework
 
 open Collimator.Instances.Option

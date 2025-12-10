@@ -1,6 +1,5 @@
 import Collimator.Optics
-import Collimator.Instances.Option
-import Collimator.Instances.List
+import Collimator.Instances
 
 /-!
 # Type Inference Helpers

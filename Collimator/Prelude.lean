@@ -12,11 +12,7 @@ import Collimator.Combinators
 import Collimator.Operators
 
 -- Type instances
-import Collimator.Instances.Array
-import Collimator.Instances.List
-import Collimator.Instances.Option
-import Collimator.Instances.Prod
-import Collimator.Instances.Sum
+import Collimator.Instances
 
 -- Derive macros
 import Collimator.Derive.Lenses

@@ -1,6 +1,5 @@
 import Collimator.Optics
-import Collimator.Instances.Sum
-import Collimator.Instances.Option
+import Collimator.Instances
 import Collimator.Combinators
 import Collimator.Operators
 import Collimator.Poly
