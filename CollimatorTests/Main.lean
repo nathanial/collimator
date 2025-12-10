@@ -18,7 +18,7 @@ import CollimatorTests.AdvancedShowcase.HeterogeneousCompositions
 import CollimatorTests.AdvancedShowcase.MindBending
 import CollimatorTests.AdvancedShowcase.EffectfulTraversals
 import CollimatorTests.AdvancedShowcase.DeepComposition
--- FilteredIndexed.lean.wip remains WIP
+import CollimatorTests.AdvancedShowcase.FilteredIndexed
 import CollimatorTests.GetterReview
 import CollimatorTests.PropertyTests
 import CollimatorTests.ConcreteProfunctors
@@ -66,6 +66,7 @@ def main : IO UInt32 := do
   exitCode := exitCode + (← runTests "Mind Bending" CollimatorTests.AdvancedShowcase.MindBending.cases)
   exitCode := exitCode + (← runTests "Effectful Traversals" CollimatorTests.AdvancedShowcase.EffectfulTraversals.cases)
   exitCode := exitCode + (← runTests "Deep Composition" CollimatorTests.AdvancedShowcase.DeepComposition.cases)
+  exitCode := exitCode + (← runTests "Filtered & Indexed" CollimatorTests.AdvancedShowcase.FilteredIndexed.cases)
 
   -- New test suites
   exitCode := exitCode + (← runTests "Concrete Profunctors" CollimatorTests.ConcreteProfunctors.cases)
