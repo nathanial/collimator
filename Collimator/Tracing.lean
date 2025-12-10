@@ -1,5 +1,5 @@
 import Collimator.Optics.Types
-import Collimator.Combinators.Operators
+import Collimator.Operators
 
 /-!
 # Optic Composition Tracing

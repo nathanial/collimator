@@ -2,8 +2,6 @@ import CollimatorTests.Framework
 import Collimator.Prelude
 import Collimator.Instances.String
 import Collimator.Instances.List
-import Collimator.Combinators.Bitraversal
-import Collimator.Combinators.Plated
 import Collimator.Poly
 
 /-!

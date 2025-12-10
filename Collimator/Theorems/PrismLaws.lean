@@ -4,7 +4,7 @@ import Collimator.Core.Profunctor
 import Collimator.Core.Choice
 import Collimator.Concrete.Forget
 import Collimator.Concrete.Tagged
-import Collimator.Combinators.Composition
+import Collimator.Combinators
 
 /-!
 # Prism Laws

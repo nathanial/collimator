@@ -1,7 +1,7 @@
 import Collimator.Optics.Lens
 import Collimator.Optics.Traversal
 import Collimator.Optics.Iso
-import Collimator.Combinators.Indexed
+import Collimator.Combinators
 
 /-!
 # String Optics

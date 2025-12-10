@@ -1,8 +1,8 @@
 import Collimator.Optics.Prism
 import Collimator.Instances.Sum
 import Collimator.Instances.Option
-import Collimator.Combinators.Composition
-import Collimator.Combinators.Operators
+import Collimator.Combinators
+import Collimator.Operators
 import Collimator.Poly
 import CollimatorTests.Framework
 

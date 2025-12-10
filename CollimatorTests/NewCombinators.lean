@@ -1,7 +1,5 @@
 import CollimatorTests.Framework
 import Collimator.Prelude
-import Collimator.Combinators.ListOps
-import Collimator.Combinators.PrismOps
 import Collimator.Helpers
 
 /-!

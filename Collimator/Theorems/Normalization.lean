@@ -3,7 +3,7 @@ import Collimator.Optics.Iso
 import Collimator.Optics.Lens
 import Collimator.Optics.Prism
 import Collimator.Optics.Traversal
-import Collimator.Combinators.Composition
+import Collimator.Combinators
 import Collimator.Core.Profunctor
 import Collimator.Core.Laws
 

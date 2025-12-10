@@ -6,7 +6,7 @@ import Collimator.Optics.Traversal
 import Collimator.Optics.Affine
 import Collimator.Optics.Fold
 import Collimator.Poly.Classes
-import Collimator.Combinators.Composition
+import Collimator.Combinators
 import Collimator.Instances.Prod
 import Collimator.Instances.Sum
 import Collimator.Instances.Option

@@ -1,8 +1,6 @@
 import Collimator.Optics.Traversal
-import Collimator.Combinators.Filtered
-import Collimator.Combinators.Indexed
-import Collimator.Combinators.Composition
-import Collimator.Combinators.Operators
+import Collimator.Combinators
+import Collimator.Operators
 import Collimator.Instances.List
 import Collimator.Poly
 import CollimatorTests.Framework

@@ -4,7 +4,7 @@ import Collimator.Core.Profunctor
 import Collimator.Core.Strong
 import Collimator.Concrete.Forget
 import Collimator.Concrete.FunArrow
-import Collimator.Combinators.Composition
+import Collimator.Combinators
 
 /-!
 # Lens Laws

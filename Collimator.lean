@@ -68,14 +68,8 @@ import Collimator.Optics.Review
 import Collimator.Poly
 
 -- Combinators and operators
-import Collimator.Combinators.Composition
-import Collimator.Combinators.Operators
-import Collimator.Combinators.Indexed
-import Collimator.Combinators.Filtered
-import Collimator.Combinators.ListOps
-import Collimator.Combinators.PrismOps
-import Collimator.Combinators.Bitraversal
-import Collimator.Combinators.Plated
+import Collimator.Combinators
+import Collimator.Operators
 
 -- Type instances
 import Collimator.Instances.Array

@@ -2,7 +2,7 @@ import Batteries
 import Collimator.Optics.Affine
 import Collimator.Optics.Types
 import Collimator.Theorems.AffineLaws
-import Collimator.Combinators.Composition
+import Collimator.Combinators
 import CollimatorTests.Framework
 
 namespace CollimatorTests.AffineLaws

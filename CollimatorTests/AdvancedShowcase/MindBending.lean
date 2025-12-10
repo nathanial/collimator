@@ -2,8 +2,8 @@ import Collimator.Optics.Types
 import Collimator.Optics.Iso
 import Collimator.Optics.Lens
 import Collimator.Optics.Traversal
-import Collimator.Combinators.Composition
-import Collimator.Combinators.Operators
+import Collimator.Combinators
+import Collimator.Operators
 import Collimator.Poly
 import CollimatorTests.Framework
 

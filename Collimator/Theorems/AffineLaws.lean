@@ -5,7 +5,7 @@ import Collimator.Core.Strong
 import Collimator.Core.Choice
 import Collimator.Concrete.Forget
 import Collimator.Concrete.FunArrow
-import Collimator.Combinators.Composition
+import Collimator.Combinators
 
 /-!
 # Affine Traversal Laws

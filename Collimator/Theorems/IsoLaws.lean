@@ -3,7 +3,7 @@ import Collimator.Optics.Types
 import Collimator.Core.Profunctor
 import Collimator.Concrete.Forget
 import Collimator.Concrete.Tagged
-import Collimator.Combinators.Composition
+import Collimator.Combinators
 
 /-!
 # Isomorphism Laws

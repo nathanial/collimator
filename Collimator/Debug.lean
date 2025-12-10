@@ -1,7 +1,7 @@
 import Collimator.Optics.Lens
 import Collimator.Optics.Prism
 import Collimator.Optics.Traversal
-import Collimator.Combinators.PrismOps
+import Collimator.Combinators
 import Collimator.Poly
 
 /-!

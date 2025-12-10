@@ -1,5 +1,5 @@
 import Collimator.Optics.Lens
-import Collimator.Combinators.Composition
+import Collimator.Combinators
 
 namespace Collimator.Instances.Prod
 

@@ -1,7 +1,6 @@
 import Collimator.Poly
 import Collimator.Optics.Fold
-import Collimator.Combinators.Filtered
-import Collimator.Combinators.Composition
+import Collimator.Combinators
 import Collimator.Helpers
 
 /-!

@@ -2,7 +2,7 @@ import Batteries
 import Collimator.Optics.Prism
 import Collimator.Optics.Types
 import Collimator.Theorems.PrismLaws
-import Collimator.Combinators.Composition
+import Collimator.Combinators
 import CollimatorTests.Framework
 
 namespace CollimatorTests.PrismLaws

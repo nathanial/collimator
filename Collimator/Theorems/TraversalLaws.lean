@@ -3,7 +3,7 @@ import Collimator.Optics.Types
 import Collimator.Core.Profunctor
 import Collimator.Core.Wandering
 import Collimator.Concrete.Star
-import Collimator.Combinators.Composition
+import Collimator.Combinators
 
 /-!
 # Traversal Laws

@@ -1,8 +1,6 @@
 import Batteries
-import Collimator.Combinators.Composition
-import Collimator.Combinators.Filtered
-import Collimator.Combinators.Indexed
-import Collimator.Combinators.Operators
+import Collimator.Combinators
+import Collimator.Operators
 import Collimator.Instances.Prod
 import Collimator.Instances.Sum
 import Collimator.Instances.Option

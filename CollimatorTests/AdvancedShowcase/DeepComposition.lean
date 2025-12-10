@@ -9,13 +9,10 @@ import Collimator.Optics.Prism
 import Collimator.Optics.Traversal
 import Collimator.Optics.Affine
 import Collimator.Optics.Fold
-import Collimator.Combinators.Indexed
-import Collimator.Combinators.Operators
+import Collimator.Combinators
+import Collimator.Operators
 import Collimator.Concrete.FunArrow
 import Collimator.Concrete.Forget
-import Collimator.Combinators.Filtered
-import Collimator.Combinators.Indexed
-import Collimator.Combinators.Composition
 import Collimator.Instances.List
 import Collimator.Instances.Option
 import Collimator.Instances.Prod

@@ -3,7 +3,7 @@ import Collimator.Optics.Lens
 import Collimator.Optics.Iso
 import Collimator.Optics.Traversal
 import Collimator.Poly.Classes
-import Collimator.Combinators.Composition
+import Collimator.Combinators
 import Collimator.Instances.Prod
 import CollimatorTests.Framework
 

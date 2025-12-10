@@ -1,6 +1,6 @@
 import Collimator.Optics.Prism
 import Collimator.Optics.Lens
-import Collimator.Combinators.Indexed
+import Collimator.Combinators
 
 namespace Collimator.Instances.Option
 

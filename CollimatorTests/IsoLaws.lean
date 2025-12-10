@@ -2,7 +2,7 @@ import Batteries
 import Collimator.Optics.Iso
 import Collimator.Optics.Types
 import Collimator.Theorems.IsoLaws
-import Collimator.Combinators.Composition
+import Collimator.Combinators
 import CollimatorTests.Framework
 
 namespace CollimatorTests.IsoLaws
