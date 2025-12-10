@@ -1,5 +1,9 @@
 # Collimator
 
+<p align="center">
+  <img src="logo.jpeg" alt="Collimator Logo" width="200">
+</p>
+
 A profunctor optics library for Lean 4.
 
 Optics (lenses, prisms, traversals, etc.) are encoded as polymorphic functions over profunctors, enabling composable, type-safe data access and modification patterns.
