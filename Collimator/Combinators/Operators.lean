@@ -73,6 +73,15 @@ instance {s t a b x y : Type u} : Composable (Lens s t a b) (AffineTraversal a b
 instance {s t a b x y : Type u} : Composable (AffineTraversal s t a b) (Lens a b x y) (AffineTraversal s t x y) where
   comp := composeAffineLens
 
+instance {s t a b x y : Type u} : Composable (AffineTraversal s t a b) (AffineTraversal a b x y) (AffineTraversal s t x y) where
+  comp := composeAffine
+
+instance {s t a b x y : Type u} : Composable (AffineTraversal s t a b) (Prism a b x y) (AffineTraversal s t x y) where
+  comp := composeAffinePrism
+
+instance {s t a b x y : Type u} : Composable (Prism s t a b) (AffineTraversal a b x y) (AffineTraversal s t x y) where
+  comp := composePrismAffine
+
 -- Fold compositions
 
 instance {s t a b x y : Type u} : Composable (Lens s t a b) (Fold a b x y) (Fold s t x y) where

@@ -41,6 +41,8 @@ import Collimator.Optics.Affine
 import Collimator.Optics.Traversal
 import Collimator.Optics.Fold
 import Collimator.Optics.Setter
+import Collimator.Optics.Getter
+import Collimator.Optics.Review
 
 -- Polymorphic API
 import Collimator.Poly
@@ -64,7 +66,7 @@ import Collimator.Theorems.LensLaws
 import Collimator.Theorems.PrismLaws
 import Collimator.Theorems.AffineLaws
 import Collimator.Theorems.TraversalLaws
--- import Collimator.Theorems.Equivalences  -- TODO: Fix compilation errors
+import Collimator.Theorems.Equivalences
 import Collimator.Theorems.Subtyping
 import Collimator.Theorems.Normalization
 import Collimator.Theorems.TraversalFusion

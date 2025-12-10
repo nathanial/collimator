@@ -143,4 +143,40 @@ then the lens focuses exactly one element within that.
     fun puv => outer.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P)
       (inner.toLens (P := P) (inferInstance : Strong P) puv)
 
+/--
+Compose two affine traversals. Each focuses at most one element,
+so the composition also focuses at most one element.
+-/
+@[inline] def composeAffine
+    {s t a b u v : Type u}
+    (outer : AffineTraversal s t a b) (inner : AffineTraversal a b u v) :
+    AffineTraversal s t u v :=
+  fun {P} [Profunctor P] [Strong P] [Choice P] =>
+    fun puv => outer.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P)
+      (inner.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P) puv)
+
+/--
+Compose an affine traversal with a prism. The affine focuses at most one element,
+then the prism optionally matches a pattern within that.
+-/
+@[inline] def composeAffinePrism
+    {s t a b u v : Type u}
+    (outer : AffineTraversal s t a b) (inner : Prism a b u v) :
+    AffineTraversal s t u v :=
+  fun {P} [Profunctor P] [Strong P] [Choice P] =>
+    fun puv => outer.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P)
+      (inner.toPrism (P := P) (inferInstance : Choice P) puv)
+
+/--
+Compose a prism with an affine traversal. The prism optionally matches,
+then the affine focuses at most one element within that.
+-/
+@[inline] def composePrismAffine
+    {s t a b u v : Type u}
+    (outer : Prism s t a b) (inner : AffineTraversal a b u v) :
+    AffineTraversal s t u v :=
+  fun {P} [Profunctor P] [Strong P] [Choice P] =>
+    fun puv => outer.toPrism (P := P) (inferInstance : Choice P)
+      (inner.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P) puv)
+
 end Collimator.Combinators

@@ -3,6 +3,9 @@ import Collimator.Poly.Instances.Lens
 import Collimator.Poly.Instances.Prism
 import Collimator.Poly.Instances.Traversal
 import Collimator.Poly.Instances.Affine
+import Collimator.Poly.Instances.Getter
+import Collimator.Poly.Instances.Setter
+import Collimator.Poly.Instances.Review
 import Collimator.Poly.Instances.Iso  -- Import Iso last so it has highest priority
 
 /-!
