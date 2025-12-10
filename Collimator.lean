@@ -78,3 +78,8 @@ import Collimator.Derive.Lenses
 
 -- Helpers for type inference
 import Collimator.Helpers
+
+-- Debug utilities
+import Collimator.Debug
+import Collimator.Debug.LawCheck
+import Collimator.Poly.Guidance
