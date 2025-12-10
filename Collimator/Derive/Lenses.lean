@@ -35,7 +35,7 @@ structure is defined.**
 This is due to Lean 4's elaboration ordering: `getStructureFields` requires
 the structure to be fully elaborated in the environment, which doesn't happen
 until after the current file completes. Attempting to use `makeLenses` in the
-same file as the structure definition will result in a panic.
+same file as the structure definition will result in an error.
 
 ## When to Use This vs Manual Lenses
 
@@ -85,11 +85,27 @@ def toUpperFirst (s : String) : String :=
 elab_rules : command
   | `(makeLenses $structName:ident) => do
     let env ← getEnv
-    -- Resolve the identifier to get the fully qualified name
-    let declName ← liftCoreM <| Lean.resolveGlobalConstNoOverload structName
 
-    -- Get the structure fields
+    -- Resolve the identifier with helpful error message
+    let declName ← try
+      liftCoreM <| Lean.resolveGlobalConstNoOverload structName
+    catch _ =>
+      throwError m!"makeLenses: Cannot find structure '{structName}'.\n\n" ++
+        m!"Hint: The structure must be defined before calling makeLenses.\n" ++
+        m!"If this structure is in the same file, you must move makeLenses " ++
+        m!"to a separate file that imports this one.\n\n" ++
+        m!"Example:\n" ++
+        m!"  -- File: MyTypes.lean\n" ++
+        m!"  structure {structName} where ...\n\n" ++
+        m!"  -- File: MyLenses.lean\n" ++
+        m!"  import MyTypes\n" ++
+        m!"  makeLenses {structName}"
+
+    -- Get the structure fields with validation
     let fields := getStructureFields env declName
+    if fields.isEmpty then
+      throwError m!"makeLenses: '{structName}' has no fields or is not a structure.\n" ++
+        m!"Hint: makeLenses only works with structure types, not inductives or other definitions."
 
     for fieldName in fields do
       -- Create lens name: structName + FieldName (camelCase)

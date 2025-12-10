@@ -59,6 +59,77 @@ def toListTraversal {s a : Type _} [Inhabited (List a)]
 scoped infixr:80 " ∘ₗf " => composeLensFold
 scoped infixr:80 " ∘f " => composeFold
 
+/--
+Check if any focus of the fold matches a predicate.
+
+```lean
+anyOf traversed (· > 3) [1, 2, 5]  -- true
+anyOf traversed (· > 10) [1, 2, 5] -- false
+```
+-/
+def anyOf {s a : Type _} [Inhabited (List a)]
+    (fld : Fold' s a) (pred : a → Bool) (s₀ : s) : Bool :=
+  (toList fld s₀).any pred
+
+/--
+Check if all foci of the fold match a predicate.
+
+```lean
+allOf traversed (· > 0) [1, 2, 3]  -- true
+allOf traversed (· > 2) [1, 2, 3]  -- false
+```
+-/
+def allOf {s a : Type _} [Inhabited (List a)]
+    (fld : Fold' s a) (pred : a → Bool) (s₀ : s) : Bool :=
+  (toList fld s₀).all pred
+
+/--
+Find the first focus that matches a predicate.
+
+```lean
+findOf traversed (· > 2) [1, 2, 3, 4]  -- some 3
+findOf traversed (· > 10) [1, 2, 3]    -- none
+```
+-/
+def findOf {s a : Type _} [Inhabited (List a)]
+    (fld : Fold' s a) (pred : a → Bool) (s₀ : s) : Option a :=
+  (toList fld s₀).find? pred
+
+/--
+Count the number of foci in the fold.
+
+```lean
+lengthOf traversed [1, 2, 3, 4, 5]  -- 5
+lengthOf traversed []               -- 0
+```
+-/
+def lengthOf {s a : Type _} [Inhabited (List a)]
+    (fld : Fold' s a) (s₀ : s) : Nat :=
+  (toList fld s₀).length
+
+/--
+Sum all numeric foci.
+
+```lean
+sumOf traversed [1, 2, 3, 4, 5]  -- 15
+```
+-/
+def sumOf {s a : Type _} [Inhabited (List a)] [Add a] [OfNat a 0]
+    (fld : Fold' s a) (s₀ : s) : a :=
+  (toList fld s₀).foldl (· + ·) 0
+
+/--
+Check if the fold has no foci.
+
+```lean
+nullOf traversed []       -- true
+nullOf traversed [1, 2]   -- false
+```
+-/
+def nullOf {s a : Type _} [Inhabited (List a)]
+    (fld : Fold' s a) (s₀ : s) : Bool :=
+  (toList fld s₀).isEmpty
+
 end Fold
 
 end Collimator

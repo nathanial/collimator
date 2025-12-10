@@ -52,6 +52,8 @@ import Collimator.Combinators.Composition
 import Collimator.Combinators.Operators
 import Collimator.Combinators.Indexed
 import Collimator.Combinators.Filtered
+import Collimator.Combinators.ListOps
+import Collimator.Combinators.PrismOps
 
 -- Type instances
 import Collimator.Instances.Array
@@ -73,3 +75,6 @@ import Collimator.Theorems.TraversalFusion
 
 -- Derive macros
 import Collimator.Derive.Lenses
+
+-- Helpers for type inference
+import Collimator.Helpers

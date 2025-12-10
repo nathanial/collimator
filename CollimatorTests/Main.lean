@@ -16,6 +16,7 @@ import CollimatorTests.GetterReview
 import CollimatorTests.PropertyTests
 import CollimatorTests.ConcreteProfunctors
 import CollimatorTests.EdgeCases
+import CollimatorTests.NewCombinators
 
 /-!
 # Test Runner for Collimator
@@ -60,6 +61,7 @@ def main : IO UInt32 := do
   exitCode := exitCode + (← runTests "Property Tests" CollimatorTests.PropertyTests.cases)
   exitCode := exitCode + (← runTests "Concrete Profunctors" CollimatorTests.ConcreteProfunctors.cases)
   exitCode := exitCode + (← runTests "Edge Cases" CollimatorTests.EdgeCases.cases)
+  exitCode := exitCode + (← runTests "New Combinators" CollimatorTests.NewCombinators.cases)
 
   IO.println ""
   if exitCode == 0 then

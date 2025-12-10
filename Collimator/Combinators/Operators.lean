@@ -120,4 +120,24 @@ scoped infixr:80 "%~" => fun optic f => Collimator.Poly.over optic f
 /-- Set the focus of a setter-like optic to a constant value. -/
 scoped infixr:80 ".~" => fun optic value => Collimator.Poly.set optic value
 
+/-!
+## Monomorphic Operators
+
+These operators work directly with the monomorphic API functions (`view'`, `over'`, etc.),
+avoiding type class resolution overhead for simple cases where you're working with
+monomorphic optics like `Lens'` or `Prism'`.
+-/
+
+/-- View through a lens using monomorphic API. Avoids typeclass resolution. -/
+scoped infixl:60 " ^.' " => fun s l => Collimator.view' l s
+
+/-- Set through a lens using monomorphic API. Avoids typeclass resolution. -/
+scoped notation:80 l " .~' " v => Collimator.set' l v
+
+/-- Modify through a lens using monomorphic API. Avoids typeclass resolution. -/
+scoped notation:80 l " %~' " f => Collimator.over' l f
+
+/-- Preview through a prism using monomorphic API. Avoids typeclass resolution. -/
+scoped infixl:60 " ^?' " => fun s p => Collimator.preview' p s
+
 end Collimator.Operators
