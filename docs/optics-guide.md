@@ -18,7 +18,16 @@ Welcome! This guide explains every optic type and typeclass in the Collimator li
    - [Review](#review---construction-only)
 4. [The Optic Hierarchy](#the-optic-hierarchy)
 5. [Profunctor Typeclasses](#profunctor-typeclasses-the-theory)
-6. [Quick Reference](#quick-reference)
+6. [Advanced Combinators](#advanced-combinators)
+   - [Filtering](#filtering-combinators)
+   - [Indexed Optics](#indexed-optics)
+   - [List Operations](#list-operations)
+   - [Bitraversals](#bitraversals)
+   - [Plated (Recursive Structures)](#plated-recursive-structures)
+   - [Prism Combinators](#prism-combinators)
+7. [Container Instances](#container-instances)
+8. [Debug & Integration](#debug--integration)
+9. [Quick Reference](#quick-reference)
 
 ---
 
@@ -512,6 +521,552 @@ This "profunctor optics" encoding has key advantages:
 2. **Type-safe**: The profunctor constraints ensure only valid operations compile
 3. **Extensible**: New optic types can be added by defining new constraints
 4. **Efficient**: No intermediate data structures when composing
+
+---
+
+## Advanced Combinators
+
+Collimator provides powerful combinators for real-world scenarios that go beyond basic optics.
+
+### Filtering Combinators
+
+Filter which elements a traversal focuses on based on predicates.
+
+**`filtered`** - Restrict any traversal to elements matching a predicate:
+
+```lean
+import Collimator.Combinators.Filtered
+open Collimator.Combinators
+
+-- Double only positive numbers in a list
+over (filtered traversed (· > 0)) (· * 2) [-1, 2, -3, 4]
+-- Result: [-1, 4, -3, 8]
+
+-- Works with any traversal
+over (filtered employeeTraversal (·.department == "Engineering"))
+     (fun e => { e with salary := e.salary * 110 / 100 })
+     company
+```
+
+**`filteredList`** - Shorthand for `filtered traversed`:
+
+```lean
+-- These are equivalent:
+over (filteredList (· > 0)) (· * 2) nums
+over (filtered traversed (· > 0)) (· * 2) nums
+```
+
+**`ifilteredList`** - Filter with access to both index and value:
+
+```lean
+-- Modify only elements at even indices
+over (ifilteredList fun i _ => i % 2 == 0) (· ++ "!") ["a", "b", "c", "d"]
+-- Result: ["a!", "b", "c!", "d"]
+
+-- Modify elements where index equals value
+over (ifilteredList fun i v => i == v) (· * 10) [0, 5, 2, 3, 8]
+-- Result: [0, 5, 20, 30, 8]
+```
+
+---
+
+### Indexed Optics
+
+Access elements by their position/key in a container.
+
+**`HasIx` typeclass** - Focus on a single indexed position (0-or-1 focus):
+
+```lean
+import Collimator.Combinators.Indexed
+open Collimator.Indexed
+
+-- Modify element at index 2
+over (ix 2) (· * 10) [1, 2, 3, 4, 5]
+-- Result: [1, 2, 30, 4, 5]
+
+-- Out of bounds is a no-op
+over (ix 10) (· * 10) [1, 2, 3]
+-- Result: [1, 2, 3]
+```
+
+**`HasAt` typeclass** - Lens to optional element at index:
+
+```lean
+-- Get optional element
+view' (atLens 1) ["a", "b", "c"]   -- some "b"
+view' (atLens 5) ["a", "b", "c"]   -- none
+
+-- Can also be used to delete by setting to none
+set' (atLens 1) none ["a", "b", "c"]  -- ["a", "c"] (depending on impl)
+```
+
+**`itraversed`** - Traverse with index information:
+
+```lean
+import Collimator.Instances.List
+open Collimator.Instances.List
+
+-- Get (index, value) pairs
+toListOf itraversed ["a", "b", "c"]
+-- [(0, "a"), (1, "b"), (2, "c")]
+
+-- Modify values using their indices
+over itraversed (fun (i, v) => (i, s!"{i}: {v}")) ["a", "b"]
+-- [(0, "0: a"), (1, "1: b")]
+```
+
+**Available instances:**
+
+| Container | `ix` | `atLens` | `itraversed` | `traversed` |
+|-----------|------|----------|--------------|-------------|
+| `List α`  | `Nat` | `Nat` | Yes | Yes |
+| `Array α` | `Nat` | `Nat` | Yes | Yes |
+| `String`  | `Nat` | `Nat` | Yes | Yes |
+| `Option α`| `Unit`| `Unit`| No | No |
+
+---
+
+### List Operations
+
+Safe operations on list structure without runtime errors.
+
+**`_head`** - Safely access the first element (AffineTraversal):
+
+```lean
+import Collimator.Combinators.ListOps
+open Collimator.Combinators
+
+preview _head [1, 2, 3]        -- some 1
+preview _head ([] : List Int)  -- none
+
+over _head (· * 10) [1, 2, 3]  -- [10, 2, 3]
+over _head (· * 10) []         -- []
+```
+
+**`_last`** - Safely access the last element:
+
+```lean
+preview _last [1, 2, 3]        -- some 3
+over _last (· * 10) [1, 2, 3]  -- [1, 2, 30]
+```
+
+**`taking n`** - Traverse only the first `n` elements:
+
+```lean
+over (taking 2) (· * 10) [1, 2, 3, 4]  -- [10, 20, 3, 4]
+over (taking 0) (· * 10) [1, 2, 3]     -- [1, 2, 3]
+over (taking 10) (· * 10) [1, 2]       -- [10, 20]
+
+toListOf (taking 3) [1, 2, 3, 4, 5]    -- [1, 2, 3]
+```
+
+**`dropping n`** - Skip the first `n` elements, traverse the rest:
+
+```lean
+over (dropping 2) (· * 10) [1, 2, 3, 4]  -- [1, 2, 30, 40]
+toListOf (dropping 2) [1, 2, 3, 4, 5]    -- [3, 4, 5]
+```
+
+---
+
+### Bitraversals
+
+Work with both components of pairs or either branch of sums.
+
+```lean
+import Collimator.Combinators.Bitraversal
+open Collimator.Combinators.Bitraversal
+```
+
+**`both`** - Traverse both components of a homogeneous pair `(α × α)`:
+
+```lean
+-- Double both components
+over both (· * 2) (3, 5)
+-- (6, 10)
+
+-- Collect both values
+toListOf both (1, 2)
+-- [1, 2]
+
+-- Works with any type
+over both String.toUpper ("hello", "world")
+-- ("HELLO", "WORLD")
+```
+
+**`beside`** - Traverse elements in both parts of a pair using separate traversals:
+
+```lean
+-- Traverse all elements in both lists
+let listPair := ([1, 2], [3, 4, 5])
+over (beside traversed traversed) (· + 1) listPair
+-- ([2, 3], [4, 5, 6])
+
+-- Collect all elements from both sides
+toListOf (beside traversed traversed) (["a", "b"], ["c"])
+-- ["a", "b", "c"]
+
+-- Works with different container types on each side
+let mixed := (some 5, [1, 2])
+over (beside somePrism traversed) (· * 10) mixed
+-- (some 50, [10, 20])
+```
+
+**`chosen`** - Traverse whichever branch of `Sum α α` is present:
+
+```lean
+over chosen (· * 2) (Sum.inl 5)   -- Sum.inl 10
+over chosen (· * 2) (Sum.inr 7)   -- Sum.inr 14
+
+preview chosen (Sum.inl "hi")     -- some "hi"
+preview chosen (Sum.inr "bye")    -- some "bye"
+```
+
+**`swapped` / `swappedSum`** - Swap components:
+
+```lean
+view swapped (1, 2)                -- (2, 1)
+view swappedSum (Sum.inl 42)       -- Sum.inr 42
+view swappedSum (Sum.inr 99)       -- Sum.inl 99
+```
+
+---
+
+### Plated (Recursive Structures)
+
+The `Plated` typeclass enables powerful operations on recursive data structures.
+
+```lean
+import Collimator.Combinators.Plated
+open Collimator.Combinators.Plated
+```
+
+**Defining a Plated instance:**
+
+```lean
+inductive Tree (α : Type) where
+  | leaf : α → Tree α
+  | node : Tree α → Tree α → Tree α
+
+-- plate focuses on immediate children of the same type
+instance : Plated (Tree α) where
+  plate := traversal fun f t =>
+    match t with
+    | Tree.leaf _ => pure t  -- leaves have no Tree children
+    | Tree.node l r => pure Tree.node <*> f l <*> f r
+```
+
+**`transform`** - Bottom-up transformation (children first, then parent):
+
+```lean
+-- Simplify arithmetic expressions
+def simplify : Expr → Expr
+  | Expr.add (Expr.num 0) e => e  -- 0 + e → e
+  | Expr.add e (Expr.num 0) => e  -- e + 0 → e
+  | e => e
+
+-- Apply simplify to ALL subexpressions, bottom-up
+transform simplify expr
+```
+
+**`rewrite`** - Iteratively rewrite until no more changes:
+
+```lean
+-- Keep simplifying until fixpoint
+def trySimplify : Expr → Option Expr
+  | Expr.add (Expr.num 0) e => some e
+  | _ => none
+
+rewrite trySimplify complexExpr
+```
+
+**`universeList`** - Collect all descendants (transitive closure):
+
+```lean
+-- Get all subexpressions
+universeList myExpr
+-- [myExpr, child1, child2, grandchild1, grandchild2, ...]
+```
+
+**Other Plated operations:**
+
+```lean
+-- Children only (not recursive)
+childrenOf node           -- immediate children
+overChildren f node       -- transform immediate children
+
+-- Queries
+cosmosCount tree          -- total node count
+depth tree               -- maximum depth
+allOf predicate tree     -- all nodes satisfy predicate?
+anyOf predicate tree     -- any node satisfies predicate?
+findOf predicate tree    -- first matching node (Option)
+
+-- Top-down variants
+transformDown f tree     -- apply f first, then recurse
+rewriteDown f tree       -- try f first, then recurse
+```
+
+**Built-in instances:**
+
+```lean
+-- List is plated: children are tail sublists
+instance : Plated (List α)
+
+-- Option has no recursive structure
+instance : Plated (Option α)
+```
+
+---
+
+### Prism Combinators
+
+Additional operations for working with prisms.
+
+```lean
+import Collimator.Combinators.PrismOps
+open Collimator.Combinators
+```
+
+**`orElse`** - Try the first prism, fall back to the second:
+
+```lean
+-- Match either pattern
+def evenOrDiv3 : AffineTraversal' Int Int :=
+  orElse evenPrism div3Prism
+
+preview evenOrDiv3 4   -- some 4 (even)
+preview evenOrDiv3 9   -- some 9 (div by 3)
+preview evenOrDiv3 7   -- none (neither)
+```
+
+**`affineFromPartial`** - Build an AffineTraversal from preview/set:
+
+```lean
+def safeHead : AffineTraversal' (List a) a :=
+  affineFromPartial
+    (fun xs => xs.head?)
+    (fun xs a => match xs with
+      | [] => []
+      | _ :: rest => a :: rest)
+```
+
+**`prismFromPartial`** (in `Collimator.Prelude`):
+
+```lean
+-- Create a prism from a partial function
+def evenPrism : Prism' Int Int :=
+  prismFromPartial
+    (fun n => if n % 2 == 0 then some n else none)
+    id  -- review function
+
+preview evenPrism 4  -- some 4
+preview evenPrism 3  -- none
+review evenPrism 4   -- 4
+```
+
+**`failing`** - A prism that never matches:
+
+```lean
+preview failing x  -- always none
+over failing f x   -- always unchanged (identity)
+```
+
+---
+
+## Container Instances
+
+Collimator provides optics for common Lean containers.
+
+### List
+
+```lean
+import Collimator.Instances.List
+open Collimator.Instances.List
+
+-- Traverse all elements
+over traversed (· + 1) [1, 2, 3]  -- [2, 3, 4]
+
+-- Indexed traversal
+toListOf itraversed ["a", "b"]   -- [(0, "a"), (1, "b")]
+
+-- Index access
+over (ix 1) String.toUpper ["a", "b", "c"]  -- ["a", "B", "c"]
+view' (atLens 0) [1, 2, 3]                  -- some 1
+```
+
+### Array
+
+```lean
+import Collimator.Instances.Array
+open Collimator.Instances.Array
+
+-- Same API as List
+over traversed (· * 2) #[1, 2, 3]  -- #[2, 4, 6]
+over (ix 0) (· + 100) #[1, 2, 3]   -- #[101, 2, 3]
+```
+
+### Option
+
+```lean
+import Collimator.Instances.Option
+open Collimator.Instances.Option
+
+-- Focus on the Some case
+preview somePrism' (some 42)  -- some 42
+preview somePrism' none       -- none
+review somePrism' 42          -- some 42
+
+-- Modify if present
+over somePrism' (· + 1) (some 42)  -- some 43
+over somePrism' (· + 1) none       -- none
+```
+
+### String
+
+```lean
+import Collimator.Instances.String
+open Collimator.Instances.String
+
+-- String ↔ List Char isomorphism
+view chars "hello"            -- ['h', 'e', 'l', 'l', 'o']
+review chars ['h', 'i']       -- "hi"
+
+-- Traverse characters
+over traversed Char.toUpper "hello"  -- "HELLO"
+
+-- Indexed access
+over (ix 0) Char.toUpper "hello"     -- "Hello"
+view' (atLens 0) "abc"               -- some 'a'
+```
+
+### Sum
+
+```lean
+import Collimator.Instances.Sum
+open Collimator.Instances.Sum
+
+-- Focus on left or right branch
+preview left' (Sum.inl 42 : Sum Int String)   -- some 42
+preview left' (Sum.inr "hi" : Sum Int String) -- none
+preview right' (Sum.inr "hi")                 -- some "hi"
+```
+
+### Prod (Tuples)
+
+```lean
+-- Built into core Collimator
+view _1 (1, "hello")    -- 1
+view _2 (1, "hello")    -- "hello"
+set _1 99 (1, "hello")  -- (99, "hello")
+
+-- Or use helpers with explicit types
+import Collimator.Helpers
+open Collimator.Helpers
+
+view' (first' Int String) (1, "hello")   -- 1
+view' (second' Int String) (1, "hello")  -- "hello"
+```
+
+---
+
+## Debug & Integration
+
+### Debug Utilities
+
+Trace optic operations for debugging.
+
+```lean
+import Collimator.Debug
+open Collimator.Debug
+
+-- Wrap a lens to log operations
+let debugLens := tracedLens "myLens" myLens
+
+view' debugLens myStruct
+-- Prints: [myLens] view → <value>
+
+set' debugLens 42 myStruct
+-- Prints: [myLens] set ← 42
+
+-- Same for prisms
+let debugPrism := tracedPrism "somePrism" somePrism'
+preview' debugPrism (some 42)
+-- Prints: [somePrism] preview some 42 → some 42
+```
+
+**Runtime Law Checking:**
+
+```lean
+import Collimator.Debug.LawCheck
+
+-- Verify lens laws at runtime
+verifyLensLaws "myLens" myLens testValue [val1, val2, val3]
+-- Prints: ✓ myLens: All lens laws verified (3 samples)
+
+-- Individual law checks
+checkGetPut myLens value testStruct     -- Bool
+checkPutGet myLens value testStruct     -- Bool
+checkPutPut myLens v1 v2 testStruct     -- Bool
+
+-- Prism laws
+verifyPrismLaws "somePrism" somePrism' [val1, val2]
+
+-- Iso laws
+verifyIsoLaws "chars" charsIso [str1, str2]
+```
+
+### Error Guidance
+
+Safe operations with better error messages.
+
+```lean
+import Collimator.Poly.Guidance
+open Collimator.Poly.Guidance
+
+-- Safe view that returns Option
+viewSafe somePrism value          -- some x or none
+
+-- View with default value
+viewOrElse somePrism "default" value
+
+-- Check if focus exists
+hasFocus somePrism value          -- Bool
+
+-- Get informative error message
+prismViewError "somePrism"
+-- "Cannot use 'view' with Prism 'somePrism': prisms may not match. Use 'preview' instead."
+```
+
+### Integration Patterns
+
+Combine optics with Lean's monad transformers.
+
+```lean
+import Collimator.Integration
+open Collimator.Integration
+
+-- Validate through a lens (Except)
+def validateAge : Int → Except String Int
+  | n => if n >= 0 then .ok n else .error "Age must be non-negative"
+
+validateThrough ageLens validateAge person
+-- .ok updatedPerson or .error "Age must be non-negative"
+
+-- Extract with custom error
+previewOrError somePrism "Value not present" maybeValue
+-- .ok value or .error "Value not present"
+
+-- StateM integration
+getThrough lens         -- read focused value from state
+setThrough lens value   -- write focused value to state
+modifyThrough lens f    -- modify focused value in state
+zoom lens action        -- run action on focused substate
+
+-- ReaderM integration
+askThrough lens         -- read focused value from environment
+localThrough lens f action  -- modify environment for action
+```
 
 ---
 

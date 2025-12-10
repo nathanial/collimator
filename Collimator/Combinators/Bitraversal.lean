@@ -58,32 +58,38 @@ def both {α β : Type} : Traversal (α × α) (β × β) α β :=
 def both' (α : Type) : Traversal' (α × α) α := both
 
 /--
-Traverse two components using separate traversals combined.
+Traverse both parts of a pair, using separate traversals for each.
 
-Given traversals for two parts of a structure, create a traversal
-that visits all foci of both.
+Given a traversal for the left component and one for the right,
+create a traversal that visits all `a` foci in both parts of the pair.
 
 ## Example
 
 ```lean
--- Traverse first element of first pair and second element of second pair
-beside _1 _2 : Traversal' ((Int × String) × (Bool × Int)) Int
+-- Given a pair of lists, traverse all elements
+beside traversed traversed : Traversal' (List Int × List Int) Int
+
+over (beside traversed traversed) (· + 1) ([1, 2], [3, 4])
+-- ([2, 3], [4, 5])
+
+-- Collect all values from both sides
+toListOf (beside traversed traversed) (["a", "b"], ["c"])
+-- ["a", "b", "c"]
 ```
 -/
-def beside {s t a b : Type}
-    (l : Traversal s t a b) (r : Traversal s t a b) : Traversal s t a b :=
+def beside {s t s' t' a b : Type}
+    (l : Traversal s t a b) (r : Traversal s' t' a b)
+    : Traversal (s × s') (t × t') a b :=
   Collimator.traversal
     (fun {F : Type → Type} [Applicative F]
-      (f : a → F b) (s₀ : s) =>
-        -- First traverse with l, then with r
-        let afterL := Traversal.traverse' l f s₀
-        -- We need to sequence: afterL >>= traverse' r f
-        -- But traverse' returns F t, so we need to map traverse' r f over it
-        -- This is tricky because we traverse the same structure twice
-        -- Actually, beside should visit both sets of foci
-        -- For a proper implementation, we'd need to interleave or compose
-        -- Let's use a simpler approach: just sequence the two traversals
-        Traversal.traverse' l f s₀)
+      (f : a → F b) (pair : s × s') =>
+        -- Traverse left side with l, right side with r, combine results
+        pure Prod.mk <*> Traversal.traverse' l f pair.1 <*> Traversal.traverse' r f pair.2)
+
+/-- Monomorphic version of `beside`. -/
+def beside' {s s' a : Type}
+    (l : Traversal' s a) (r : Traversal' s' a)
+    : Traversal' (s × s') a := beside l r
 
 /--
 Traverse whichever branch is present in a homogeneous sum.

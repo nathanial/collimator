@@ -1,6 +1,7 @@
 import CollimatorTests.Framework
 import Collimator.Prelude
 import Collimator.Instances.String
+import Collimator.Instances.List
 import Collimator.Combinators.Bitraversal
 import Collimator.Combinators.Plated
 import Collimator.Poly
@@ -157,6 +158,48 @@ def bitraversalTests : List TestCase := [
       let r' := Collimator.Poly.view swappedSum right
       ensureEq "swap left" (Sum.inr 42) l'
       ensureEq "swap right" (Sum.inl 99) r'
+  },
+  {
+    name := "beside: traverse both sides of pair"
+    run := do
+      let pair := ([1, 2], [3, 4])
+      let listTrav : Traversal' (List Int) Int := Collimator.Instances.List.traversed
+      let t := beside listTrav listTrav
+      let result := Traversal.over' t (· + 1) pair
+      ensureEq "increment both lists" ([2, 3], [4, 5]) result
+  },
+  {
+    name := "beside: collect from both sides"
+    run := do
+      let pair := (["a", "b"], ["c"])
+      let listTrav : Traversal' (List String) String := Collimator.Instances.List.traversed
+      let t := beside listTrav listTrav
+      let result := Fold.toListTraversal t pair
+      ensureEq "collect all strings" ["a", "b", "c"] result
+  },
+  {
+    name := "beside': monomorphic version"
+    run := do
+      let pair := ([10, 20], [30])
+      let listTrav : Traversal' (List Int) Int := Collimator.Instances.List.traversed
+      let t := beside' listTrav listTrav
+      let result := Traversal.over' t (· * 2) pair
+      ensureEq "double all" ([20, 40], [60]) result
+  },
+  {
+    name := "beside: heterogeneous source types"
+    run := do
+      -- Left is Option, right is List
+      let pair : (Option Int × List Int) := (some 5, [1, 2])
+      let optTrav : Traversal' (Option Int) Int := Collimator.traversal
+        (fun {F} [Applicative F] (f : Int → F Int) (opt : Option Int) =>
+          match opt with
+          | none => pure none
+          | some x => Functor.map some (f x))
+      let listTrav : Traversal' (List Int) Int := Collimator.Instances.List.traversed
+      let t := beside optTrav listTrav
+      let result := Traversal.over' t (· + 10) pair
+      ensureEq "traverse option and list" (some 15, [11, 12]) result
   }
 ]
 
