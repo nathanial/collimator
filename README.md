@@ -1,8 +1,9 @@
+<p align="center">
+  <img src="logo.jpeg" alt="Collimator Logo">
+</p>
+
 # Collimator
 
-<p align="center">
-  <img src="logo.jpeg" alt="Collimator Logo" width="200">
-</p>
 
 A profunctor optics library for Lean 4.
 
