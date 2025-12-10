@@ -133,4 +133,97 @@ abbrev Fold' (s a : Type) := Fold s s a a
 abbrev Setter' (s a : Type) := Setter s s a a
 abbrev AffineTraversal' (s a : Type) := AffineTraversal s s a a
 
+/-!
+## Optic Hierarchy Coercions
+
+The optic types form a subtyping hierarchy based on their profunctor constraints:
+
+```
+        Iso
+       /   \
+    Lens   Prism
+       \   /
+   AffineTraversal ──→ Fold
+         |
+     Traversal ──→ Setter
+```
+
+These coercions allow using a more specific optic wherever a more general one is expected.
+For example, a `Lens` can be used as an `AffineTraversal` or `Fold`.
+
+Note: `Traversal → Fold` is not provided as a direct coercion because `Traversal` requires
+`Wandering P` while `Fold` only provides `Strong P + Choice P`. Use `Fold.toListTraversal`
+or similar functions to extract data from traversals.
+-/
+
+-- Iso can be used as any other optic (it has no constraints)
+
+/-- An Iso can be used as a Lens by providing the Strong constraint. -/
+instance : Coe (Iso s t a b) (Lens s t a b) where
+  coe i := ⟨fun {P} [Profunctor P] _ pab => i.toIso pab⟩
+
+/-- An Iso can be used as a Prism by providing the Choice constraint. -/
+instance : Coe (Iso s t a b) (Prism s t a b) where
+  coe i := ⟨fun {P} [Profunctor P] _ pab => i.toIso pab⟩
+
+/-- An Iso can be used as an AffineTraversal. -/
+instance : Coe (Iso s t a b) (AffineTraversal s t a b) where
+  coe i := ⟨fun {P} [Profunctor P] _ _ pab => i.toIso pab⟩
+
+/-- An Iso can be used as a Traversal. -/
+instance : Coe (Iso s t a b) (Traversal s t a b) where
+  coe i := ⟨fun {P} [Profunctor P] [Strong P] [Choice P] _ pab => i.toIso pab⟩
+
+/-- An Iso can be used as a Fold. -/
+instance : Coe (Iso s t a b) (Fold s t a b) where
+  coe i := ⟨fun {P} [Profunctor P] _ _ pab => i.toIso pab⟩
+
+/-- An Iso can be used as a Setter. -/
+instance : Coe (Iso s t a b) (Setter s t a b) where
+  coe i := ⟨fun {P} [Profunctor P] _ pab => i.toIso pab⟩
+
+-- Lens coercions
+
+/-- A Lens can be used as an AffineTraversal (lenses always succeed). -/
+instance : Coe (Lens s t a b) (AffineTraversal s t a b) where
+  coe l := ⟨fun {P} [Profunctor P] hStrong _ pab => l.toLens hStrong pab⟩
+
+/-- A Lens can be used as a Traversal. A lens focuses exactly one element, which is a valid traversal. -/
+instance : Coe (Lens s t a b) (Traversal s t a b) where
+  coe l := ⟨fun {P} [Profunctor P] [Strong P] [Choice P] _ pab => l.toLens inferInstance pab⟩
+
+/-- A Lens can be used as a Fold. -/
+instance : Coe (Lens s t a b) (Fold s t a b) where
+  coe l := ⟨fun {P} [Profunctor P] hStrong _ pab => l.toLens hStrong pab⟩
+
+/-- A Lens can be used as a Setter. -/
+instance : Coe (Lens s t a b) (Setter s t a b) where
+  coe l := ⟨fun {P} [Profunctor P] hStrong pab => l.toLens hStrong pab⟩
+
+-- Prism coercions
+
+/-- A Prism can be used as an AffineTraversal. -/
+instance : Coe (Prism s t a b) (AffineTraversal s t a b) where
+  coe p := ⟨fun {P} [Profunctor P] _ hChoice pab => p.toPrism hChoice pab⟩
+
+/-- A Prism can be used as a Traversal. A prism focuses 0 or 1 elements, which is a valid traversal. -/
+instance : Coe (Prism s t a b) (Traversal s t a b) where
+  coe p := ⟨fun {P} [Profunctor P] [Strong P] [Choice P] _ pab => p.toPrism inferInstance pab⟩
+
+/-- A Prism can be used as a Fold. -/
+instance : Coe (Prism s t a b) (Fold s t a b) where
+  coe p := ⟨fun {P} [Profunctor P] _ hChoice pab => p.toPrism hChoice pab⟩
+
+-- AffineTraversal coercions
+
+/-- An AffineTraversal can be used as a Traversal. -/
+instance : Coe (AffineTraversal s t a b) (Traversal s t a b) where
+  coe aff := ⟨fun {P} [Profunctor P] [Strong P] [Choice P] _ pab =>
+    aff.toAffineTraversal inferInstance inferInstance pab⟩
+
+/-- An AffineTraversal can be used as a Fold (same constraints). -/
+instance : Coe (AffineTraversal s t a b) (Fold s t a b) where
+  coe aff := ⟨fun {P} [Profunctor P] hStrong hChoice pab =>
+    aff.toAffineTraversal hStrong hChoice pab⟩
+
 end Collimator

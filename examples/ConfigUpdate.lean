@@ -1,11 +1,11 @@
+import Collimator.Prelude
+
 /-!
 # Configuration Management with Optics
 
 This example shows how optics simplify updating deeply nested configuration
 structures, a common pattern in application development.
 -/
-
-import Collimator.Prelude
 
 open Collimator
 open Collimator.Poly
@@ -93,7 +93,7 @@ def serverPort : Lens' AppConfig Nat := server ⊚ srvPort
 
 -- Path to optional log output
 open Collimator.Instances.Option in
-def logOutputPath : AffineTraversal' AppConfig String := logging ⊚ logOutput ⊚ somePrism'
+def logOutputPath : AffineTraversal' AppConfig String := logging ⊚ logOutput ⊚ somePrism' String
 
 /-! ## Sample Configuration -/
 
@@ -143,23 +143,23 @@ def applyProdConfig (config : AppConfig) : AppConfig :=
     & databasePort .~ 5432
     & loggingLevel .~ "warn"
     & cacheIsEnabled .~ true
-    & cache ⊚ cacheTtl .~ 7200
-    & cache ⊚ cacheMaxSize .~ 10000
-    & server ⊚ srvTimeout .~ 60
-    & database ⊚ dbMaxConns .~ 100
+    & (cache ⊚ cacheTtl) .~ 7200
+    & (cache ⊚ cacheMaxSize) .~ 10000
+    & (server ⊚ srvTimeout) .~ 60
+    & (database ⊚ dbMaxConns) .~ 100
 
 /-- Scale up configuration for high load -/
 def scaleUp (factor : Nat) (config : AppConfig) : AppConfig :=
   config
-    & database ⊚ dbMaxConns %~ (· * factor)
-    & cache ⊚ cacheMaxSize %~ (· * factor)
-    & server ⊚ srvTimeout %~ (· + 10)
+    & (database ⊚ dbMaxConns) %~ (· * factor)
+    & (cache ⊚ cacheMaxSize) %~ (· * factor)
+    & (server ⊚ srvTimeout) %~ (· + 10)
 
 /-- Sanitize config for logging (remove sensitive data) -/
 def sanitizeForLogging (config : AppConfig) : AppConfig :=
   config
-    & database ⊚ dbPassword .~ "***"
-    & database ⊚ dbUsername .~ "***"
+    & (database ⊚ dbPassword) .~ "***"
+    & (database ⊚ dbUsername) .~ "***"
 
 /-! ## Example Usage -/
 
@@ -186,22 +186,22 @@ def examples : IO Unit := do
   IO.println "After applying prod config:"
   IO.println s!"  Database host: {prodConfig ^. databaseHost}"
   IO.println s!"  Log level: {prodConfig ^. loggingLevel}"
-  IO.println s!"  Cache TTL: {prodConfig ^. cache ⊚ cacheTtl}"
-  IO.println s!"  Max DB connections: {prodConfig ^. database ⊚ dbMaxConns}"
+  IO.println s!"  Cache TTL: {prodConfig ^.' (cache ⊚ cacheTtl)}"
+  IO.println s!"  Max DB connections: {prodConfig ^.' (database ⊚ dbMaxConns)}"
   IO.println ""
 
   -- Scale up
   let scaledConfig := scaleUp 3 prodConfig
   IO.println "After scaling up by 3x:"
-  IO.println s!"  Max DB connections: {scaledConfig ^. database ⊚ dbMaxConns}"
-  IO.println s!"  Cache max size: {scaledConfig ^. cache ⊚ cacheMaxSize}"
+  IO.println s!"  Max DB connections: {scaledConfig ^.' (database ⊚ dbMaxConns)}"
+  IO.println s!"  Cache max size: {scaledConfig ^.' (cache ⊚ cacheMaxSize)}"
   IO.println ""
 
   -- Sanitize for logging
   let safeConfig := sanitizeForLogging defaultConfig
   IO.println "Sanitized for logging:"
-  IO.println s!"  DB password: {safeConfig ^. database ⊚ dbPassword}"
-  IO.println s!"  DB username: {safeConfig ^. database ⊚ dbUsername}"
+  IO.println s!"  DB password: {safeConfig ^.' (database ⊚ dbPassword)}"
+  IO.println s!"  DB username: {safeConfig ^.' (database ⊚ dbUsername)}"
   IO.println ""
 
   -- Access optional field

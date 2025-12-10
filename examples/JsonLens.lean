@@ -1,3 +1,8 @@
+import Collimator.Prelude
+import Collimator.Core.Profunctor
+import Collimator.Core.Strong
+import Collimator.Core.Choice
+
 /-!
 # JSON Navigation with Optics
 
@@ -5,10 +10,9 @@ This example demonstrates how to use prisms and traversals to navigate
 and modify JSON-like data structures in a type-safe manner.
 -/
 
-import Collimator.Prelude
-
 open Collimator
 open Collimator.Poly
+open Collimator.Core
 open Collimator.Combinators
 open scoped Collimator.Operators
 
@@ -111,15 +115,14 @@ def index (i : Nat) : AffineTraversal' JsonValue JsonValue :=
         | other => Sum.inl other)
       (fun
         | Sum.inl json => json
-        | Sum.inr (newVal, (items, idx)) => array (items.set idx newVal)
-        | Sum.inr _ => null)
+        | Sum.inr (newVal, (items, idx)) => array (items.set idx newVal))
       (Choice.right (Strong.first pab))⟩
 
 /-! ## Traversing All Array Elements -/
 
 /-- Traversal over all elements in a JSON array -/
 def elements : Traversal' JsonValue JsonValue :=
-  _array ⊚ Collimator.Instances.List.traversed
+  _array ⊚ (Collimator.Instances.List.traversed : Traversal' (List JsonValue) JsonValue)
 
 end JsonValue
 
@@ -154,50 +157,50 @@ def examples : IO Unit := do
   IO.println ""
 
   -- Access nested field: data.users[0].name
-  let firstUserName := field "users" ⊚ index 0 ⊚ field "name" ⊚ _string
-  IO.println s!"First user name: {preview firstUserName sampleData}"
+  let firstUserName : AffineTraversal' JsonValue String :=
+    field "users" ⊚ index 0 ⊚ field "name" ⊚ _string
+  IO.println s!"First user name: {AffineTraversalOps.preview' firstUserName sampleData}"
   -- Output: First user name: some "Alice"
 
   -- Access count field
-  let countPath := field "count" ⊚ _number
-  IO.println s!"Count: {preview countPath sampleData}"
+  let countPath : AffineTraversal' JsonValue Int := field "count" ⊚ _number
+  IO.println s!"Count: {AffineTraversalOps.preview' countPath sampleData}"
   -- Output: Count: some 3
 
   -- Modify: increment all ages by 1
-  let allAges := field "users" ⊚ elements ⊚ field "age" ⊚ _number
-  let updated := over allAges (· + 1) sampleData
+  let allAges : Traversal' JsonValue Int :=
+    field "users" ⊚ elements ⊚ field "age" ⊚ _number
+  let updated := Traversal.over' allAges (· + 1) sampleData
   IO.println s!"After incrementing ages:"
 
   -- Verify first user's new age
-  let firstAge := field "users" ⊚ index 0 ⊚ field "age" ⊚ _number
-  IO.println s!"  Alice's new age: {preview firstAge updated}"
+  let firstAge : AffineTraversal' JsonValue Int :=
+    field "users" ⊚ index 0 ⊚ field "age" ⊚ _number
+  IO.println s!"  Alice's new age: {AffineTraversalOps.preview' firstAge updated}"
   -- Output: Alice's new age: some 31
 
   -- Collect all names
-  let allNames := field "users" ⊚ elements ⊚ field "name" ⊚ _string
-  let names := Fold.toList allNames sampleData
+  let allNames : Traversal' JsonValue String :=
+    field "users" ⊚ elements ⊚ field "name" ⊚ _string
+  let names := Fold.toListTraversal allNames sampleData
   IO.println s!"All user names: {names}"
   -- Output: All user names: ["Alice", "Bob", "Charlie"]
 
   -- Check if any user is inactive
-  let allActive := field "users" ⊚ elements ⊚ field "active" ⊚ _bool
-  let anyInactive := Fold.anyOf allActive (· == false) sampleData
+  let allActive : Traversal' JsonValue Bool :=
+    field "users" ⊚ elements ⊚ field "active" ⊚ _bool
+  let anyInactive := Fold.anyOfTraversal allActive (· == false) sampleData
   IO.println s!"Any inactive users? {anyInactive}"
   -- Output: Any inactive users? true
-
-  -- Update specific user by name (using filtered)
-  -- Set Bob's active status to true
-  let bobActive := field "users" ⊚ elements ⊚ field "active" ⊚ _bool
-  -- Note: In a full implementation, you'd filter by name first
 
   IO.println ""
   IO.println "=== Construction with review ==="
 
   -- Build JSON values using review
   let newUser := JsonValue.object [
-    ("name", review _string "Diana"),
-    ("age", review _number 28),
-    ("active", review _bool true)
+    ("name", review' _string "Diana"),
+    ("age", review' _number 28),
+    ("active", review' _bool true)
   ]
   IO.println s!"New user: {repr newUser}"
 

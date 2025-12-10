@@ -1,3 +1,5 @@
+import Collimator.Prelude
+
 /-!
 # Form Validation with Prisms
 
@@ -5,8 +7,6 @@ This example demonstrates using prisms for type-safe form validation,
 where prisms act as validators that either succeed with a validated value
 or fail with the original input.
 -/
-
-import Collimator.Prelude
 
 open Collimator
 open Collimator.Poly
@@ -136,7 +136,7 @@ def combine {a b c : Type} (f : a → b → c)
   | _, .errors e => .errors e
 
 /-- Validate the entire form -/
-def validateForm (form : RawFormData) : ValidationResult ValidatedForm := do
+def validateForm (form : RawFormData) : ValidationResult ValidatedForm :=
   let nameResult := validateField validName "Name is required and must be at most 50 characters" form
   let emailResult := validateField validEmailField "Please enter a valid email address" form
   let ageResult := validateField validAgeField "Age must be a number between 0 and 150" form
@@ -237,9 +237,10 @@ def examples : IO Unit := do
 
   -- Using prisms for safe parsing
   IO.println "Parsing examples:"
-  IO.println s!"  Parse '42': {\"42\" ^? parseInt}"
-  IO.println s!"  Parse 'abc': {\"abc\" ^? parseInt}"
-  IO.println s!"  Parse and validate '25' (0-150): {\"25\" ^? parseInt ⊚ inRange 0 150}"
-  IO.println s!"  Parse and validate '200' (0-150): {\"200\" ^? parseInt ⊚ inRange 0 150}"
+  IO.println s!"  Parse '42': {preview parseInt "42"}"
+  IO.println s!"  Parse 'abc': {preview parseInt "abc"}"
+  let parseAndValidate : Prism' String Int := parseInt ⊚ inRange 0 150
+  IO.println s!"  Parse and validate '25' (0-150): {preview parseAndValidate "25"}"
+  IO.println s!"  Parse and validate '200' (0-150): {preview parseAndValidate "200"}"
 
 -- #eval examples

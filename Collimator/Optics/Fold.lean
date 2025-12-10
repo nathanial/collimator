@@ -12,6 +12,60 @@ open Batteries
 open Collimator.Core
 open Collimator.Concrete
 
+/-!
+## Foldable Typeclass
+
+`Foldable` captures optics that can extract a list of foci from a structure.
+This allows `toList`, `sumOf`, `lengthOf`, etc. to work polymorphically across
+`Fold`, `Lens`, `Prism`, `AffineTraversal`, and `Traversal`.
+-/
+
+/-- Typeclass for optics that can fold/collect their foci into a list. -/
+class Foldable (optic : Type → Type → Type → Type → Type 1) where
+  /-- Collect all foci into a list. -/
+  foldToList : ∀ {s t a b : Type} [Inhabited (List a)], optic s t a b → s → List a
+
+-- Instance for Fold
+instance : Foldable Fold where
+  foldToList fld s₀ :=
+    let forget : Forget (List _) _ _ := fun x => [x]
+    let lifted := fld.toFold (P := Forget (List _)) inferInstance inferInstance forget
+    lifted s₀
+
+-- Instance for Lens
+instance : Foldable Lens where
+  foldToList l s₀ :=
+    let forget : Forget (List _) _ _ := fun x => [x]
+    let lifted := l.toLens (P := Forget (List _)) inferInstance forget
+    lifted s₀
+
+-- Instance for Prism
+instance : Foldable Prism where
+  foldToList p s₀ :=
+    let forget : Forget (List _) _ _ := fun x => [x]
+    let lifted := p.toPrism (P := Forget (List _)) inferInstance forget
+    lifted s₀
+
+-- Instance for AffineTraversal
+instance : Foldable AffineTraversal where
+  foldToList aff s₀ :=
+    let forget : Forget (List _) _ _ := fun x => [x]
+    let lifted := aff.toAffineTraversal (P := Forget (List _)) inferInstance inferInstance forget
+    lifted s₀
+
+-- Instance for Traversal (uses Wandering instance of Forget)
+instance : Foldable Traversal where
+  foldToList tr s₀ :=
+    let forget : Forget (List _) _ _ := fun x => [x]
+    let lifted := tr.toTraversal (P := Forget (List _)) inferInstance forget
+    lifted s₀
+
+-- Instance for Iso
+instance : Foldable Iso where
+  foldToList i s₀ :=
+    let forget : Forget (List _) _ _ := fun x => [x]
+    let lifted := i.toIso (P := Forget (List _)) forget
+    lifted s₀
 
 namespace Fold
 
@@ -24,6 +78,18 @@ def ofLens {s t a b : Type}
 def ofAffine {s t a b : Type}
     (aff : Collimator.AffineTraversal s t a b) : Collimator.Fold s t a b :=
   ⟨fun {P} [Profunctor P] hStrong hChoice pab => aff.toAffineTraversal (P := P) hStrong hChoice pab⟩
+
+/-
+Note: There is no general `Traversal → Fold` coercion because `Traversal` requires
+`Wandering P` while `Fold` only provides `Strong P + Choice P`. You cannot construct
+a `Wandering` instance from just `Strong + Choice`.
+
+However, for specific operations like `toList`, we use `Forget R` which has a `Wandering`
+instance (when R has `One`, `Mul`, `Inhabited`), so traversals work with those functions.
+
+Use `toListTraversal`, `sumOfTraversal`, etc. for traversals, or use the coercion
+from `Lens`/`Prism`/`AffineTraversal` to `Fold` for those optic types.
+-/
 
 /-- Collect all focuses of a fold into a list. -/
 def toList {s a : Type} [Inhabited (List a)]
@@ -39,6 +105,43 @@ def toListTraversal {s a : Type} [Inhabited (List a)]
   let forget : Forget (List a) a a := fun x => [x]
   let lifted := tr.toTraversal (P := Forget (List a)) inferInstance forget
   lifted s₀
+
+/-!
+## Traversal-specific fold operations
+
+These functions provide the same functionality as the `Fold'` versions but work
+directly with `Traversal'`. They use `Forget R` which has a `Wandering` instance.
+-/
+
+/-- Check if any focus of a traversal matches a predicate. -/
+def anyOfTraversal {s a : Type} [Inhabited (List a)]
+    (tr : Traversal' s a) (pred : a → Bool) (s₀ : s) : Bool :=
+  (toListTraversal tr s₀).any pred
+
+/-- Check if all foci of a traversal match a predicate. -/
+def allOfTraversal {s a : Type} [Inhabited (List a)]
+    (tr : Traversal' s a) (pred : a → Bool) (s₀ : s) : Bool :=
+  (toListTraversal tr s₀).all pred
+
+/-- Find the first focus of a traversal that matches a predicate. -/
+def findOfTraversal {s a : Type} [Inhabited (List a)]
+    (tr : Traversal' s a) (pred : a → Bool) (s₀ : s) : Option a :=
+  (toListTraversal tr s₀).find? pred
+
+/-- Count the number of foci in a traversal. -/
+def lengthOfTraversal {s a : Type} [Inhabited (List a)]
+    (tr : Traversal' s a) (s₀ : s) : Nat :=
+  (toListTraversal tr s₀).length
+
+/-- Sum all numeric foci of a traversal. -/
+def sumOfTraversal {s a : Type} [Inhabited (List a)] [Add a] [OfNat a 0]
+    (tr : Traversal' s a) (s₀ : s) : a :=
+  (toListTraversal tr s₀).foldl (· + ·) 0
+
+/-- Check if a traversal has no foci. -/
+def nullOfTraversal {s a : Type} [Inhabited (List a)]
+    (tr : Traversal' s a) (s₀ : s) : Bool :=
+  (toListTraversal tr s₀).isEmpty
 
 /-- Compose a lens with a fold to focus deeper. -/
 @[inline] def composeLensFold
@@ -131,5 +234,67 @@ def nullOf {s a : Type} [Inhabited (List a)]
   (toList fld s₀).isEmpty
 
 end Fold
+
+/-!
+## Polymorphic Fold Operations
+
+These functions work with any optic that has a `Foldable` instance, including
+`Lens`, `Prism`, `AffineTraversal`, `Traversal`, and `Fold`.
+
+Example usage:
+```lean
+-- All of these work with `toListOf`:
+toListOf nameLens person           -- Lens
+toListOf somePrism' maybeValue     -- Prism
+toListOf affineTraversal structure -- AffineTraversal
+toListOf traversed list            -- Traversal
+toListOf fold structure            -- Fold
+```
+-/
+
+/-- Collect all foci of any foldable optic into a list. -/
+def toListOf {optic : Type → Type → Type → Type → Type 1} [Foldable optic]
+    {s t a b : Type} [Inhabited (List a)] (o : optic s t a b) (s₀ : s) : List a :=
+  Foldable.foldToList o s₀
+
+/-- Check if any focus matches a predicate. Works with any foldable optic. -/
+def anyOf {optic : Type → Type → Type → Type → Type 1} [Foldable optic]
+    {s t a b : Type} [Inhabited (List a)] (o : optic s t a b) (pred : a → Bool) (s₀ : s) : Bool :=
+  (toListOf o s₀).any pred
+
+/-- Check if all foci match a predicate. Works with any foldable optic. -/
+def allOf {optic : Type → Type → Type → Type → Type 1} [Foldable optic]
+    {s t a b : Type} [Inhabited (List a)] (o : optic s t a b) (pred : a → Bool) (s₀ : s) : Bool :=
+  (toListOf o s₀).all pred
+
+/-- Find first focus matching a predicate. Works with any foldable optic. -/
+def findOf {optic : Type → Type → Type → Type → Type 1} [Foldable optic]
+    {s t a b : Type} [Inhabited (List a)] (o : optic s t a b) (pred : a → Bool) (s₀ : s) : Option a :=
+  (toListOf o s₀).find? pred
+
+/-- Count the number of foci. Works with any foldable optic. -/
+def lengthOf {optic : Type → Type → Type → Type → Type 1} [Foldable optic]
+    {s t a b : Type} [Inhabited (List a)] (o : optic s t a b) (s₀ : s) : Nat :=
+  (toListOf o s₀).length
+
+/-- Sum all numeric foci. Works with any foldable optic. -/
+def sumOf {optic : Type → Type → Type → Type → Type 1} [Foldable optic]
+    {s t a b : Type} [Inhabited (List a)] [Add a] [OfNat a 0] (o : optic s t a b) (s₀ : s) : a :=
+  (toListOf o s₀).foldl (· + ·) 0
+
+/-- Check if the optic has no foci. Works with any foldable optic. -/
+def nullOf {optic : Type → Type → Type → Type → Type 1} [Foldable optic]
+    {s t a b : Type} [Inhabited (List a)] (o : optic s t a b) (s₀ : s) : Bool :=
+  (toListOf o s₀).isEmpty
+
+/-- Get the first focus if it exists. Works with any foldable optic. -/
+def firstOf {optic : Type → Type → Type → Type → Type 1} [Foldable optic]
+    {s t a b : Type} [Inhabited (List a)] (o : optic s t a b) (s₀ : s) : Option a :=
+  (toListOf o s₀).head?
+
+/-- Get the last focus if it exists. Works with any foldable optic. -/
+def lastOf {optic : Type → Type → Type → Type → Type 1} [Foldable optic]
+    {s t a b : Type} [Inhabited (List a)] (o : optic s t a b) (s₀ : s) : Option a :=
+  (toListOf o s₀).getLast?
 
 end Collimator

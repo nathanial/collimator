@@ -1,3 +1,5 @@
+import Collimator.Prelude
+
 /-!
 # Tree Traversal with Optics
 
@@ -5,8 +7,6 @@ This example demonstrates using traversals with recursive tree structures,
 showing how optics can focus on all nodes at a particular level or
 matching a condition.
 -/
-
-import Collimator.Prelude
 
 open Collimator
 open Collimator.Poly
@@ -19,19 +19,19 @@ open scoped Collimator.Operators
 inductive BinTree (α : Type) where
   | leaf : BinTree α
   | node : α → BinTree α → BinTree α → BinTree α
-  deriving Repr
+  deriving Repr, Inhabited
 
 /-- A rose tree (n-ary tree) -/
 structure RoseTree (α : Type) where
   value : α
   children : List (RoseTree α)
-  deriving Repr
+  deriving Repr, Inhabited
 
 /-- A file system tree -/
 inductive FSEntry where
   | file : String → Nat → FSEntry  -- name, size
   | dir : String → List FSEntry → FSEntry  -- name, contents
-  deriving Repr
+  deriving Repr, Inhabited
 
 namespace BinTree
 
@@ -44,7 +44,7 @@ def _nodeValue {α : Type} : Prism' (BinTree α) α :=
     (fun v => node v leaf leaf)
 
 /-- Lens for the value of a node (partial - assumes node) -/
-def nodeValue {α : Type} : Lens' (BinTree α) α :=
+def nodeValue {α : Type} [Inhabited α] : Lens' (BinTree α) α :=
   lens'
     (fun | node v _ _ => v | leaf => default)
     (fun t v => match t with
@@ -52,7 +52,7 @@ def nodeValue {α : Type} : Lens' (BinTree α) α :=
       | leaf => leaf)
 
 /-- Lens for left subtree of a node -/
-def leftTree {α : Type} [Inhabited α] : Lens' (BinTree α) (BinTree α) :=
+def leftTree {α : Type} : Lens' (BinTree α) (BinTree α) :=
   lens'
     (fun | node _ l _ => l | leaf => leaf)
     (fun t l => match t with
@@ -60,7 +60,7 @@ def leftTree {α : Type} [Inhabited α] : Lens' (BinTree α) (BinTree α) :=
       | leaf => leaf)
 
 /-- Lens for right subtree of a node -/
-def rightTree {α : Type} [Inhabited α] : Lens' (BinTree α) (BinTree α) :=
+def rightTree {α : Type} : Lens' (BinTree α) (BinTree α) :=
   lens'
     (fun | node _ _ r => r | leaf => leaf)
     (fun t r => match t with
@@ -73,9 +73,9 @@ partial def toList {α : Type} : BinTree α → List α
   | node v l r => toList l ++ [v] ++ toList r
 
 /-- Map over all values in a binary tree -/
-partial def map {α β : Type} (f : α → β) : BinTree α → BinTree β
+partial def mapTree {α β : Type} (f : α → β) : BinTree α → BinTree β
   | leaf => leaf
-  | node v l r => node (f v) (map f l) (map f r)
+  | node v l r => node (f v) (mapTree f l) (mapTree f r)
 
 /-- A traversal focusing on all values in the tree -/
 def values {α : Type} : Traversal' (BinTree α) α :=
@@ -99,19 +99,17 @@ def rootValue {α : Type} : Lens' (RoseTree α) α :=
 def childrenLens {α : Type} : Lens' (RoseTree α) (List (RoseTree α)) :=
   lens' (·.children) (fun t cs => { t with children := cs })
 
-/-- Traversal over immediate children -/
+/-- Traversal over immediate children using explicit composition function -/
 def immediateChildren {α : Type} : Traversal' (RoseTree α) (RoseTree α) :=
-  childrenLens ⊚ Collimator.Instances.List.traversed
+  composeLensTraversal childrenLens Collimator.Instances.List.traversed
 
-/-- Traversal over all values in the tree (breadth-first would need more work) -/
-def allValues {α : Type} : Traversal' (RoseTree α) α :=
-  Collimator.traversal fun {F} [Applicative F] f t =>
-    let rec go (tree : RoseTree α) : F (RoseTree α) :=
-      let goChildren : List (RoseTree α) → F (List (RoseTree α))
-        | [] => pure []
-        | c :: cs => (· :: ·) <$> go c <*> goChildren cs
-      RoseTree.mk <$> f tree.value <*> goChildren tree.children
-    go t
+/-- Collect all values from a rose tree (depth-first) -/
+partial def collectValues {α : Type} (t : RoseTree α) : List α :=
+  t.value :: t.children.flatMap collectValues
+
+/-- Map over all values in a rose tree (monomorphic - same type) -/
+partial def mapValues {α : Type} [Inhabited α] (f : α → α) (t : RoseTree α) : RoseTree α :=
+  { value := f t.value, children := t.children.map (mapValues f) }
 
 /-- Count total nodes -/
 partial def size {α : Type} (t : RoseTree α) : Nat :=
@@ -169,23 +167,30 @@ def dirContents : Traversal' FSEntry FSEntry :=
         | x :: xs => (· :: ·) <$> f x <*> goList xs
       dir n <$> goList contents
 
-/-- Recursively traverse all entries -/
-def allEntries : Traversal' FSEntry FSEntry :=
-  Collimator.traversal fun {F} [Applicative F] f e =>
-    let rec go (entry : FSEntry) : F FSEntry :=
-      match entry with
-      | file n s => f (file n s)
-      | dir n contents =>
-        let goList : List FSEntry → F (List FSEntry)
-          | [] => pure []
-          | x :: xs => (· :: ·) <$> go x <*> goList xs
-        f entry *> (dir n <$> goList contents)
-    go e
+/-- Collect all entries recursively -/
+partial def collectAll : FSEntry → List FSEntry
+  | e@(file _ _) => [e]
+  | e@(dir _ contents) => e :: contents.flatMap collectAll
+
+/-- Collect all file sizes -/
+partial def collectFileSizes : FSEntry → List Nat
+  | file _ s => [s]
+  | dir _ contents => contents.flatMap collectFileSizes
+
+/-- Collect all names -/
+partial def collectNames : FSEntry → List String
+  | file n _ => [n]
+  | dir n contents => n :: contents.flatMap collectNames
 
 /-- Calculate total size -/
 partial def totalSize : FSEntry → Nat
   | file _ s => s
   | dir _ contents => contents.foldl (fun acc e => acc + totalSize e) 0
+
+/-- Double all file sizes -/
+partial def doubleSizes : FSEntry → FSEntry
+  | file n s => file n (s * 2)
+  | dir n contents => dir n (contents.map doubleSizes)
 
 end FSEntry
 
@@ -244,11 +249,11 @@ def examples : IO Unit := do
   IO.println "Binary Tree:"
   IO.println s!"  Original values: {BinTree.toList sampleBinTree}"
 
-  let doubled := over BinTree.values (· * 2) sampleBinTree
+  let doubled := Traversal.over' BinTree.values (· * 2) sampleBinTree
   IO.println s!"  After doubling: {BinTree.toList doubled}"
 
-  -- Collect all values
-  let values := Fold.toList BinTree.values sampleBinTree
+  -- Collect all values using toListTraversal
+  let values := Fold.toListTraversal BinTree.values sampleBinTree
   IO.println s!"  Collected via traversal: {values}"
   IO.println ""
 
@@ -258,11 +263,11 @@ def examples : IO Unit := do
   IO.println s!"  Size: {RoseTree.size sampleRoseTree}"
   IO.println s!"  Depth: {RoseTree.depth sampleRoseTree}"
 
-  let allVals := Fold.toList RoseTree.allValues sampleRoseTree
+  let allVals := RoseTree.collectValues sampleRoseTree
   IO.println s!"  All values: {allVals}"
 
-  let uppercased := over RoseTree.allValues String.toUpper sampleRoseTree
-  let upperedVals := Fold.toList RoseTree.allValues uppercased
+  let uppercased := RoseTree.mapValues String.toUpper sampleRoseTree
+  let upperedVals := RoseTree.collectValues uppercased
   IO.println s!"  After uppercase: {upperedVals}"
   IO.println ""
 
@@ -271,15 +276,29 @@ def examples : IO Unit := do
   IO.println s!"  Total size: {FSEntry.totalSize sampleFS} bytes"
 
   -- Get all file sizes
-  let sizes := Fold.toList (FSEntry.allEntries ⊚ FSEntry.fileSize) sampleFS
+  let sizes := FSEntry.collectFileSizes sampleFS
   IO.println s!"  All file sizes: {sizes}"
 
   -- Get all entry names
-  let names := Fold.toList (FSEntry.allEntries ⊚ FSEntry.nameLens) sampleFS
+  let names := FSEntry.collectNames sampleFS
   IO.println s!"  All entry names: {names}"
 
   -- Double all file sizes (for testing)
-  let expanded := over (FSEntry.allEntries ⊚ FSEntry.fileSize) (· * 2) sampleFS
+  let expanded := FSEntry.doubleSizes sampleFS
   IO.println s!"  Total size after doubling: {FSEntry.totalSize expanded} bytes"
+
+  IO.println ""
+  IO.println "=== Optics Usage ==="
+
+  -- Using traversal with BinTree
+  let sum := Fold.sumOfTraversal BinTree.values sampleBinTree
+  IO.println s!"  Sum of binary tree values: {sum}"
+
+  let count := Fold.lengthOfTraversal BinTree.values sampleBinTree
+  IO.println s!"  Count of binary tree nodes: {count}"
+
+  -- Using immediate children traversal
+  let childCount := Fold.lengthOfTraversal RoseTree.immediateChildren sampleRoseTree
+  IO.println s!"  Rose tree immediate children: {childCount}"
 
 -- #eval examples
