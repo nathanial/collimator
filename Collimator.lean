@@ -54,6 +54,8 @@ import Collimator.Combinators.Indexed
 import Collimator.Combinators.Filtered
 import Collimator.Combinators.ListOps
 import Collimator.Combinators.PrismOps
+import Collimator.Combinators.Bitraversal
+import Collimator.Combinators.Plated
 
 -- Type instances
 import Collimator.Instances.Array
@@ -61,6 +63,7 @@ import Collimator.Instances.List
 import Collimator.Instances.Option
 import Collimator.Instances.Prod
 import Collimator.Instances.Sum
+import Collimator.Instances.String
 
 -- Theorems and proofs
 import Collimator.Theorems.IsoLaws
