@@ -12,7 +12,7 @@ namespace Setter
 def over' {s t a b : Type}
     (st : Setter s t a b) (f : a → b) : s → t :=
   let arrow := FunArrow.mk (α := a) (β := b) f
-  let transformed := st.toSetter (P := fun α β => FunArrow α β) inferInstance arrow
+  let transformed := st (P := fun α β => FunArrow α β) arrow
   fun s => transformed s
 
 /-- Replace the target of a setter with a constant value. -/

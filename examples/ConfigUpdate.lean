@@ -84,15 +84,15 @@ def features : Lens' AppConfig (List String) := lens' (·.features) (fun c f => 
 /-! ## Composed Paths -/
 
 -- Deep paths into the config
-def databaseHost : Lens' AppConfig String := database ⊚ dbHost
-def databasePort : Lens' AppConfig Nat := database ⊚ dbPort
-def cacheIsEnabled : Lens' AppConfig Bool := cache ⊚ cacheEnabled
-def loggingLevel : Lens' AppConfig String := logging ⊚ logLevel
-def serverPort : Lens' AppConfig Nat := server ⊚ srvPort
+def databaseHost : Lens' AppConfig String := database ∘ dbHost
+def databasePort : Lens' AppConfig Nat := database ∘ dbPort
+def cacheIsEnabled : Lens' AppConfig Bool := cache ∘ cacheEnabled
+def loggingLevel : Lens' AppConfig String := logging ∘ logLevel
+def serverPort : Lens' AppConfig Nat := server ∘ srvPort
 
 -- Path to optional log output
 open Collimator.Instances.Option in
-def logOutputPath : AffineTraversal' AppConfig String := logging ⊚ logOutput ⊚ somePrism' String
+def logOutputPath : AffineTraversal' AppConfig String := logging ∘ logOutput ∘ somePrism' String
 
 /-! ## Sample Configuration -/
 
@@ -129,36 +129,36 @@ def defaultConfig : AppConfig := {
 /-- Apply development environment settings -/
 def applyDevConfig (config : AppConfig) : AppConfig :=
   config
-    & databaseHost .~ "localhost"
-    & databasePort .~ 5432
-    & loggingLevel .~ "debug"
-    & cacheIsEnabled .~ false
-    & serverPort .~ 3000
+    & databaseHost .~' "localhost"
+    & databasePort .~' 5432
+    & loggingLevel .~' "debug"
+    & cacheIsEnabled .~' false
+    & serverPort .~' 3000
 
 /-- Apply production environment settings -/
 def applyProdConfig (config : AppConfig) : AppConfig :=
   config
-    & databaseHost .~ "db.production.internal"
-    & databasePort .~ 5432
-    & loggingLevel .~ "warn"
-    & cacheIsEnabled .~ true
-    & (cache ⊚ cacheTtl) .~ 7200
-    & (cache ⊚ cacheMaxSize) .~ 10000
-    & (server ⊚ srvTimeout) .~ 60
-    & (database ⊚ dbMaxConns) .~ 100
+    & databaseHost .~' "db.production.internal"
+    & databasePort .~' 5432
+    & loggingLevel .~' "warn"
+    & cacheIsEnabled .~' true
+    & (cache ∘ cacheTtl) .~' 7200
+    & (cache ∘ cacheMaxSize) .~' 10000
+    & (server ∘ srvTimeout) .~' 60
+    & (database ∘ dbMaxConns) .~' 100
 
 /-- Scale up configuration for high load -/
 def scaleUp (factor : Nat) (config : AppConfig) : AppConfig :=
   config
-    & (database ⊚ dbMaxConns) %~ (· * factor)
-    & (cache ⊚ cacheMaxSize) %~ (· * factor)
-    & (server ⊚ srvTimeout) %~ (· + 10)
+    & (database ∘ dbMaxConns) %~' (· * factor)
+    & (cache ∘ cacheMaxSize) %~' (· * factor)
+    & (server ∘ srvTimeout) %~' (· + 10)
 
 /-- Sanitize config for logging (remove sensitive data) -/
 def sanitizeForLogging (config : AppConfig) : AppConfig :=
   config
-    & (database ⊚ dbPassword) .~ "***"
-    & (database ⊚ dbUsername) .~ "***"
+    & (database ∘ dbPassword) .~' "***"
+    & (database ∘ dbUsername) .~' "***"
 
 /-! ## Example Usage -/
 
@@ -167,47 +167,47 @@ def examples : IO Unit := do
   IO.println ""
 
   -- View nested values
-  IO.println s!"Database host: {defaultConfig ^. databaseHost}"
-  IO.println s!"Cache enabled: {defaultConfig ^. cacheIsEnabled}"
-  IO.println s!"Log level: {defaultConfig ^. loggingLevel}"
+  IO.println s!"Database host: {defaultConfig ^.' databaseHost}"
+  IO.println s!"Cache enabled: {defaultConfig ^.' cacheIsEnabled}"
+  IO.println s!"Log level: {defaultConfig ^.' loggingLevel}"
   IO.println ""
 
   -- Apply environment-specific config
   let devConfig := applyDevConfig defaultConfig
   IO.println "After applying dev config:"
-  IO.println s!"  Database host: {devConfig ^. databaseHost}"
-  IO.println s!"  Log level: {devConfig ^. loggingLevel}"
-  IO.println s!"  Cache enabled: {devConfig ^. cacheIsEnabled}"
-  IO.println s!"  Server port: {devConfig ^. serverPort}"
+  IO.println s!"  Database host: {devConfig ^.' databaseHost}"
+  IO.println s!"  Log level: {devConfig ^.' loggingLevel}"
+  IO.println s!"  Cache enabled: {devConfig ^.' cacheIsEnabled}"
+  IO.println s!"  Server port: {devConfig ^.' serverPort}"
   IO.println ""
 
   let prodConfig := applyProdConfig defaultConfig
   IO.println "After applying prod config:"
-  IO.println s!"  Database host: {prodConfig ^. databaseHost}"
-  IO.println s!"  Log level: {prodConfig ^. loggingLevel}"
-  IO.println s!"  Cache TTL: {prodConfig ^.' (cache ⊚ cacheTtl)}"
-  IO.println s!"  Max DB connections: {prodConfig ^.' (database ⊚ dbMaxConns)}"
+  IO.println s!"  Database host: {prodConfig ^.' databaseHost}"
+  IO.println s!"  Log level: {prodConfig ^.' loggingLevel}"
+  IO.println s!"  Cache TTL: {prodConfig ^.' (cache ∘ cacheTtl)}"
+  IO.println s!"  Max DB connections: {prodConfig ^.' (database ∘ dbMaxConns)}"
   IO.println ""
 
   -- Scale up
   let scaledConfig := scaleUp 3 prodConfig
   IO.println "After scaling up by 3x:"
-  IO.println s!"  Max DB connections: {scaledConfig ^.' (database ⊚ dbMaxConns)}"
-  IO.println s!"  Cache max size: {scaledConfig ^.' (cache ⊚ cacheMaxSize)}"
+  IO.println s!"  Max DB connections: {scaledConfig ^.' (database ∘ dbMaxConns)}"
+  IO.println s!"  Cache max size: {scaledConfig ^.' (cache ∘ cacheMaxSize)}"
   IO.println ""
 
   -- Sanitize for logging
   let safeConfig := sanitizeForLogging defaultConfig
   IO.println "Sanitized for logging:"
-  IO.println s!"  DB password: {safeConfig ^.' (database ⊚ dbPassword)}"
-  IO.println s!"  DB username: {safeConfig ^.' (database ⊚ dbUsername)}"
+  IO.println s!"  DB password: {safeConfig ^.' (database ∘ dbPassword)}"
+  IO.println s!"  DB username: {safeConfig ^.' (database ∘ dbUsername)}"
   IO.println ""
 
   -- Access optional field
-  IO.println s!"Log output path: {defaultConfig ^? logOutputPath}"
+  IO.println s!"Log output path: {AffineTraversalOps.preview' logOutputPath defaultConfig}"
 
   -- Modify optional field if present
-  let config2 := over logOutputPath (· ++ ".bak") defaultConfig
-  IO.println s!"Modified log path: {config2 ^? logOutputPath}"
+  let config2 := AffineTraversalOps.over logOutputPath (· ++ ".bak") defaultConfig
+  IO.println s!"Modified log path: {AffineTraversalOps.preview' logOutputPath config2}"
 
 -- #eval examples

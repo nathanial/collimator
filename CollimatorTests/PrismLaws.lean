@@ -168,7 +168,7 @@ private def case_compositionPreviewReviewLaw : TestCase := {
   run := do
     let boxPrism : Prism' Container Shape := prism Container.buildBox Container.splitBox
     let circlePrism : Prism' Shape Int := prism Shape.buildCircle Shape.splitCircle
-    let composed : Prism' Container Int := composePrism boxPrism circlePrism
+    let composed : Prism' Container Int := boxPrism ∘ circlePrism
 
     let radius := 77
     let reviewed := review' composed radius
@@ -184,7 +184,7 @@ private def case_compositionReviewPreviewLaw : TestCase := {
   run := do
     let boxPrism : Prism' Container Shape := prism Container.buildBox Container.splitBox
     let circlePrism : Prism' Shape Int := prism Shape.buildCircle Shape.splitCircle
-    let composed : Prism' Container Int := composePrism boxPrism circlePrism
+    let composed : Prism' Container Int := boxPrism ∘ circlePrism
 
     let c : Container := Container.box (Shape.circle 99)
     match preview' composed c with
@@ -202,7 +202,7 @@ private def case_composedPreviewFailure : TestCase := {
   run := do
     let boxPrism : Prism' Container Shape := prism Container.buildBox Container.splitBox
     let circlePrism : Prism' Shape Int := prism Shape.buildCircle Shape.splitCircle
-    let composed : Prism' Container Int := composePrism boxPrism circlePrism
+    let composed : Prism' Container Int := boxPrism ∘ circlePrism
 
     let c : Container := Container.empty
     let result := preview' composed c
@@ -217,7 +217,7 @@ private def case_composedPreviewInnerFailure : TestCase := {
   run := do
     let boxPrism : Prism' Container Shape := prism Container.buildBox Container.splitBox
     let circlePrism : Prism' Shape Int := prism Shape.buildCircle Shape.splitCircle
-    let composed : Prism' Container Int := composePrism boxPrism circlePrism
+    let composed : Prism' Container Int := boxPrism ∘ circlePrism
 
     let c : Container := Container.box (Shape.rectangle 5 10)
     let result := preview' composed c
@@ -256,7 +256,7 @@ private def case_compositionLawfulInstance : TestCase := {
     -- The instance composedPrism_isLawful proves that composed build/split are lawful
     let boxPrism : Prism' Container Shape := prism Container.buildBox Container.splitBox
     let rectPrism : Prism' Shape (Int × Int) := prism Shape.buildRectangle Shape.splitRectangle
-    let composed : Prism' Container (Int × Int) := composePrism boxPrism rectPrism
+    let composed : Prism' Container (Int × Int) := boxPrism ∘ rectPrism
 
     -- Verify the composition works correctly
     let c := Container.box (Shape.rectangle 8 12)

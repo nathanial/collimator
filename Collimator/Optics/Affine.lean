@@ -16,7 +16,7 @@ namespace AffineTraversalOps
 def over {s t a b : Type}
     (aff : Collimator.AffineTraversal s t a b) (f : a → b) : s → t :=
   let arrow := FunArrow.mk (α := a) (β := b) f
-  let transformed := aff.toAffineTraversal (P := fun α β => FunArrow α β) inferInstance inferInstance arrow
+  let transformed := aff (P := fun α β => FunArrow α β) arrow
   fun s => transformed s
 
 /-- Set the target of an affine traversal to a constant value. -/
@@ -29,20 +29,20 @@ def preview' {s a : Type}
     (aff : Collimator.AffineTraversal' s a) (s₀ : s) : Option a :=
   let forget := fun a : a => some a
   let transformed :=
-    aff.toAffineTraversal (P := fun α β => Forget (Option a) α β) inferInstance inferInstance forget
+    aff (P := fun α β => Forget (Option a) α β) forget
   transformed s₀
 
 /-- Every prism is an affine traversal. -/
 def ofPrism {s t a b : Type}
     (p : Prism s t a b) : Collimator.AffineTraversal s t a b :=
-  ⟨fun {P} [Profunctor P] _hStrong hChoice pab =>
-    p.toPrism (P := P) hChoice pab⟩
+  fun {P} [Profunctor P] [Strong P] [Choice P] pab =>
+    p (P := P) pab
 
 /-- Every lens yields an affine traversal focusing exactly one target. -/
 def ofLens {s t a b : Type}
     (l : Lens s t a b) : Collimator.AffineTraversal s t a b :=
-  ⟨fun {P} [Profunctor P] hStrong _ pab =>
-    l.toLens (P := P) hStrong pab⟩
+  fun {P} [Profunctor P] [Strong P] [Choice P] pab =>
+    l (P := P) pab
 
 end AffineTraversalOps
 

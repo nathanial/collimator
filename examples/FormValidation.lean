@@ -17,49 +17,49 @@ open scoped Collimator.Operators
 def nonEmpty : Prism' String String :=
   prismFromPartial
     (fun s => if s.isEmpty then none else some s)
-    id
+    _root_.id
 
 /-- Prism for strings with minimum length -/
 def minLength (n : Nat) : Prism' String String :=
   prismFromPartial
     (fun s => if s.length >= n then some s else none)
-    id
+    _root_.id
 
 /-- Prism for strings with maximum length -/
 def maxLength (n : Nat) : Prism' String String :=
   prismFromPartial
     (fun s => if s.length <= n then some s else none)
-    id
+    _root_.id
 
 /-- Prism for strings matching a simple pattern (contains substring) -/
 def containsChar (c : Char) : Prism' String String :=
   prismFromPartial
     (fun s => if s.any (· == c) then some s else none)
-    id
+    _root_.id
 
 /-- Prism for valid email (simplified: must contain @) -/
 def validEmail : Prism' String String :=
   prismFromPartial
     (fun s => if s.containsSubstr "@" && s.length > 3 then some s else none)
-    id
+    _root_.id
 
 /-- Prism for integers in a range -/
 def inRange (lo hi : Int) : Prism' Int Int :=
   prismFromPartial
     (fun n => if lo <= n && n <= hi then some n else none)
-    id
+    _root_.id
 
 /-- Prism for positive integers -/
 def positive : Prism' Int Int :=
   prismFromPartial
     (fun n => if n > 0 then some n else none)
-    id
+    _root_.id
 
 /-- Prism for non-negative integers -/
 def nonNegative : Prism' Int Int :=
   prismFromPartial
     (fun n => if n >= 0 then some n else none)
-    id
+    _root_.id
 
 /-- Parse string to Int -/
 def parseInt : Prism' String Int :=
@@ -96,19 +96,19 @@ def formConfirm : Lens' RawFormData String := lens' (·.confirmPassword) (fun f 
 
 -- Composed validation: name must be non-empty and max 50 chars
 def validName : AffineTraversal' RawFormData String :=
-  formName ⊚ nonEmpty ⊚ maxLength 50
+  formName ∘ nonEmpty ∘ maxLength 50
 
 -- Email validation
 def validEmailField : AffineTraversal' RawFormData String :=
-  formEmail ⊚ validEmail
+  formEmail ∘ validEmail
 
 -- Age validation: parse to int, must be 0-150
 def validAgeField : AffineTraversal' RawFormData Int :=
-  formAge ⊚ parseInt ⊚ inRange 0 150
+  formAge ∘ parseInt ∘ inRange 0 150
 
 -- Password validation: min 8 chars
 def validPassword : AffineTraversal' RawFormData String :=
-  formPassword ⊚ minLength 8
+  formPassword ∘ minLength 8
 
 /-! ## Validation Functions -/
 
@@ -121,7 +121,7 @@ inductive ValidationResult (α : Type) where
 /-- Validate a single field with custom error message -/
 def validateField {s a : Type} (path : AffineTraversal' s a) (errMsg : String)
     (form : s) : ValidationResult a :=
-  match preview path form with
+  match AffineTraversalOps.preview' path form with
   | some v => .ok v
   | none => .errors [errMsg]
 
@@ -164,9 +164,9 @@ def validateForm (form : RawFormData) : ValidationResult ValidatedForm :=
 /-- Trim whitespace from all string fields -/
 def sanitizeForm (form : RawFormData) : RawFormData :=
   form
-    & formName %~ String.trim
-    & formEmail %~ String.trim
-    & formAge %~ String.trim
+    & formName %~' String.trim
+    & formEmail %~' String.trim
+    & formAge %~' String.trim
 
 /-! ## Example Usage -/
 
@@ -209,10 +209,10 @@ def examples : IO Unit := do
 
   -- Partial validation with preview
   IO.println "Individual field validation:"
-  IO.println s!"  Valid name in validForm: {validForm ^? validName}"
-  IO.println s!"  Valid name in invalidForm: {invalidForm ^? validName}"
-  IO.println s!"  Valid age in validForm: {validForm ^? validAgeField}"
-  IO.println s!"  Valid age in invalidForm: {invalidForm ^? validAgeField}"
+  IO.println s!"  Valid name in validForm: {AffineTraversalOps.preview' validName validForm}"
+  IO.println s!"  Valid name in invalidForm: {AffineTraversalOps.preview' validName invalidForm}"
+  IO.println s!"  Valid age in validForm: {AffineTraversalOps.preview' validAgeField validForm}"
+  IO.println s!"  Valid age in invalidForm: {AffineTraversalOps.preview' validAgeField invalidForm}"
   IO.println ""
 
   -- Sanitization
@@ -236,10 +236,10 @@ def examples : IO Unit := do
 
   -- Using prisms for safe parsing
   IO.println "Parsing examples:"
-  IO.println s!"  Parse '42': {preview parseInt "42"}"
-  IO.println s!"  Parse 'abc': {preview parseInt "abc"}"
-  let parseAndValidate : Prism' String Int := parseInt ⊚ inRange 0 150
-  IO.println s!"  Parse and validate '25' (0-150): {preview parseAndValidate "25"}"
-  IO.println s!"  Parse and validate '200' (0-150): {preview parseAndValidate "200"}"
+  IO.println s!"  Parse '42': {preview' parseInt "42"}"
+  IO.println s!"  Parse 'abc': {preview' parseInt "abc"}"
+  let parseAndValidate : Prism' String Int := parseInt ∘ inRange 0 150
+  IO.println s!"  Parse and validate '25' (0-150): {preview' parseAndValidate "25"}"
+  IO.println s!"  Parse and validate '200' (0-150): {preview' parseAndValidate "200"}"
 
 -- #eval examples

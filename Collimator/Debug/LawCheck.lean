@@ -2,6 +2,7 @@ import Collimator.Optics.Lens
 import Collimator.Optics.Prism
 import Collimator.Optics.Iso
 import Collimator.Poly
+import Collimator.Theorems.IsoLaws
 
 /-!
 # Runtime Law Verification for Optics
@@ -177,8 +178,8 @@ Check the Back-Forward law: `back (forward s) = s`
 Round-tripping through the iso and back should preserve the source.
 -/
 def checkBackForward {s a : Type} [BEq s] (i : Iso' s a) (s₀ : s) : Bool :=
-  let forward := Collimator.Poly.view i s₀
-  let back := Collimator.Poly.review i forward
+  let forward := Collimator.Theorems.isoForward i s₀
+  let back := Collimator.Theorems.isoBackward i forward
   back == s₀
 
 /--
@@ -187,8 +188,8 @@ Check the Forward-Back law: `forward (back a) = a`
 Round-tripping through the iso in reverse should preserve the focus.
 -/
 def checkForwardBack {s a : Type} [BEq a] (i : Iso' s a) (a₀ : a) : Bool :=
-  let back := Collimator.Poly.review i a₀
-  let forward := Collimator.Poly.view i back
+  let back := Collimator.Theorems.isoBackward i a₀
+  let forward := Collimator.Theorems.isoForward i back
   forward == a₀
 
 /--

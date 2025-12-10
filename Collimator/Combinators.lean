@@ -12,16 +12,33 @@ import Collimator.Core.Choice
 /-!
 # Collimator Combinators
 
-This module consolidates all optic combinators:
+This module provides optic combinators for working with profunctor optics.
 
-- **Composition**: Functions for composing different optic types
-- **Operators**: Infix operators for optic operations (⊚, ^., %~, .~, &)
-- **Indexed**: Index-based access typeclasses and functions
-- **Filtered**: Predicate-based traversal filtering
-- **ListOps**: Safe list operations (_head, _last, taking, dropping)
-- **PrismOps**: Prism combinators (orElse, affineFromPartial)
-- **Bitraversal**: Bifunctor traversals (both, beside, chosen)
-- **Plated**: Recursive structure traversals (transform, rewrite, universe)
+## Composition
+
+With type alias optics, standard function composition (`∘`) works naturally:
+
+```lean
+-- Compose two lenses
+let composed := outerLens ∘ innerLens
+
+-- Compose a lens with a prism (gives AffineTraversal)
+let affine := myLens ∘ myPrism
+
+-- Compose a lens with a traversal (gives Traversal)
+let trav := myLens ∘ myTraversal
+```
+
+The profunctor constraints are automatically propagated by Lean's type system.
+
+## Combinators Provided
+
+- **Filtering**: `filtered`, `filteredList`, `ifilteredList`
+- **Safe List Ops**: `_head`, `_last`, `taking`, `dropping`
+- **Prism Ops**: `orElse`, `affineFromPartial`
+- **Indexed**: `ix`, `atLens` for index-based access
+- **Bitraversal**: `both`, `beside`, `chosen` for bifunctors
+- **Plated**: `transform`, `rewrite`, `universe` for recursive structures
 -/
 
 namespace Collimator.Combinators
@@ -30,244 +47,6 @@ open Collimator
 open Collimator.Core
 open Collimator.Setter
 open Collimator.Traversal
-
-
-/-! ## Composition Functions -/
-
-/--
-Compose two isomorphisms.
--/
-@[inline] def composeIso
-    {s t a b u v : Type} (outer : Iso s t a b) (inner : Iso a b u v) :
-    Iso s t u v :=
-  fun {P} [Profunctor P] =>
-    outer.toIso (P := P) ∘ inner.toIso (P := P)
-
-/--
-Compose two lenses to focus through nested product-like structures.
--/
-@[inline] def composeLens
-    {s t a b u v : Type}
-    (outer : Lens s t a b) (inner : Lens a b u v) : Lens s t u v :=
-  fun {P} [Profunctor P] hStrong =>
-    fun puv => outer.toLens (P := P) hStrong (inner.toLens (P := P) hStrong puv)
-
-/--
-Compose two prisms to focus through nested sum-like structures.
--/
-@[inline] def composePrism
-    {s t a b u v : Type}
-    (outer : Prism s t a b) (inner : Prism a b u v) : Prism s t u v :=
-  fun {P} [Profunctor P] hChoice =>
-    fun puv => outer.toPrism (P := P) hChoice (inner.toPrism (P := P) hChoice puv)
-
-/--
-Compose a lens with a traversal. The resulting traversal iterates the inner
-focus for every focus selected by the outer lens.
--/
-@[inline] def composeLensTraversal
-    {s t a b u v : Type}
-    (outer : Lens s t a b) (inner : Traversal a b u v) :
-    Traversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] w =>
-    fun puv => outer.toLens (P := P) (inferInstance : Strong P)
-      (inner.toTraversal (P := P) w puv)
-
-/--
-Compose a traversal with a lens. The resulting traversal focuses the inner
-lens for every element selected by the outer traversal.
--/
-@[inline] def composeTraversalLens
-    {s t a b u v : Type}
-    (outer : Traversal s t a b) (inner : Lens a b u v) :
-    Traversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] w =>
-    fun puv => outer.toTraversal (P := P) w (inner.toLens (P := P) (inferInstance : Strong P) puv)
-
-/--
-Compose two traversals, applying the inner traversal to every focus yielded by
-the outer traversal.
--/
-@[inline] def composeTraversal
-    {s t a b u v : Type}
-    (outer : Traversal s t a b) (inner : Traversal a b u v) :
-    Traversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] w =>
-    fun puv => outer.toTraversal (P := P) w (inner.toTraversal (P := P) w puv)
-
-/--
-Compose an isomorphism with a traversal. The iso transforms the type, then the
-traversal focuses multiple elements.
--/
-@[inline] def composeIsoTraversal
-    {s t a b u v : Type}
-    (outer : Iso s t a b) (inner : Traversal a b u v) :
-    Traversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] w =>
-    fun puv => outer.toIso (P := P) (inner.toTraversal (P := P) w puv)
-
-/--
-Compose a lens with a prism. The lens focuses exactly one element, then the
-prism optionally matches a pattern within that element.
--/
-@[inline] def composeLensPrism
-    {s t a b u v : Type}
-    (outer : Lens s t a b) (inner : Prism a b u v) :
-    AffineTraversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] =>
-    fun puv => outer.toLens (P := P) (inferInstance : Strong P)
-      (inner.toPrism (P := P) (inferInstance : Choice P) puv)
-
-/--
-Compose a traversal with a prism. The traversal focuses many elements, then the
-prism filters by pattern matching.
--/
-@[inline] def composeTraversalPrism
-    {s t a b u v : Type}
-    (outer : Traversal s t a b) (inner : Prism a b u v) :
-    Traversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] w =>
-    fun puv => outer.toTraversal (P := P) w (inner.toPrism (P := P) (inferInstance : Choice P) puv)
-
-/--
-Compose a traversal with an affine traversal. The traversal focuses many elements,
-then the affine focuses at most one element within each.
--/
-@[inline] def composeTraversalAffine
-    {s t a b u v : Type}
-    (outer : Traversal s t a b) (inner : AffineTraversal a b u v) :
-    Traversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] w =>
-    fun puv => outer.toTraversal (P := P) w
-      (inner.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P) puv)
-
-/--
-Compose a lens with an affine traversal. The lens focuses exactly one element,
-then the affine focuses at most one element within that.
--/
-@[inline] def composeLensAffine
-    {s t a b u v : Type}
-    (outer : Lens s t a b) (inner : AffineTraversal a b u v) :
-    AffineTraversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] =>
-    fun puv => outer.toLens (P := P) (inferInstance : Strong P)
-      (inner.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P) puv)
-
-/--
-Compose an affine traversal with a lens. The affine focuses at most one element,
-then the lens focuses exactly one element within that.
--/
-@[inline] def composeAffineLens
-    {s t a b u v : Type}
-    (outer : AffineTraversal s t a b) (inner : Lens a b u v) :
-    AffineTraversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] =>
-    fun puv => outer.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P)
-      (inner.toLens (P := P) (inferInstance : Strong P) puv)
-
-/--
-Compose two affine traversals. Each focuses at most one element,
-so the composition also focuses at most one element.
--/
-@[inline] def composeAffine
-    {s t a b u v : Type}
-    (outer : AffineTraversal s t a b) (inner : AffineTraversal a b u v) :
-    AffineTraversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] =>
-    fun puv => outer.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P)
-      (inner.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P) puv)
-
-/--
-Compose an affine traversal with a prism. The affine focuses at most one element,
-then the prism optionally matches a pattern within that.
--/
-@[inline] def composeAffinePrism
-    {s t a b u v : Type}
-    (outer : AffineTraversal s t a b) (inner : Prism a b u v) :
-    AffineTraversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] =>
-    fun puv => outer.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P)
-      (inner.toPrism (P := P) (inferInstance : Choice P) puv)
-
-/--
-Compose a prism with an affine traversal. The prism optionally matches,
-then the affine focuses at most one element within that.
--/
-@[inline] def composePrismAffine
-    {s t a b u v : Type}
-    (outer : Prism s t a b) (inner : AffineTraversal a b u v) :
-    AffineTraversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] =>
-    fun puv => outer.toPrism (P := P) (inferInstance : Choice P)
-      (inner.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P) puv)
-
-/--
-Compose a prism with a lens. The prism optionally matches a pattern,
-then the lens focuses exactly one element within that.
--/
-@[inline] def composePrismLens
-    {s t a b u v : Type}
-    (outer : Prism s t a b) (inner : Lens a b u v) :
-    AffineTraversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] =>
-    fun puv => outer.toPrism (P := P) (inferInstance : Choice P)
-      (inner.toLens (P := P) (inferInstance : Strong P) puv)
-
-/--
-Compose a prism with a traversal. The prism optionally matches a pattern,
-then the traversal focuses multiple elements within that.
--/
-@[inline] def composePrismTraversal
-    {s t a b u v : Type}
-    (outer : Prism s t a b) (inner : Traversal a b u v) :
-    Traversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] w =>
-    fun puv => outer.toPrism (P := P) (inferInstance : Choice P)
-      (inner.toTraversal (P := P) w puv)
-
-/--
-Compose an affine traversal with a traversal. The affine focuses at most one element,
-then the traversal focuses multiple elements within that.
--/
-@[inline] def composeAffineTraversal
-    {s t a b u v : Type}
-    (outer : AffineTraversal s t a b) (inner : Traversal a b u v) :
-    Traversal s t u v :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] w =>
-    fun puv => outer.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P)
-      (inner.toTraversal (P := P) w puv)
-
-/-! ## Optic Conversions -/
-
-/--
-Convert a lens to a traversal. Every lens is a valid traversal that focuses
-on exactly one element.
--/
-@[inline] def lensToTraversal
-    {s t a b : Type}
-    (l : Lens s t a b) : Traversal s t a b :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] =>
-    l.toLens (P := P) (inferInstance : Strong P)
-
-/--
-Convert a prism to a traversal. Every prism is a valid traversal that focuses
-on zero or one element.
--/
-@[inline] def prismToTraversal
-    {s t a b : Type}
-    (p : Prism s t a b) : Traversal s t a b :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] =>
-    p.toPrism (P := P) (inferInstance : Choice P)
-
-/--
-Convert an affine traversal to a traversal. Every affine traversal is a valid
-traversal that focuses on zero or one element.
--/
-@[inline] def affineToTraversal
-    {s t a b : Type}
-    (aff : AffineTraversal s t a b) : Traversal s t a b :=
-  fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] =>
-    aff.toAffineTraversal (P := P) (inferInstance : Strong P) (inferInstance : Choice P)
 
 
 /-! ## Filtering Combinators -/
@@ -351,9 +130,7 @@ over _head (· * 10) []         -- []
 ```
 -/
 def _head {a : Type} : AffineTraversal' (List a) a :=
-  ⟨fun {P} [Profunctor P] hStrong hChoice pab =>
-    let _ : Strong P := hStrong
-    let _ : Choice P := hChoice
+  fun {P} [Profunctor P] [Strong P] [Choice P] pab =>
     -- Split list into Either [] (head, tail)
     Profunctor.dimap
       (fun xs : List a => match xs with
@@ -362,7 +139,7 @@ def _head {a : Type} : AffineTraversal' (List a) a :=
       (fun
         | Sum.inl xs => xs
         | Sum.inr (x, rest) => x :: rest)
-      (Choice.right (Strong.first pab))⟩
+      (Choice.right (Strong.first pab))
 
 /--
 Safely access the last element of a list.
@@ -376,9 +153,7 @@ over _last (· * 10) [1, 2, 3]  -- [1, 2, 30]
 ```
 -/
 def _last {a : Type} : AffineTraversal' (List a) a :=
-  ⟨fun {P} [Profunctor P] hStrong hChoice pab =>
-    let _ : Strong P := hStrong
-    let _ : Choice P := hChoice
+  fun {P} [Profunctor P] [Strong P] [Choice P] pab =>
     -- Split list into Either [] (init, last)
     let splitLast : List a → Sum (List a) (List a × a) :=
       fun xs =>
@@ -394,7 +169,7 @@ def _last {a : Type} : AffineTraversal' (List a) a :=
       (fun
         | Sum.inl xs => xs
         | Sum.inr (init, last) => init ++ [last])
-      (Choice.right (Strong.second pab))⟩
+      (Choice.right (Strong.second pab))
 
 /--
 Traverse the first `n` elements of a list.
@@ -460,9 +235,7 @@ preview evenOrDiv3 7   -- none (neither)
 -/
 def orElse {s a : Type}
     (p1 : Prism' s a) (p2 : Prism' s a) : AffineTraversal' s a :=
-  ⟨fun {P} [Profunctor P] hStrong hChoice pab =>
-    let _ : Strong P := hStrong
-    let _ : Choice P := hChoice
+  fun {P} [Profunctor P] [Strong P] [Choice P] pab =>
     -- Try p1 first, if Sum.inl (failed), try p2
     -- This requires constructing the affine traversal manually
     let tryBoth : s → Sum s (a × s) := fun s =>
@@ -481,7 +254,7 @@ def orElse {s a : Type}
           match preview' p1 origS with
           | some _ => review' p1 a
           | none => review' p2 a)
-      (Choice.right (Strong.first pab))⟩
+      (Choice.right (Strong.first pab))
 
 /--
 Construct an affine traversal from a preview and set function.
@@ -500,9 +273,7 @@ def headAffine : AffineTraversal' (List a) a :=
 def affineFromPartial {s a : Type}
     (preview_ : s → Option a)
     (set_ : s → a → s) : AffineTraversal' s a :=
-  ⟨fun {P} [Profunctor P] hStrong hChoice pab =>
-    let _ : Strong P := hStrong
-    let _ : Choice P := hChoice
+  fun {P} [Profunctor P] [Strong P] [Choice P] pab =>
     Profunctor.dimap
       (fun s => match preview_ s with
         | some a => Sum.inr (a, s)
@@ -510,7 +281,7 @@ def affineFromPartial {s a : Type}
       (fun
         | Sum.inl s => s
         | Sum.inr (a, s) => set_ s a)
-      (Choice.right (Strong.first pab))⟩
+      (Choice.right (Strong.first pab))
 
 end Collimator.Combinators
 

@@ -123,7 +123,7 @@ private def case_three_level_lens : TestCase := {
     let l2 : Lens' (((Int × Int) × Int)) ((Int × Int)) := _1
     let l3 : Lens' ((Int × Int)) Int := _1
 
-    let composed := composeLens l1 (composeLens l2 l3)
+    let composed := l1 ∘ (l2 l3)
 
     ensureEq "3-level view" 1 (view' composed nested)
     ensureEq "3-level set" ((((99, 2), 3), 4)) (set' composed 99 nested)
@@ -142,7 +142,7 @@ private def case_five_level_lens : TestCase := {
     let l3 : Lens' (((Int × Int) × Int)) ((Int × Int)) := _1
     let l4 : Lens' ((Int × Int)) Int := _1
 
-    let composed := composeLens l1 (composeLens l2 (composeLens l3 l4))
+    let composed := l1 ∘ (l2 (l3 ∘ l4))
 
     ensureEq "5-level view" 1 (view' composed nested)
     ensureEq "5-level set" (((((42, 2), 3), 4), 5)) (set' composed 42 nested)
@@ -159,7 +159,7 @@ private def case_lens_traversal_composition : TestCase := {
     let lensToList : Lens' (List Int × String) (List Int) := _1
     let traverseList : Traversal' (List Int) Int := Traversal.eachList
 
-    let composed := composeLensTraversal lensToList traverseList
+    let composed := lensToList traverseList
 
     let result := Traversal.over' composed (· + 10) pair
     ensureEq "Lens ∘ Traversal" (([11, 12, 13], "hello")) result
@@ -176,7 +176,7 @@ private def case_traversal_lens_composition : TestCase := {
     let traverseList : Traversal' (List (Int × String)) (Int × String) := Traversal.eachList
     let lensToFirst : Lens' (Int × String) Int := _1
 
-    let composed := composeTraversalLens traverseList lensToFirst
+    let composed := traverseList lensToFirst
 
     let result := Traversal.over' composed (· * 2) pairs
     ensureEq "Traversal ∘ Lens" ([(2, "a"), (4, "b"), (6, "c")]) result
@@ -194,7 +194,7 @@ private def case_lens_prism_composition : TestCase := {
     let lensToOpt : Lens' (Option Int × String) (Option Int) := _1
     let prismToSome : Prism' (Option Int) Int := Collimator.Instances.Option.somePrism' (α := Int)
 
-    let composed := composeLensPrism lensToOpt prismToSome
+    let composed := lensToOpt prismToSome
 
     let preview1 := AffineTraversalOps.preview' composed pair1
     ensureEq "Lens ∘ Prism preview some" (some 42) preview1
@@ -250,7 +250,7 @@ private def case_nested_list_traversal : TestCase := {
     let outerTr : Traversal' (List (List Int)) (List Int) := Traversal.eachList
     let innerTr : Traversal' (List Int) Int := Traversal.eachList
 
-    let composed := composeTraversal outerTr innerTr
+    let composed := outerTr ∘ innerTr
     let result := Traversal.over' composed (· * 10) nestedList
 
     ensureEq "Nested traversal" ([[10, 20], [30, 40, 50], [60]]) result

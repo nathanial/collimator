@@ -31,7 +31,8 @@ private def case_isoDimap : TestCase := {
       iso (s := Int) (t := Int) (a := Int) (b := Int)
         (forward := fun n => n + 1) (back := fun n => n - 1)
     let double := FunArrow.mk (fun n : Int => n * 2)
-    let mapped := shiftIso.toIso (P := fun α β => FunArrow α β) double
+    -- With type-alias optics, the iso IS the polymorphic function
+    let mapped := shiftIso (P := fun α β => FunArrow α β) double
     ensureEq "iso applies dimap" 7 (mapped 3)
 }
 

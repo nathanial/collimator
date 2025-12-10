@@ -156,7 +156,7 @@ Composed lenses satisfy GetPut law
 private def composed_getPut_prop (seed : Nat) : Bool :=
   let r := randomRectangle seed
   let v := randomInt (seed + 100)
-  let composed := Collimator.Combinators.composeLens Rectangle.topLeftLens Point.xLens
+  let composed := Collimator.Combinators.Rectangle.topLeftLens ∘ Point.xLens
   view' composed (set' composed v r) == v
 
 /--
@@ -164,7 +164,7 @@ Composed lenses satisfy PutGet law
 -/
 private def composed_putGet_prop (seed : Nat) : Bool :=
   let r := randomRectangle seed
-  let composed := Collimator.Combinators.composeLens Rectangle.topLeftLens Point.xLens
+  let composed := Collimator.Combinators.Rectangle.topLeftLens ∘ Point.xLens
   set' composed (view' composed r) r == r
 
 /--
@@ -174,7 +174,7 @@ private def composed_putPut_prop (seed : Nat) : Bool :=
   let r := randomRectangle seed
   let v := randomInt (seed + 100)
   let v' := randomInt (seed + 200)
-  let composed := Collimator.Combinators.composeLens Rectangle.topLeftLens Point.xLens
+  let composed := Collimator.Combinators.Rectangle.topLeftLens ∘ Point.xLens
   set' composed v (set' composed v' r) == set' composed v r
 
 /-! ## Test Cases -/
@@ -285,9 +285,9 @@ private def case_stress_deep_composition : TestCase := {
     let l3 : Lens' ((Int × Int) × Int) (Int × Int) := _1
     let l4 : Lens' (Int × Int) Int := _1
 
-    let composed := Collimator.Combinators.composeLens l1
-                   (Collimator.Combinators.composeLens l2
-                   (Collimator.Combinators.composeLens l3 l4))
+    let composed := l1
+                   (l2
+                   (Collimator.Combinators.l3 ∘ l4))
 
     ensure (view' composed nested == 1) "Deep view"
     ensure (view' composed (set' composed 99 nested) == 99) "Deep set"

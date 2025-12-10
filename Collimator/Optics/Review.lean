@@ -56,7 +56,7 @@ Uses the Tagged profunctor to extract just the constructor.
 -/
 def Review.ofPrism {s t a b : Type} (p : Prism s t a b) : Review t b :=
   ⟨fun b =>
-    @p.toPrism Tagged instProfunctorTagged instChoiceTagged b⟩
+    p (P := Tagged) b⟩
 
 /--
 Every Iso can be used as a Review (forgetful conversion).
@@ -64,7 +64,7 @@ Uses the Tagged profunctor to extract just the backward function.
 -/
 def Review.ofIso {s t a b : Type} (i : Iso s t a b) : Review t b :=
   ⟨fun b =>
-    @i.toIso Tagged instProfunctorTagged b⟩
+    i (P := Tagged) b⟩
 
 /--
 Compose two Reviews.

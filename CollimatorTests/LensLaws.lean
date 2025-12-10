@@ -133,7 +133,7 @@ private def case_compositionGetPutLaw : TestCase := {
     }
     let topLeftLens : Lens' Rectangle Point := lens' Rectangle.getLens_topLeft Rectangle.setLens_topLeft
     let xLens : Lens' Point Int := lens' Point.getLens_x Point.setLens_x
-    let composed : Lens' Rectangle Int := composeLens topLeftLens xLens
+    let composed : Lens' Rectangle Int := topLeftLens ∘ xLens
 
     let newValue := -50
     let modified := set' composed newValue r
@@ -153,7 +153,7 @@ private def case_compositionPutGetLaw : TestCase := {
     }
     let topLeftLens : Lens' Rectangle Point := lens' Rectangle.getLens_topLeft Rectangle.setLens_topLeft
     let yLens : Lens' Point Int := lens' Point.getLens_y Point.setLens_y
-    let composed : Lens' Rectangle Int := composeLens topLeftLens yLens
+    let composed : Lens' Rectangle Int := topLeftLens ∘ yLens
 
     let currentValue := view' composed r
     let unchanged := set' composed currentValue r
@@ -172,7 +172,7 @@ private def case_compositionPutPutLaw : TestCase := {
     }
     let topLeftLens : Lens' Rectangle Point := lens' Rectangle.getLens_topLeft Rectangle.setLens_topLeft
     let xLens : Lens' Point Int := lens' Point.getLens_x Point.setLens_x
-    let composed : Lens' Rectangle Int := composeLens topLeftLens xLens
+    let composed : Lens' Rectangle Int := topLeftLens ∘ xLens
 
     let intermediate := set' composed 777 r
     let final := set' composed 888 intermediate
@@ -221,10 +221,10 @@ private def case_compositionLawfulInstance : TestCase := {
     -- These compositions use the lawful instances
     let topLeftLens : Lens' Rectangle Point := lens' Rectangle.getLens_topLeft Rectangle.setLens_topLeft
     let xLens : Lens' Point Int := lens' Point.getLens_x Point.setLens_x
-    let comp1 : Lens' Rectangle Int := composeLens topLeftLens xLens
+    let comp1 : Lens' Rectangle Int := topLeftLens ∘ xLens
 
     let yLens : Lens' Point Int := lens' Point.getLens_y Point.setLens_y
-    let comp2 : Lens' Rectangle Int := composeLens topLeftLens yLens
+    let comp2 : Lens' Rectangle Int := topLeftLens ∘ yLens
 
     -- Verify the compositions work correctly
     ensureEq "Composed X view" 0 (view' comp1 r)

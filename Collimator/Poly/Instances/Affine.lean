@@ -95,7 +95,7 @@ The Strong and Choice instances for Star handle the affine structure:
 instance : HasTraverse AffineTraversal where
   traverse {_s _t _a _b F} [Applicative F] aff f s :=
     let star : Star F _a _b := Concrete.Star.mk f
-    let result := aff.toAffineTraversal (P := Star F) inferInstance inferInstance star
+    let result := aff (P := Star F) star
     result s
 
 end Collimator.Poly

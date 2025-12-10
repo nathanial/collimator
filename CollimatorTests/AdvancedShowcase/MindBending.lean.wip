@@ -343,7 +343,7 @@ private def case_composedRecursiveTraversal : TestCase := {
         | some a => pure some <*> f a)
 
     -- Compose: first traverse tree, then traverse options
-    let composed := treeTr ⊚ optionTr
+    let composed := treeTr ∘ optionTr
 
     -- Transform: double all present values, skip None
     let doubled := treeOfOptions & composed %~ (· * 2)

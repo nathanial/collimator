@@ -8,6 +8,25 @@ namespace Collimator
 
 open Collimator.Core
 
+/-!
+# Optic Types
+
+Optics are defined as type aliases for polymorphic functions over profunctors.
+This encoding allows standard function composition (`∘`) to work naturally:
+
+```lean
+lens1 ∘ lens2  -- composes two lenses
+lens ∘ prism   -- composes a lens with a prism (gives AffineTraversal)
+```
+
+The profunctor constraints determine what operations each optic supports:
+- `Profunctor P` alone: Iso (bidirectional transformation)
+- `Strong P`: Lens (product-like access)
+- `Choice P`: Prism (sum-like access)
+- `Strong P + Choice P`: AffineTraversal (0-or-1 focus)
+- `Strong P + Choice P + Wandering P`: Traversal (0-to-many focus)
+-/
+
 /--
 `Optic C s t a b` quantifies over all profunctors satisfying the constraint `C`.
 -/
@@ -15,126 +34,78 @@ def Optic (C : (Type → Type → Type) → Prop)
     (s t a b : Type) : Type 1 :=
   ∀ {P : Type → Type → Type} [Profunctor P], C P → P a b → P s t
 
-/-- Isomorphisms are optics constrained only by the profunctor structure. -/
-structure Iso (s t a b : Type) : Type 1 where
-  toIso : ∀ {P : Type → Type → Type} [Profunctor P], P a b → P s t
+/--
+Isomorphisms are optics constrained only by the profunctor structure.
+An iso witnesses that `s` and `a` are isomorphic (and `t` and `b`).
+-/
+def Iso (s t a b : Type) : Type 1 :=
+  ∀ {P : Type → Type → Type} [Profunctor P], P a b → P s t
 
-/-- Coercion to construct an Iso from its profunctor encoding. -/
-instance : Coe (∀ {P : Type → Type → Type} [Profunctor P], P a b → P s t)
-              (Iso s t a b) where
-  coe f := ⟨f⟩
+/--
+Lenses require a `Strong` profunctor.
+A lens focuses on exactly one `a` inside an `s`.
+-/
+def Lens (s t a b : Type) : Type 1 :=
+  ∀ {P : Type → Type → Type} [Profunctor P] [Strong P], P a b → P s t
 
-/-- Coercion to apply an Iso as if it were its profunctor encoding. -/
-instance : CoeFun (Iso s t a b)
-              (fun _ => ∀ {P : Type → Type → Type} [Profunctor P], P a b → P s t) where
-  coe i := i.toIso
-
-/-- Lenses require a `Strong` profunctor. -/
-structure Lens (s t a b : Type) : Type 1 where
-  toLens : ∀ {P : Type → Type → Type} [Profunctor P], Strong P → P a b → P s t
-
-/-- Coercion to construct a Lens from its profunctor encoding. -/
-instance : Coe (∀ {P : Type → Type → Type} [Profunctor P], Strong P → P a b → P s t)
-              (Lens s t a b) where
-  coe f := ⟨f⟩
-
-/-- Coercion to apply a Lens as if it were its profunctor encoding. -/
-instance : CoeFun (Lens s t a b)
-              (fun _ => ∀ {P : Type → Type → Type} [Profunctor P], Strong P → P a b → P s t) where
-  coe l := l.toLens
-
-/-
+/--
 Prisms require a `Choice` profunctor.
+A prism focuses on an `a` that may or may not be present in `s`.
 -/
-structure Prism (s t a b : Type) : Type 1 where
-  toPrism : ∀ {P : Type → Type → Type} [Profunctor P], Choice P → P a b → P s t
-
-/-- Coercion to construct a Prism from its profunctor encoding. -/
-instance : Coe (∀ {P : Type → Type → Type} [Profunctor P], Choice P → P a b → P s t)
-              (Prism s t a b) where
-  coe f := ⟨f⟩
-
-/-- Coercion to apply a Prism as if it were its profunctor encoding. -/
-instance : CoeFun (Prism s t a b)
-              (fun _ => ∀ {P : Type → Type → Type} [Profunctor P], Choice P → P a b → P s t) where
-  coe p := p.toPrism
+def Prism (s t a b : Type) : Type 1 :=
+  ∀ {P : Type → Type → Type} [Profunctor P] [Choice P], P a b → P s t
 
 /--
-Traversals require a `Wandering` profunctor (which itself depends on `Strong`
-and `Choice`).
+Affine traversals require both `Strong` and `Choice`.
+An affine traversal focuses on at most one `a` inside an `s`.
 -/
-structure Traversal (s t a b : Type) : Type 1 where
-  toTraversal : ∀ {P : Type → Type → Type} [Profunctor P] [Strong P] [Choice P],
-    Wandering P → P a b → P s t
-
-/-- Coercion to construct a Traversal from its profunctor encoding. -/
-instance : Coe (∀ {P : Type → Type → Type} [Profunctor P] [Strong P] [Choice P],
-                 Wandering P → P a b → P s t)
-              (Traversal s t a b) where
-  coe f := ⟨f⟩
-
-/-- Coercion to apply a Traversal as if it were its profunctor encoding. -/
-instance : CoeFun (Traversal s t a b)
-              (fun _ => ∀ {P : Type → Type → Type} [Profunctor P] [Strong P] [Choice P],
-                        Wandering P → P a b → P s t) where
-  coe tr := tr.toTraversal
-
-/-- Folds are read-only optics that rely on both `Strong` and `Choice`. -/
-structure Fold (s t a b : Type) : Type 1 where
-  toFold : ∀ {P : Type → Type → Type} [Profunctor P], Strong P → Choice P → P a b → P s t
-
-/-- Coercion to construct a Fold from its profunctor encoding. -/
-instance : Coe (∀ {P : Type → Type → Type} [Profunctor P], Strong P → Choice P → P a b → P s t)
-              (Fold s t a b) where
-  coe f := ⟨f⟩
-
-/-- Coercion to apply a Fold as if it were its profunctor encoding. -/
-instance : CoeFun (Fold s t a b)
-              (fun _ => ∀ {P : Type → Type → Type} [Profunctor P], Strong P → Choice P → P a b → P s t) where
-  coe fld := fld.toFold
+def AffineTraversal (s t a b : Type) : Type 1 :=
+  ∀ {P : Type → Type → Type} [Profunctor P] [Strong P] [Choice P], P a b → P s t
 
 /--
-Setters are write-only optics constrained only by `Strong` profunctors.
+Traversals require `Strong`, `Choice`, and `Wandering` profunctors.
+A traversal focuses on zero or more `a` values inside an `s`.
 -/
-structure Setter (s t a b : Type) : Type 1 where
-  toSetter : ∀ {P : Type → Type → Type} [Profunctor P], Strong P → P a b → P s t
-
-/-- Coercion to construct a Setter from its profunctor encoding. -/
-instance : Coe (∀ {P : Type → Type → Type} [Profunctor P], Strong P → P a b → P s t)
-              (Setter s t a b) where
-  coe f := ⟨f⟩
-
-/-- Coercion to apply a Setter as if it were its profunctor encoding. -/
-instance : CoeFun (Setter s t a b)
-              (fun _ => ∀ {P : Type → Type → Type} [Profunctor P], Strong P → P a b → P s t) where
-  coe st := st.toSetter
+def Traversal (s t a b : Type) : Type 1 :=
+  ∀ {P : Type → Type → Type} [Profunctor P] [Strong P] [Choice P] [Wandering P], P a b → P s t
 
 /--
-Affine traversals update at most one focus and require `Strong` and `Choice`.
+Folds are read-only optics that require `Strong` and `Choice`.
+A fold extracts zero or more `a` values from an `s`.
 -/
-structure AffineTraversal (s t a b : Type) : Type 1 where
-  toAffineTraversal : ∀ {P : Type → Type → Type} [Profunctor P], Strong P → Choice P → P a b → P s t
+def Fold (s t a b : Type) : Type 1 :=
+  ∀ {P : Type → Type → Type} [Profunctor P] [Strong P] [Choice P], P a b → P s t
 
-/-- Coercion to construct an AffineTraversal from its profunctor encoding. -/
-instance : Coe (∀ {P : Type → Type → Type} [Profunctor P], Strong P → Choice P → P a b → P s t)
-              (AffineTraversal s t a b) where
-  coe f := ⟨f⟩
+/--
+Setters are write-only optics that require `Strong`.
+A setter modifies zero or more `a` values inside an `s`.
+-/
+def Setter (s t a b : Type) : Type 1 :=
+  ∀ {P : Type → Type → Type} [Profunctor P] [Strong P], P a b → P s t
 
-/-- Coercion to apply an AffineTraversal as if it were its profunctor encoding. -/
-instance : CoeFun (AffineTraversal s t a b)
-              (fun _ => ∀ {P : Type → Type → Type} [Profunctor P], Strong P → Choice P → P a b → P s t) where
-  coe aff := aff.toAffineTraversal
-
+/-- Monomorphic iso (source and target types are the same). -/
 abbrev Iso' (s a : Type) := Iso s s a a
-abbrev Lens' (s : Type) (a : Type) := Lens s s a a
+
+/-- Monomorphic lens (source and target types are the same). -/
+abbrev Lens' (s a : Type) := Lens s s a a
+
+/-- Monomorphic prism (source and target types are the same). -/
 abbrev Prism' (s a : Type) := Prism s s a a
-abbrev Traversal' (s a : Type) := Traversal s s a a
-abbrev Fold' (s a : Type) := Fold s s a a
-abbrev Setter' (s a : Type) := Setter s s a a
+
+/-- Monomorphic affine traversal (source and target types are the same). -/
 abbrev AffineTraversal' (s a : Type) := AffineTraversal s s a a
 
+/-- Monomorphic traversal (source and target types are the same). -/
+abbrev Traversal' (s a : Type) := Traversal s s a a
+
+/-- Monomorphic fold (source and target types are the same). -/
+abbrev Fold' (s a : Type) := Fold s s a a
+
+/-- Monomorphic setter (source and target types are the same). -/
+abbrev Setter' (s a : Type) := Setter s s a a
+
 /-!
-## Optic Hierarchy Coercions
+## Optic Hierarchy
 
 The optic types form a subtyping hierarchy based on their profunctor constraints:
 
@@ -148,82 +119,58 @@ The optic types form a subtyping hierarchy based on their profunctor constraints
      Traversal ──→ Setter
 ```
 
-These coercions allow using a more specific optic wherever a more general one is expected.
-For example, a `Lens` can be used as an `AffineTraversal` or `Fold`.
+With type aliases, this hierarchy is enforced by Lean's type system automatically.
+When you compose optics with `∘`, the result type has the union of all constraints:
 
-Note: `Traversal → Fold` is not provided as a direct coercion because `Traversal` requires
-`Wandering P` while `Fold` only provides `Strong P + Choice P`. Use `Fold.toListTraversal`
-or similar functions to extract data from traversals.
+- `Lens ∘ Lens` = `Lens` (both need Strong)
+- `Lens ∘ Prism` = `AffineTraversal` (needs Strong + Choice)
+- `Lens ∘ Traversal` = `Traversal` (needs Strong + Choice + Wandering)
+
+No explicit coercion instances are needed!
 -/
 
--- Iso can be used as any other optic (it has no constraints)
+/-!
+## Coercion Functions
 
-/-- An Iso can be used as a Lens by providing the Strong constraint. -/
-instance : Coe (Iso s t a b) (Lens s t a b) where
-  coe i := ⟨fun {P} [Profunctor P] _ pab => i.toIso pab⟩
+While standard function composition handles most cases automatically,
+these explicit coercion functions are provided for cases where you need
+to explicitly widen an optic's type.
+-/
 
-/-- An Iso can be used as a Prism by providing the Choice constraint. -/
-instance : Coe (Iso s t a b) (Prism s t a b) where
-  coe i := ⟨fun {P} [Profunctor P] _ pab => i.toIso pab⟩
+/-- Widen an Iso to a Lens. -/
+@[inline] def Iso.toLens {s t a b : Type} (i : Iso s t a b) : Lens s t a b :=
+  fun {P} [Profunctor P] [Strong P] => i
 
-/-- An Iso can be used as an AffineTraversal. -/
-instance : Coe (Iso s t a b) (AffineTraversal s t a b) where
-  coe i := ⟨fun {P} [Profunctor P] _ _ pab => i.toIso pab⟩
+/-- Widen an Iso to a Prism. -/
+@[inline] def Iso.toPrism {s t a b : Type} (i : Iso s t a b) : Prism s t a b :=
+  fun {P} [Profunctor P] [Choice P] => i
 
-/-- An Iso can be used as a Traversal. -/
-instance : Coe (Iso s t a b) (Traversal s t a b) where
-  coe i := ⟨fun {P} [Profunctor P] [Strong P] [Choice P] _ pab => i.toIso pab⟩
+/-- Widen an Iso to an AffineTraversal. -/
+@[inline] def Iso.toAffine {s t a b : Type} (i : Iso s t a b) : AffineTraversal s t a b :=
+  fun {P} [Profunctor P] [Strong P] [Choice P] => i
 
-/-- An Iso can be used as a Fold. -/
-instance : Coe (Iso s t a b) (Fold s t a b) where
-  coe i := ⟨fun {P} [Profunctor P] _ _ pab => i.toIso pab⟩
+/-- Widen an Iso to a Traversal. -/
+@[inline] def Iso.toTraversal {s t a b : Type} (i : Iso s t a b) : Traversal s t a b :=
+  fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] => i
 
-/-- An Iso can be used as a Setter. -/
-instance : Coe (Iso s t a b) (Setter s t a b) where
-  coe i := ⟨fun {P} [Profunctor P] _ pab => i.toIso pab⟩
+/-- Widen a Lens to an AffineTraversal. -/
+@[inline] def Lens.toAffine {s t a b : Type} (l : Lens s t a b) : AffineTraversal s t a b :=
+  fun {P} [Profunctor P] [Strong P] [Choice P] => l
 
--- Lens coercions
+/-- Widen a Lens to a Traversal. -/
+@[inline] def Lens.toTraversal {s t a b : Type} (l : Lens s t a b) : Traversal s t a b :=
+  fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] => l
 
-/-- A Lens can be used as an AffineTraversal (lenses always succeed). -/
-instance : Coe (Lens s t a b) (AffineTraversal s t a b) where
-  coe l := ⟨fun {P} [Profunctor P] hStrong _ pab => l.toLens hStrong pab⟩
+/-- Widen a Prism to an AffineTraversal. -/
+@[inline] def Prism.toAffine {s t a b : Type} (p : Prism s t a b) : AffineTraversal s t a b :=
+  fun {P} [Profunctor P] [Strong P] [Choice P] => p
 
-/-- A Lens can be used as a Traversal. A lens focuses exactly one element, which is a valid traversal. -/
-instance : Coe (Lens s t a b) (Traversal s t a b) where
-  coe l := ⟨fun {P} [Profunctor P] [Strong P] [Choice P] _ pab => l.toLens inferInstance pab⟩
+/-- Widen a Prism to a Traversal. -/
+@[inline] def Prism.toTraversal {s t a b : Type} (p : Prism s t a b) : Traversal s t a b :=
+  fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] => p
 
-/-- A Lens can be used as a Fold. -/
-instance : Coe (Lens s t a b) (Fold s t a b) where
-  coe l := ⟨fun {P} [Profunctor P] hStrong _ pab => l.toLens hStrong pab⟩
-
-/-- A Lens can be used as a Setter. -/
-instance : Coe (Lens s t a b) (Setter s t a b) where
-  coe l := ⟨fun {P} [Profunctor P] hStrong pab => l.toLens hStrong pab⟩
-
--- Prism coercions
-
-/-- A Prism can be used as an AffineTraversal. -/
-instance : Coe (Prism s t a b) (AffineTraversal s t a b) where
-  coe p := ⟨fun {P} [Profunctor P] _ hChoice pab => p.toPrism hChoice pab⟩
-
-/-- A Prism can be used as a Traversal. A prism focuses 0 or 1 elements, which is a valid traversal. -/
-instance : Coe (Prism s t a b) (Traversal s t a b) where
-  coe p := ⟨fun {P} [Profunctor P] [Strong P] [Choice P] _ pab => p.toPrism inferInstance pab⟩
-
-/-- A Prism can be used as a Fold. -/
-instance : Coe (Prism s t a b) (Fold s t a b) where
-  coe p := ⟨fun {P} [Profunctor P] _ hChoice pab => p.toPrism hChoice pab⟩
-
--- AffineTraversal coercions
-
-/-- An AffineTraversal can be used as a Traversal. -/
-instance : Coe (AffineTraversal s t a b) (Traversal s t a b) where
-  coe aff := ⟨fun {P} [Profunctor P] [Strong P] [Choice P] _ pab =>
-    aff.toAffineTraversal inferInstance inferInstance pab⟩
-
-/-- An AffineTraversal can be used as a Fold (same constraints). -/
-instance : Coe (AffineTraversal s t a b) (Fold s t a b) where
-  coe aff := ⟨fun {P} [Profunctor P] hStrong hChoice pab =>
-    aff.toAffineTraversal hStrong hChoice pab⟩
+/-- Widen an AffineTraversal to a Traversal. -/
+@[inline] def AffineTraversal.toTraversal {s t a b : Type} (aff : AffineTraversal s t a b) : Traversal s t a b :=
+  fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] => aff
 
 end Collimator

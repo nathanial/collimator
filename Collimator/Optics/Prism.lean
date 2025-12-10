@@ -54,24 +54,23 @@ A lawful prism satisfies:
 -/
 def prism {s t a b : Type}
     (build : b → t) (split : s → Sum t a) : Prism s t a b :=
-  ⟨fun {P} [Profunctor P] hChoice pab =>
-    let _ : Choice P := hChoice
+  fun {P} [Profunctor P] [Choice P] pab =>
     let right := Choice.right (P := P) (γ := t) pab
     let post : Sum t b → t :=
       Sum.elim (fun t' => t') (fun b' => build b')
-    Profunctor.dimap (P := P) split post right⟩
+    Profunctor.dimap (P := P) split post right
 
 /-- Attempt to extract a focused value with a prism. -/
 def preview' {s a : Type}
     (p : Prism' s a) (x : s) : Option a :=
   let forget : Forget (Option a) a a := fun a => some a
-  let result := p.toPrism (P := fun α β => Forget (Option a) α β) inferInstance forget
+  let result := p (P := fun α β => Forget (Option a) α β) forget
   result x
 
 /-- Inject a value through a prism. -/
 def review' {s t a b : Type}
     (p : Prism s t a b) (b₀ : b) : t :=
-  p.toPrism (P := fun α β => Tagged α β) inferInstance b₀
+  p (P := fun α β => Tagged α β) b₀
 
 /--
 A prism that always fails to match.

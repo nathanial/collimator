@@ -84,7 +84,7 @@ Implementation: Uses FunArrow profunctor to compose the transformation.
 The Choice constraint ensures the function is lifted properly through the sum type.
 -/
 instance : HasOver Prism where
-  over p f := (p.toPrism (P := FunArrow) inferInstance (FunArrow.mk f)).run
+  over p f := (p (P := FunArrow) (FunArrow.mk f)).run
 
 /-! ## HasSet Instance -/
 
@@ -98,7 +98,7 @@ Implementation: Uses Tagged profunctor to extract the review direction.
 Note: Unlike lenses, this ignores the original structure entirely.
 -/
 instance : HasSet Prism where
-  set p b _s := p.toPrism (P := fun α β => Tagged α β) inferInstance b
+  set p b _s := p (P := fun α β => Tagged α β) b
 
 /-! ## HasTraverse Instance -/
 
@@ -118,7 +118,7 @@ This leverages the profunctor encoding to handle polymorphic prisms correctly.
 instance : HasTraverse Prism where
   traverse {_s _t _a _b F} [Applicative F] p f s :=
     let star : Star F _a _b := Concrete.Star.mk f
-    let result := p.toPrism (P := Star F) inferInstance star
+    let result := p (P := Star F) star
     result.run s
 
 end Collimator.Poly

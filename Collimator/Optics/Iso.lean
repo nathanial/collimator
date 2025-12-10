@@ -48,8 +48,8 @@ These laws ensure the transformation is truly bidirectional and lossless.
 -/
 def iso {s t a b : Type}
     (forward : s → a) (back : b → t) : Iso s t a b :=
-  ⟨fun {P : Type → Type → Type} [Profunctor P] =>
-    Profunctor.dimap (P := P) forward back⟩
+  fun {P : Type → Type → Type} [Profunctor P] =>
+    Profunctor.dimap (P := P) forward back
 
 /-- Identity optic. -/
 def id {α : Type} : Iso' α α :=

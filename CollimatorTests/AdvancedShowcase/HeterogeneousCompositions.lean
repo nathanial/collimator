@@ -187,7 +187,7 @@ private def case_lensTraversal : TestCase := {
     -- employeeTraversal then traverses each employee
     -- salaryLens focuses on each employee's salary
     let raiseComposed : Traversal Project Project Nat Nat :=
-      employeesLens ⊚ employeeTraversal ⊚ salaryLens
+      employeesLens ∘ employeeTraversal ∘ salaryLens
     let afterRaise : Project := project & raiseComposed %~ (fun s => s * 110 / 100)
 
     -- Verify all salaries increased
@@ -207,7 +207,7 @@ private def case_lensTraversal : TestCase := {
     IO.println "✓ Lens ∘ Traversal: gave 10% raise to all employees"
 
     -- Another example: Clear all contact info
-    let contactComposed := employeesLens ⊚ employeeTraversal ⊚ contactLens
+    let contactComposed := employeesLens ∘ employeeTraversal ∘ contactLens
     let noContact : Project := Traversal.over' contactComposed (fun _ => Contact.none) project
 
     if !noContact.employees.all (fun e => e.contact == Contact.none) then
@@ -235,8 +235,8 @@ private def case_traversalPrism : TestCase := {
     -- employeeTraversal traverses all employees
     -- contactLens focuses on each contact field
     -- emailPrism only matches email contacts
-    -- Note: Traversal ⊚ Lens ⊚ Prism all supported
-    let emailComposed := employeeTraversal ⊚ contactLens ⊚ emailPrism
+    -- Note: Traversal ∘ Lens ∘ Prism all supported
+    let emailComposed := employeeTraversal ∘ contactLens ∘ emailPrism
     let updated : List Employee := employees & emailComposed %~
       (fun (email : String) => email.replace "@example.com" "@newdomain.com")
 
@@ -261,7 +261,7 @@ private def case_traversalPrism : TestCase := {
     IO.println "✓ Traversal ∘ Prism: updated only matching email contacts"
 
     -- Another example: uppercase all phone numbers
-    let phoneComposed := employeeTraversal ⊚ contactLens ⊚ phonePrism
+    let phoneComposed := employeeTraversal ∘ contactLens ∘ phonePrism
     let phones : List Employee := Traversal.over' phoneComposed (fun p => "PHONE:" ++ p) employees
 
     match phones[1]!.contact with
@@ -297,7 +297,7 @@ private def case_lensPrismLens : TestCase := {
     -- domesticPrism → (String × String) (if domestic)
 
     let domesticAddressComposed :=
-      membersLens ⊚ personTraversal ⊚ addressLens ⊚ (@somePrism Address) ⊚ domesticPrism
+      membersLens ∘ personTraversal ∘ addressLens ∘ (@somePrism Address) ∘ domesticPrism
 
     -- Update all domestic addresses to add "USA"
     -- This only affects Alice and Dave, not Bob (international) or Carol (none)
@@ -379,9 +379,9 @@ private def case_deepChains : TestCase := {
     -- Deep composition: Company → Departments → Projects → Employees → Salary
     -- This is a 5-level deep traversal through nested structures
     let allSalariesComposed :=
-      departmentsLens ⊚ departmentTraversal ⊚
-      projectsLens ⊚ projectTraversal ⊚
-      employeesLens ⊚ employeeTraversal ⊚
+      departmentsLens ∘ departmentTraversal ∘
+      projectsLens ∘ projectTraversal ∘
+      employeesLens ∘ employeeTraversal ∘
       salaryLens
 
     -- Give everyone a 15% raise
@@ -404,10 +404,10 @@ private def case_deepChains : TestCase := {
 
     -- Another deep chain: Update only email contacts in high-budget projects
     let highBudgetEmailsComposed :=
-      departmentsLens ⊚ departmentTraversal ⊚
-      projectsLens ⊚ projectTraversal ⊚
-      employeesLens ⊚ employeeTraversal ⊚
-      contactLens ⊚ emailPrism
+      departmentsLens ∘ departmentTraversal ∘
+      projectsLens ∘ projectTraversal ∘
+      employeesLens ∘ employeeTraversal ∘
+      contactLens ∘ emailPrism
 
     let updated : Company := Traversal.over' highBudgetEmailsComposed
       (fun (email : String) => email.replace "@tech.com" "@techcorp.com") company
@@ -451,7 +451,7 @@ private def case_typeInference : TestCase := {
 
     -- Minimal type annotations help type inference
     -- Lean infers this is a Traversal
-    let composed1 := employeesLens ⊚ employeeTraversal ⊚ salaryLens
+    let composed1 := employeesLens ∘ employeeTraversal ∘ salaryLens
     let result1 : Project := project & composed1 %~ (· + 5000)
     if result1.employees[0]!.salary != 85000 then
       throw (IO.userError s!"Expected salary 85000, got {result1.employees[0]!.salary}")
@@ -459,7 +459,7 @@ private def case_typeInference : TestCase := {
     IO.println "✓ Type inference: Lens ∘ Traversal ∘ Lens → Traversal"
 
     -- This composition includes a Prism, so it's still a Traversal
-    let composed2 := employeesLens ⊚ employeeTraversal ⊚ contactLens ⊚ emailPrism
+    let composed2 := employeesLens ∘ employeeTraversal ∘ contactLens ∘ emailPrism
     let result2 : Project := project & composed2 %~ (fun (s : String) => s ++ " (work)")
 
     match result2.employees[0]!.contact with
@@ -504,25 +504,25 @@ private def case_realWorldScenario : TestCase := {
 
     -- Step 1: Give 20% raise to all employees (company-wide)
     let allSalaries :=
-      departmentsLens ⊚ departmentTraversal ⊚
-      projectsLens ⊚ projectTraversal ⊚
-      employeesLens ⊚ employeeTraversal ⊚
+      departmentsLens ∘ departmentTraversal ∘
+      projectsLens ∘ projectTraversal ∘
+      employeesLens ∘ employeeTraversal ∘
       salaryLens
     let afterRaises : Company := company & allSalaries %~ (fun s => s * 120 / 100)
 
     -- Step 2: Update email domain for all email contacts
     let allEmails :=
-      departmentsLens ⊚ departmentTraversal ⊚
-      projectsLens ⊚ projectTraversal ⊚
-      employeesLens ⊚ employeeTraversal ⊚
-      contactLens ⊚ emailPrism
+      departmentsLens ∘ departmentTraversal ∘
+      projectsLens ∘ projectTraversal ∘
+      employeesLens ∘ employeeTraversal ∘
+      contactLens ∘ emailPrism
     let newDomain : Company := afterRaises & allEmails %~
                      (fun (e : String) => e.replace "@startup.com" "@bigcorp.com")
 
     -- Step 3: Double budget for all projects
     let allBudgets :=
-      departmentsLens ⊚ departmentTraversal ⊚
-      projectsLens ⊚ projectTraversal ⊚
+      departmentsLens ∘ departmentTraversal ∘
+      projectsLens ∘ projectTraversal ∘
       budgetLens
     let final : Company := Traversal.over' allBudgets (· * 2) newDomain
 

@@ -117,7 +117,7 @@ def index (i : Nat) : AffineTraversal' JsonValue JsonValue :=
 
 /-- Traversal over all elements in a JSON array -/
 def elements : Traversal' JsonValue JsonValue :=
-  _array ⊚ (Collimator.Instances.List.traversed : Traversal' (List JsonValue) JsonValue)
+  _array ∘ (Collimator.Instances.List.traversed : Traversal' (List JsonValue) JsonValue)
 
 end JsonValue
 
@@ -153,37 +153,37 @@ def examples : IO Unit := do
 
   -- Access nested field: data.users[0].name
   let firstUserName : AffineTraversal' JsonValue String :=
-    field "users" ⊚ index 0 ⊚ field "name" ⊚ _string
+    field "users" ∘ index 0 ∘ field "name" ∘ _string
   IO.println s!"First user name: {AffineTraversalOps.preview' firstUserName sampleData}"
   -- Output: First user name: some "Alice"
 
   -- Access count field
-  let countPath : AffineTraversal' JsonValue Int := field "count" ⊚ _number
+  let countPath : AffineTraversal' JsonValue Int := field "count" ∘ _number
   IO.println s!"Count: {AffineTraversalOps.preview' countPath sampleData}"
   -- Output: Count: some 3
 
   -- Modify: increment all ages by 1
   let allAges : Traversal' JsonValue Int :=
-    field "users" ⊚ elements ⊚ field "age" ⊚ _number
+    field "users" ∘ elements ∘ field "age" ∘ _number
   let updated := Traversal.over' allAges (· + 1) sampleData
   IO.println s!"After incrementing ages:"
 
   -- Verify first user's new age
   let firstAge : AffineTraversal' JsonValue Int :=
-    field "users" ⊚ index 0 ⊚ field "age" ⊚ _number
+    field "users" ∘ index 0 ∘ field "age" ∘ _number
   IO.println s!"  Alice's new age: {AffineTraversalOps.preview' firstAge updated}"
   -- Output: Alice's new age: some 31
 
   -- Collect all names
   let allNames : Traversal' JsonValue String :=
-    field "users" ⊚ elements ⊚ field "name" ⊚ _string
+    field "users" ∘ elements ∘ field "name" ∘ _string
   let names := Fold.toListTraversal allNames sampleData
   IO.println s!"All user names: {names}"
   -- Output: All user names: ["Alice", "Bob", "Charlie"]
 
   -- Check if any user is inactive
   let allActive : Traversal' JsonValue Bool :=
-    field "users" ⊚ elements ⊚ field "active" ⊚ _bool
+    field "users" ∘ elements ∘ field "active" ∘ _bool
   let anyInactive := Fold.anyOfTraversal allActive (· == false) sampleData
   IO.println s!"Any inactive users? {anyInactive}"
   -- Output: Any inactive users? true

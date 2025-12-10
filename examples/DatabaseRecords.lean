@@ -66,13 +66,13 @@ def contactEmail : Lens' ContactInfo String := lens' (·.email) (fun c e => { c 
 def contactPhone : Lens' ContactInfo (Option String) := lens' (·.phone) (fun c p => { c with phone := p })
 def contactAddress : Lens' ContactInfo (Option Address) := lens' (·.address) (fun c a => { c with address := a })
 
--- Path to phone number if present (using ⊚ operator)
+-- Path to phone number if present (using ∘ operator)
 open Collimator.Instances.Option in
-def contactPhoneNumber : AffineTraversal' ContactInfo String := contactPhone ⊚ somePrism' String
+def contactPhoneNumber : AffineTraversal' ContactInfo String := contactPhone ∘ somePrism' String
 
--- Path to address city if present (chained composition with ⊚)
+-- Path to address city if present (chained composition with ∘)
 open Collimator.Instances.Option in
-def contactCity : AffineTraversal' ContactInfo String := contactAddress ⊚ somePrism' Address ⊚ addrCity
+def contactCity : AffineTraversal' ContactInfo String := contactAddress ∘ somePrism' Address ∘ addrCity
 
 /-! ## Employee Lenses -/
 
@@ -84,8 +84,8 @@ def empSalary : Lens' Employee Int := lens' (·.salary) (fun e s => { e with sal
 def empContact : Lens' Employee ContactInfo := lens' (·.contact) (fun e c => { e with contact := c })
 def empManagerId : Lens' Employee (Option Nat) := lens' (·.managerId) (fun e m => { e with managerId := m })
 
--- Path to employee's email (composed with ⊚)
-def empEmail : Lens' Employee String := empContact ⊚ contactEmail
+-- Path to employee's email (composed with ∘)
+def empEmail : Lens' Employee String := empContact ∘ contactEmail
 
 /-! ## Department Lenses -/
 
@@ -94,9 +94,9 @@ def deptName : Lens' Department String := lens' (·.name) (fun d n => { d with n
 def deptBudget : Lens' Department Int := lens' (·.budget) (fun d b => { d with budget := b })
 def deptEmployees : Lens' Department (List Employee) := lens' (·.employees) (fun d e => { d with employees := e })
 
--- Traversal over all employees in department (using ⊚)
+-- Traversal over all employees in department (using ∘)
 def deptAllEmployees : Traversal' Department Employee :=
-  deptEmployees ⊚ (Collimator.Instances.List.traversed : Traversal' (List Employee) Employee)
+  deptEmployees ∘ Collimator.Instances.List.traversed
 
 /-! ## Company Lenses -/
 
@@ -106,17 +106,17 @@ def coFounded : Lens' Company Nat := lens' (·.founded) (fun c f => { c with fou
 def coDepartments : Lens' Company (List Department) := lens' (·.departments) (fun c d => { c with departments := d })
 def coHeadquarters : Lens' Company Address := lens' (·.headquarters) (fun c h => { c with headquarters := h })
 
--- Traversal over all departments (using ⊚)
+-- Traversal over all departments (using ∘)
 def coAllDepartments : Traversal' Company Department :=
-  coDepartments ⊚ (Collimator.Instances.List.traversed : Traversal' (List Department) Department)
+  coDepartments ∘ Collimator.Instances.List.traversed
 
--- Traversal over all employees in company (using ⊚)
+-- Traversal over all employees in company (using ∘)
 def coAllEmployees : Traversal' Company Employee :=
-  coAllDepartments ⊚ deptAllEmployees
+  coAllDepartments ∘ deptAllEmployees
 
--- Traversal over all salaries (using ⊚)
+-- Traversal over all salaries (using ∘)
 def coAllSalaries : Traversal' Company Int :=
-  coAllEmployees ⊚ empSalary
+  coAllEmployees ∘ empSalary
 
 /-! ## Sample Data -/
 
@@ -193,48 +193,50 @@ def sampleCompany : Company := {
   ]
 }
 
-/-! ## Query Functions (using polymorphic toListOf, sumOf, lengthOf) -/
+/-! ## Query Functions (using monomorphic fold API) -/
 
 /-- Get all employee last names -/
 def getAllEmployeeNames (company : Company) : List String :=
-  toListOf (coAllEmployees ⊚ empLastName) company
+  Fold.toListTraversal (coAllEmployees ∘ empLastName) company
 
 /-- Get total salary expense -/
 def getTotalSalaries (company : Company) : Int :=
-  sumOf coAllSalaries company
+  (Fold.toListTraversal coAllSalaries company).foldl (· + ·) 0
 
 /-- Get average salary -/
 def getAverageSalary (company : Company) : Int :=
-  let total := sumOf coAllSalaries company
-  let count := lengthOf coAllSalaries company
+  let salaries := Fold.toListTraversal coAllSalaries company
+  let total := salaries.foldl (· + ·) 0
+  let count := salaries.length
   if count > 0 then total / count else 0
 
 /-- Find employees earning above threshold -/
 def highEarners (threshold : Int) (company : Company) : List Employee :=
-  (toListOf coAllEmployees company).filter (·.salary > threshold)
+  (Fold.toListTraversal coAllEmployees company).filter (·.salary > threshold)
 
 /-- Get all departments with their employee counts -/
 def deptSizes (company : Company) : List (String × Nat) :=
-  (toListOf coAllDepartments company).map fun d => (d.name, d.employees.length)
+  (Fold.toListTraversal coAllDepartments company).map fun d => (d.name, d.employees.length)
 
-/-! ## Update Functions (using over with ⊚) -/
+/-! ## Update Functions (using monomorphic over/set) -/
 
 /-- Give all employees a percentage raise -/
 def giveRaise (percent : Int) (company : Company) : Company :=
-  over coAllSalaries (fun s => s + s * percent / 100) company
+  Traversal.over' coAllSalaries (fun s => s + s * percent / 100) company
 
 /-- Give raise to specific department using filtered traversal -/
 def giveDeptRaise (deptNameFilter : String) (percent : Int) (company : Company) : Company :=
-  let targetDeptSalaries := filtered coAllDepartments (·.name == deptNameFilter) ⊚ deptAllEmployees ⊚ empSalary
-  over targetDeptSalaries (fun s => s + s * percent / 100) company
+  let targetDeptSalaries : Traversal' Company Int :=
+    filtered coAllDepartments (·.name == deptNameFilter) ∘ deptAllEmployees ∘ empSalary
+  Traversal.over' targetDeptSalaries (fun s => s + s * percent / 100) company
 
-/-- Update company headquarters (using set with ⊚) -/
+/-- Update company headquarters (using set with ∘) -/
 def relocateHQ (newAddress : Address) (company : Company) : Company :=
-  set coHeadquarters newAddress company
+  set' coHeadquarters newAddress company
 
-/-- Standardize all email domains (using over with ⊚) -/
+/-- Standardize all email domains (using over with ∘) -/
 def standardizeEmails (newDomain : String) (company : Company) : Company :=
-  over (coAllEmployees ⊚ empEmail)
+  Traversal.over' (coAllEmployees ∘ empEmail)
        (fun email =>
          let parts := email.splitOn "@"
          if parts.length >= 1 then parts[0]! ++ "@" ++ newDomain else email)
@@ -246,10 +248,10 @@ def examples : IO Unit := do
   IO.println "=== Database Records Examples ==="
   IO.println ""
 
-  -- Basic queries using ^. and ^.' operators
-  IO.println s!"Company: {sampleCompany ^. coName}"
-  IO.println s!"Founded: {sampleCompany ^. coFounded}"
-  IO.println s!"HQ City: {sampleCompany ^.' (coHeadquarters ⊚ addrCity)}"
+  -- Basic queries using ^.' operators
+  IO.println s!"Company: {sampleCompany ^.' coName}"
+  IO.println s!"Founded: {sampleCompany ^.' coFounded}"
+  IO.println s!"HQ City: {sampleCompany ^.' (coHeadquarters ∘ addrCity)}"
   IO.println ""
 
   -- Employee queries using polymorphic fold functions
@@ -263,7 +265,7 @@ def examples : IO Unit := do
   let avg := getAverageSalary sampleCompany
   IO.println s!"  Average salary: ${avg}"
 
-  let count := lengthOf coAllEmployees sampleCompany
+  let count := (Fold.toListTraversal coAllEmployees sampleCompany).length
   IO.println s!"  Employee count: {count}"
   IO.println ""
 
@@ -300,18 +302,18 @@ def examples : IO Unit := do
 
   -- Optional field access using preview
   IO.println "Optional fields:"
-  let employees := toListOf coAllEmployees sampleCompany
+  let employees := Fold.toListTraversal coAllEmployees sampleCompany
   match employees.head? with
   | some emp =>
-    IO.println s!"  {emp.firstName}'s phone: {preview contactPhoneNumber emp.contact}"
-    IO.println s!"  {emp.firstName}'s city: {preview contactCity emp.contact}"
+    IO.println s!"  {emp.firstName}'s phone: {AffineTraversalOps.preview' contactPhoneNumber emp.contact}"
+    IO.println s!"  {emp.firstName}'s city: {AffineTraversalOps.preview' contactCity emp.contact}"
   | none => IO.println "  No employees found"
 
   -- Check for employee without phone
   let bob := employees.find? (·.firstName == "Bob")
   match bob with
   | some emp =>
-    IO.println s!"  Bob's phone: {preview contactPhoneNumber emp.contact}"
+    IO.println s!"  Bob's phone: {AffineTraversalOps.preview' contactPhoneNumber emp.contact}"
   | none => pure ()
 
 #eval examples

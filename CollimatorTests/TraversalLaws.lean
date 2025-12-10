@@ -154,7 +154,7 @@ private def case_compositionIdentityLaw : TestCase := {
   run := do
     let outer : Traversal' (List (Option Int)) (Option Int) := traversal List.walkMon
     let inner : Traversal' (Option Int) Int := traversal Option.walkMon
-    let composed : Traversal' (List (Option Int)) Int := composeTraversal outer inner
+    let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
 
     let xs := [some 1, none, some 3]
     let result := Traversal.over' composed (fun a => a) xs
@@ -169,7 +169,7 @@ private def case_composedTraversalOver : TestCase := {
   run := do
     let outer : Traversal' (List (Option Int)) (Option Int) := traversal List.walkMon
     let inner : Traversal' (Option Int) Int := traversal Option.walkMon
-    let composed : Traversal' (List (Option Int)) Int := composeTraversal outer inner
+    let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
 
     let xs := [some 1, none, some 3]
     let result := Traversal.over' composed (· * 2) xs
@@ -216,7 +216,7 @@ private def case_compositionLawfulInstance : TestCase := {
     -- Test via explicit composition instead of private composed_walk
     let outer : Traversal' (List (Option Int)) (Option Int) := traversal List.walkMon
     let inner : Traversal' (Option Int) Int := traversal Option.walkMon
-    let composed : Traversal' (List (Option Int)) Int := composeTraversal outer inner
+    let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
 
     -- Test identity
     let xs : List (Option Int) := [some 1, none, some 2]

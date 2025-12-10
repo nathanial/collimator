@@ -20,12 +20,12 @@ open Collimator.Combinators
 /-- Lens focusing the first element of a triple represented as nested pairs. -/
 @[inline] def firstOfTriple {α β γ δ : Type} :
     Lens ((α × β) × γ) ((δ × β) × γ) α δ :=
-  composeLens (outer := _1) (inner := _1)
+  _1 ∘ _1
 
 /-- Lens focusing the middle element of a triple represented as nested pairs. -/
 @[inline] def secondOfTriple {α β γ δ : Type} :
     Lens ((α × β) × γ) ((α × δ) × γ) β δ :=
-  composeLens (outer := _1) (inner := _2)
+  _1 ∘ _2
 
 /-- Lens focusing the final element of a triple represented as nested pairs. -/
 @[inline] def thirdOfTriple {α β γ δ : Type} :

@@ -62,9 +62,8 @@ These laws ensure the traversal visits each element exactly once in a consistent
 def traversal {s t a b : Type}
     (walk : ∀ {F : Type → Type} [Applicative F], (a → F b) → s → F t) :
     Traversal s t a b :=
-  ⟨fun {P} [Profunctor P] [Strong P] [Choice P] w pab =>
-    let _ : Wandering P := w
-    Wandering.wander (P := P) walk pab⟩
+  fun {P} [Profunctor P] [Strong P] [Choice P] [Wandering P] pab =>
+    Wandering.wander (P := P) walk pab
 
 private def traverseList {F : Type → Type} [Applicative F]
     {α β : Type} (f : α → F β) : List α → F (List β)
@@ -82,7 +81,7 @@ namespace Traversal
 def over' {s t a b : Type}
     (tr : Collimator.Traversal s t a b) (f : a → b) : s → t :=
   let arrow := FunArrow.mk (α := a) (β := b) f
-  let transformed := tr.toTraversal (P := fun α β => FunArrow α β) inferInstance arrow
+  let transformed := tr (P := fun α β => FunArrow α β) arrow
   fun s => transformed s
 
 /-- Apply an effectful update to each focus of a traversal. -/
@@ -91,7 +90,7 @@ def traverse' {s t a b : Type}
     {F : Type → Type} [Applicative F]
     (f : a → F b) (s₀ : s) : F t :=
   let star := Star.mk (F := F) (α := a) (β := b) f
-  let transformed := tr.toTraversal (P := fun α β => Star F α β) inferInstance star
+  let transformed := tr (P := fun α β => Star F α β) star
   transformed s₀
 
 /-- Traversal focusing every element of a list. -/

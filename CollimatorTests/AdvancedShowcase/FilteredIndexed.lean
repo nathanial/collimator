@@ -187,7 +187,7 @@ private def case_filteredWithLens : TestCase := {
     let tr := Instances.List.traversed
     let expensiveFilter := filtered tr (fun p : Product => p.price > 100)
     -- Compose: filter expensive items, then focus on quantity field
-    let expensiveQuantity := expensiveFilter ⊚ quantityLens
+    let expensiveQuantity := expensiveFilter ∘ quantityLens
     let restocked := inventory & expensiveQuantity %~ (· + 50)
 
     let expected1 : List Product := [
@@ -202,7 +202,7 @@ private def case_filteredWithLens : TestCase := {
     -- Test 2: Filter by quantity, apply discount to price
     -- "Discount items with low stock (quantity < 10)"
     let lowStockFilter := filtered tr (fun p : Product => p.quantity < 10)
-    let lowStockPrice := lowStockFilter ⊚ priceLens
+    let lowStockPrice := lowStockFilter ∘ priceLens
     let discounted := inventory & lowStockPrice %~ (fun p => p * 80 / 100)
 
     let expected2 : List Product := [
@@ -217,7 +217,7 @@ private def case_filteredWithLens : TestCase := {
     -- Test 3: Filter and modify name field
     -- "Mark cheap items in the name"
     let cheapFilter := filtered tr (fun p : Product => p.price < 100)
-    let cheapName := cheapFilter ⊚ nameLens
+    let cheapName := cheapFilter ∘ nameLens
     let marked := inventory & cheapName %~ (fun n => "[SALE] " ++ n)
 
     let expected3 : List Product := [
@@ -232,8 +232,8 @@ private def case_filteredWithLens : TestCase := {
     -- Test 4: Multiple field modifications with different filters
     -- Combine multiple operations
     let result := inventory
-      & ((filtered tr (fun p => p.price > 100)) ⊚ quantityLens) %~ (· * 2)
-      & ((filtered tr (fun p => p.quantity > 15)) ⊚ priceLens) %~ (· - 5)
+      & ((filtered tr (fun p => p.price > 100)) ∘ quantityLens) %~ (· * 2)
+      & ((filtered tr (fun p => p.quantity > 15)) ∘ priceLens) %~ (· - 5)
 
     let expected4 : List Product := [
       { name := "Widget", price := 50, quantity := 10 },
@@ -1439,7 +1439,7 @@ private def case_realworldConditionalBatch : TestCase := {
     ]
     let tr := Instances.List.traversed
     let expensive := filtered tr (fun p : Product => p.price > 100)
-    let discounted := inventory & (expensive ⊚ priceLens) %~ (fun p => p * 80 / 100)
+    let discounted := inventory & (expensive ∘ priceLens) %~ (fun p => p * 80 / 100)
 
     let expected1 : List Product := [
       { name := "Widget", price := 50, quantity := 10 },
@@ -1452,7 +1452,7 @@ private def case_realworldConditionalBatch : TestCase := {
 
     -- Test 2: Add 10% tax only to items with quantity < 10
     let lowStock := filtered tr (fun p : Product => p.quantity < 10)
-    let taxed := inventory & (lowStock ⊚ priceLens) %~ (fun p => p * 110 / 100)
+    let taxed := inventory & (lowStock ∘ priceLens) %~ (fun p => p * 110 / 100)
 
     let expected2 : List Product := [
       { name := "Widget", price := 50, quantity := 10 },
@@ -1475,7 +1475,7 @@ private def case_realworldConditionalBatch : TestCase := {
     let trResults := Instances.List.traversed (α := TestResult) (β := TestResult)
     let tookTest := filtered trResults (fun r : TestResult => r.score >= 0)
     -- Normalize scores: map [0,100] to [0,100] (already normalized, but apply formula)
-    let normalized := results & (tookTest ⊚ scoreLens) %~ (fun s => s)
+    let normalized := results & (tookTest ∘ scoreLens) %~ (fun s => s)
 
     if normalized.length != results.length then
       throw (IO.userError "Normalization changed list length")

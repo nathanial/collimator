@@ -136,7 +136,7 @@ def case_safePartialAccess : TestCase := {
 
     -- Lens ∘ Prism creates an AffineTraversal
     -- Combined: AffineTraversal focusing on the email if present
-    let emailAffine := composeLensPrism userEmailLens (somePrism String)
+    let emailAffine := userEmailLens (somePrism String)
 
     -- Preview safely extracts the value if present
     let aliceEmail := AffineTraversalOps.preview' emailAffine completeUser
@@ -185,14 +185,14 @@ def case_lensPrismComposition : TestCase := {
 
     -- Lens into Option ConfigValue, then Prism to String
     let strValueAffine :=
-      composeAffine
-        (composeLensPrism configValueLens (somePrism ConfigValue))
+      ∘
+        (configValueLens (somePrism ConfigValue))
         (AffineTraversalOps.ofPrism strConfigPrism)
 
     -- Lens into Option ConfigValue, then Prism to Int
     let intValueAffine :=
-      composeAffine
-        (composeLensPrism configValueLens (somePrism ConfigValue))
+      ∘
+        (configValueLens (somePrism ConfigValue))
         (AffineTraversalOps.ofPrism intConfigPrism)
 
     -- Preview string values
@@ -253,15 +253,16 @@ def case_shortCircuit : TestCase := {
       ⟨none⟩
 
     -- Build deep affine traversal through 3 levels of Option
-    let level1 := composeLensPrism
-      (containerValueLens (Container (Container Nat)))
+    -- With type-alias optics, Lens ∘ Prism gives AffineTraversal
+    let level1 :=
+      (containerValueLens (Container (Container Nat))) ∘
       (somePrism (Container (Container Nat)))
-    let level2 := composeAffine level1 (composeLensPrism
-      (containerValueLens (Container Nat))
-      (somePrism (Container Nat)))
-    let deepAffine := composeAffine level2 (composeLensPrism
-      (containerValueLens Nat)
-      (somePrism Nat))
+    let level2 := level1 ∘
+      (containerValueLens (Container Nat)) ∘
+      (somePrism (Container Nat))
+    let deepAffine := level2 ∘
+      (containerValueLens Nat) ∘
+      (somePrism Nat)
 
     -- All present - we can access the value
     let presentResult := AffineTraversalOps.preview' deepAffine deepPresent
@@ -325,15 +326,15 @@ def case_databaseLookup : TestCase := {
 
     -- Affine traversal to user's bio through optional profile
     let bioAffine :=
-      composeAffine
-        (composeLensPrism userProfileLens (somePrism ProfileData))
-        (composeLensPrism profileBioLens (somePrism String))
+      ∘
+        (userProfileLens (somePrism ProfileData))
+        (profileBioLens (somePrism String))
 
     -- Affine traversal to user's age through optional profile
     let ageAffine :=
-      composeAffine
-        (composeLensPrism userProfileLens (somePrism ProfileData))
-        (composeLensPrism profileAgeLens (somePrism Nat))
+      ∘
+        (userProfileLens (somePrism ProfileData))
+        (profileAgeLens (somePrism Nat))
 
     -- Query bios - only Alice and Dave have them
     let aliceBio := AffineTraversalOps.preview' bioAffine users[0]!
@@ -414,8 +415,8 @@ def case_opticConversions : TestCase := {
     IO.println "✓ Conversion: Prism lifts to AffineTraversal (may not have focus)"
 
     -- Composed AffineTraversals combine their optionality
-    let composed := composeAffine
-      (composeAffine fromLens (AffineTraversalOps.ofPrism (somePrism ConfigValue)))
+    let composed := ∘
+      (fromLens ∘ (AffineTraversalOps.ofPrism (somePrism ConfigValue)))
       (AffineTraversalOps.ofPrism intConfigPrism)
 
     let composedResult := AffineTraversalOps.preview' composed entry

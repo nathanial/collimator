@@ -111,12 +111,12 @@ instance : HasTraverse Lens where
   traverse {_s _t a _b F} [Applicative F] l f s :=
     -- Use Forget to extract the focused value
     let forget : Forget a a a := fun y => y
-    let aval := (l.toLens (P := fun α β => Forget a α β) inferInstance forget) s
+    let aval := (l (P := fun α β => Forget a α β) forget) s
     let fb := f aval
     -- Map over the effect, using FunArrow to set the new value
     Functor.map (fun bval =>
       let arrow := FunArrow.mk (fun _ => bval)
-      (l.toLens (P := fun α β => FunArrow α β) inferInstance arrow) s
+      (l (P := fun α β => FunArrow α β) arrow) s
     ) fb
 
 end Collimator.Poly

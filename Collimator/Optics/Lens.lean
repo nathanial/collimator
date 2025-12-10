@@ -50,26 +50,24 @@ A lawful lens satisfies:
 -/
 def lens' {s t a b : Type}
     (get : s → a) (set : s → b → t) : Lens s t a b :=
-  ⟨fun {P} [Profunctor P] hStrong pab =>
-    let _ : Strong P := hStrong
-    let _ := (inferInstance : Profunctor P)
+  fun {P} [Profunctor P] [Strong P] pab =>
     let first := Strong.first (P := P) (γ := s) pab
     Profunctor.dimap (P := P)
       (fun s => (get s, s))
       (fun bs => set bs.2 bs.1)
-      first⟩
+      first
 
 /-- View the focus of a lens. -/
 def view' {s a : Type} (l : Lens' s a) (x : s) : a :=
   let forget : Forget a a a := fun a => a
-  let result := l.toLens (P := fun α β => Forget a α β) inferInstance forget
+  let result := l (P := fun α β => Forget a α β) forget
   result x
 
 /-- Modify the focus of a lens. -/
 def over' {s t a b : Type}
     (l : Lens s t a b) (f : a → b) : s → t :=
   let arrow := FunArrow.mk (α := a) (β := b) f
-  let result := l.toLens (P := fun α β => FunArrow α β) inferInstance arrow
+  let result := l (P := fun α β => FunArrow α β) arrow
   fun s => result s
 
 /-- Set the focus of a lens to a constant value. -/

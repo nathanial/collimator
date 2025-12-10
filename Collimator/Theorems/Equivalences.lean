@@ -91,10 +91,10 @@ def isoToVL {s t a b : Type} (profIso : Iso s t a b) : VLIso s t a b :=
   -- Use Forget profunctor to extract forward direction
   let forward : s → a := fun s =>
     let forget : Forget a a a := fun x => x
-    @profIso.toIso (Forget a) (instProfunctorForget a) forget s
+    profIso (P := Forget a) forget s
   -- Use Tagged profunctor to extract backward direction
   let backward : b → t := fun b =>
-    @profIso.toIso Tagged instProfunctorTagged b
+    profIso (P := Tagged) b
   { forward := forward, backward := backward }
 
 /--
@@ -176,7 +176,7 @@ def lensToVL {s t a b : Type} (profLens : Lens s t a b) :
     -- The Star profunctor bridges applicatives and profunctors
     -- Star has Strong instance when F is Applicative
     let star : Star F a b := Star.mk f
-    let result := @profLens.toLens (Star F) (instProfunctorStar F) (instStrongStar F) star
+    let result := profLens (P := Star F) star
     result.run s
 
 /--
@@ -199,7 +199,7 @@ exactly what we're comparing against. The definitions unfold to the same express
 theorem lens_prof_vl_prof {s t a b : Type} (profLens : Lens s t a b)
     (F : Type → Type) [Applicative F] (f : a → F b) (s₀ : s) :
       @lensToVL s t a b profLens F _ f s₀ =
-      (@profLens.toLens (Star F) (instProfunctorStar F) (instStrongStar F) (Star.mk f)).run s₀ := by
+      (profLens (P := Star F) (Star.mk f)).run s₀ := by
   unfold lensToVL
   rfl
 
@@ -218,7 +218,7 @@ Convert a profunctor traversal to a van Laarhoven traversal.
 def traversalToVL {s t a b : Type} (profTrav : Traversal s t a b) : VLTraversal s t a b :=
   fun {F} [_instF : Applicative F] (f : a → F b) (s : s) =>
     let star := Star.mk (F := F) f
-    (@profTrav.toTraversal (Star F) (instProfunctorStar F) (instStrongStar F) (instChoiceStar F) (instWanderingStar F) star).run s
+    (profTrav (P := Star F) star).run s
 
 /--
 **Traversal Equivalence Theorem (VL → Prof → VL)**:
@@ -233,7 +233,6 @@ theorem traversal_vl_prof_vl {s t a b : Type} (vlTrav : VLTraversal s t a b)
   unfold traversalToVL vlToTraversal traversal
   -- After unfolding, we have: (wander vlTrav (Star.mk f)).run s₀
   -- For Star F, wander applies vlTrav to the Star's run function
-  simp only [Traversal.toTraversal]
   rfl
 
 /--
@@ -246,7 +245,7 @@ exactly what we're comparing against. The definitions unfold to the same express
 theorem traversal_prof_vl_prof {s t a b : Type} (profTrav : Traversal s t a b)
     (F : Type → Type) [Applicative F] (f : a → F b) (s₀ : s) :
       @traversalToVL s t a b profTrav F _ f s₀ =
-      (@profTrav.toTraversal (Star F) (instProfunctorStar F) (instStrongStar F) (instChoiceStar F) (instWanderingStar F) (Star.mk f)).run s₀ := by
+      (profTrav (P := Star F) (Star.mk f)).run s₀ := by
   unfold traversalToVL
   rfl
 
@@ -268,7 +267,7 @@ Convert a profunctor prism to a van Laarhoven prism.
 def prismToVL {s t a b : Type} (profPrism : Prism s t a b) : VLPrism s t a b :=
   fun {F} [_instF : Applicative F] (f : a → F b) (s : s) =>
     let star := Star.mk (F := F) f
-    (@profPrism.toPrism (Star F) (instProfunctorStar F) (instChoiceStar F) star).run s
+    (profPrism (P := Star F) star).run s
 
 /--
 **Prism Equivalence Theorem (VL → Prof → VL)**:
@@ -288,7 +287,7 @@ exactly what we're comparing against. The definitions unfold to the same express
 theorem prism_prof_vl_prof {s t a b : Type} (profPrism : Prism s t a b)
     (F : Type → Type) [Applicative F] (f : a → F b) (s₀ : s) :
       @prismToVL s t a b profPrism F _ f s₀ =
-      (@profPrism.toPrism (Star F) (instProfunctorStar F) (instChoiceStar F) (Star.mk f)).run s₀ := by
+      (profPrism (P := Star F) (Star.mk f)).run s₀ := by
   unfold prismToVL
   rfl
 

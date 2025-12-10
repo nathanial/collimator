@@ -76,22 +76,22 @@ def Company.departmentsLens : Lens' Company (List Department) :=
 
 /-! ## Composed Optics
 
-The `⊚` operator composes optics. Type inference works best when optics have
+The `∘` operator composes optics. Type inference works best when optics have
 concrete types, so we annotate `traversed` with its expected type.
 -/
 
--- Lens ⊚ Lens = Lens
+-- Lens ∘ Lens = Lens
 def Employee.cityLens : Lens' Employee String :=
-  Employee.addressLens ⊚ Address.cityLens
+  Employee.addressLens ∘ Address.cityLens
 
--- Lens ⊚ Traversal = Traversal (with type annotation on traversed)
+-- Lens ∘ Traversal = Traversal (with type annotation on traversed)
 def Department.employeesTraversal : Traversal' Department Employee :=
-  Department.employeesLens ⊚ (traversed : Traversal' (List Employee) Employee)
+  Department.employeesLens ∘ (traversed : Traversal' (List Employee) Employee)
 
--- Chain of compositions: Lens ⊚ Traversal ⊚ Lens ⊚ Traversal = Traversal
+-- Chain of compositions: Lens ∘ Traversal ∘ Lens ∘ Traversal = Traversal
 def Company.allEmployees : Traversal' Company Employee :=
-  Company.departmentsLens ⊚ (traversed : Traversal' (List Department) Department)
-    ⊚ Department.employeesLens ⊚ (traversed : Traversal' (List Employee) Employee)
+  Company.departmentsLens ∘ (traversed : Traversal' (List Department) Department)
+    ∘ Department.employeesLens ∘ (traversed : Traversal' (List Employee) Employee)
 
 /-! ## Type-Safe Composition Tracing
 
@@ -111,7 +111,7 @@ The second form is useful when you want to define an optic and see the trace at 
 def Employee.cityLens' : Lens' Employee String :=
   trace![Employee.addressLens, Address.cityLens]
 
--- Heterogeneous: Lens ⊚ Traversal ⊚ Lens = Traversal
+-- Heterogeneous: Lens ∘ Traversal ∘ Lens = Traversal
 def Department.allSalaries : Traversal' Department Int :=
   trace![
     Department.employeesLens,
@@ -126,7 +126,7 @@ def Company.allEmployeeNames : Traversal' Company String :=
     (traversed : Traversal' (List Department) Department),
     Department.employeesLens,
     (traversed : Traversal' (List Employee) Employee)
-  ] ⊚ Employee.nameLens
+  ] ∘ Employee.nameLens
 
 -- Use traceCompose! for quick checks (IO-based, good for #eval)
 #eval traceCompose![
@@ -187,7 +187,7 @@ def acme : Company := {
 | `%~` | over | `lens %~ f` | Modify with a function (use with `&`) |
 | `.~` | set | `lens .~ v` | Replace with a value (use with `&`) |
 | `&` | pipe | `s & lens .~ v` | Reverse application for chaining |
-| `⊚` | compose | `lens1 ⊚ lens2` | Compose two optics |
+| `∘` | compose | `lens1 ∘ lens2` | Compose two optics |
 -/
 
 -- View through a composed lens (Employee → city)
@@ -215,7 +215,7 @@ def alice : Employee := match acme.departments.head? with
 
 -- Traversal: get all employee cities using Traversal.toList
 def Company.allCities : Traversal' Company String :=
-  Company.allEmployees ⊚ Employee.cityLens
+  Company.allEmployees ∘ Employee.cityLens
 
 #eval Fold.toListTraversal Company.allCities acme  -- ["Boston", "Cambridge", "Boston"]
 

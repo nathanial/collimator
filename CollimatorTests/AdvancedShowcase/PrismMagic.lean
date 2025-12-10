@@ -361,7 +361,7 @@ def case_prismComposition : TestCase := {
     let outerErr : Result (Result Int) := Result.err "outer error"
 
     -- Compose prisms to reach the inner value
-    let innerValuePrism := composePrism (resultOkPrism (Result Int)) (resultOkPrism Int)
+    let innerValuePrism := (resultOkPrism ∘ (Result Int)) (resultOkPrism Int)
 
     let innerOk := preview' innerValuePrism nestedOk
     if innerOk != some 42 then

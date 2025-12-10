@@ -29,42 +29,42 @@ class Foldable (optic : Type → Type → Type → Type → Type 1) where
 instance : Foldable Fold where
   foldToList fld s₀ :=
     let forget : Forget (List _) _ _ := fun x => [x]
-    let lifted := fld.toFold (P := Forget (List _)) inferInstance inferInstance forget
+    let lifted := fld (P := Forget (List _)) forget
     lifted s₀
 
 -- Instance for Lens
 instance : Foldable Lens where
   foldToList l s₀ :=
     let forget : Forget (List _) _ _ := fun x => [x]
-    let lifted := l.toLens (P := Forget (List _)) inferInstance forget
+    let lifted := l (P := Forget (List _)) forget
     lifted s₀
 
 -- Instance for Prism
 instance : Foldable Prism where
   foldToList p s₀ :=
     let forget : Forget (List _) _ _ := fun x => [x]
-    let lifted := p.toPrism (P := Forget (List _)) inferInstance forget
+    let lifted := p (P := Forget (List _)) forget
     lifted s₀
 
 -- Instance for AffineTraversal
 instance : Foldable AffineTraversal where
   foldToList aff s₀ :=
     let forget : Forget (List _) _ _ := fun x => [x]
-    let lifted := aff.toAffineTraversal (P := Forget (List _)) inferInstance inferInstance forget
+    let lifted := aff (P := Forget (List _)) forget
     lifted s₀
 
 -- Instance for Traversal (uses Wandering instance of Forget)
 instance : Foldable Traversal where
   foldToList tr s₀ :=
     let forget : Forget (List _) _ _ := fun x => [x]
-    let lifted := tr.toTraversal (P := Forget (List _)) inferInstance forget
+    let lifted := tr (P := Forget (List _)) forget
     lifted s₀
 
 -- Instance for Iso
 instance : Foldable Iso where
   foldToList i s₀ :=
     let forget : Forget (List _) _ _ := fun x => [x]
-    let lifted := i.toIso (P := Forget (List _)) forget
+    let lifted := i (P := Forget (List _)) forget
     lifted s₀
 
 namespace Fold
@@ -72,12 +72,12 @@ namespace Fold
 /-- Every lens gives a fold that observes its focus. -/
 def ofLens {s t a b : Type}
     (l : Lens s t a b) : Collimator.Fold s t a b :=
-  ⟨fun {P} [Profunctor P] hStrong _ pab => l.toLens (P := P) hStrong pab⟩
+  fun {P} [Profunctor P] [Strong P] [Choice P] pab => l (P := P) pab
 
 /-- Every affine traversal can be used as a fold. -/
 def ofAffine {s t a b : Type}
     (aff : Collimator.AffineTraversal s t a b) : Collimator.Fold s t a b :=
-  ⟨fun {P} [Profunctor P] hStrong hChoice pab => aff.toAffineTraversal (P := P) hStrong hChoice pab⟩
+  fun {P} [Profunctor P] [Strong P] [Choice P] pab => aff (P := P) pab
 
 /-
 Note: There is no general `Traversal → Fold` coercion because `Traversal` requires
@@ -96,14 +96,14 @@ def toList {s a : Type} [Inhabited (List a)]
     (fld : Fold' s a) (s₀ : s) : List a :=
   let forget : Forget (List a) a a := fun x => [x]
   let lifted :=
-    fld.toFold (P := fun α β => Forget (List a) α β) inferInstance inferInstance forget
+    fld (P := fun α β => Forget (List a) α β) forget
   lifted s₀
 
 /-- Collect all focuses of a traversal into a list using Forget's Wandering instance. -/
 def toListTraversal {s a : Type} [Inhabited (List a)]
     (tr : Traversal' s a) (s₀ : s) : List a :=
   let forget : Forget (List a) a a := fun x => [x]
-  let lifted := tr.toTraversal (P := Forget (List a)) inferInstance forget
+  let lifted := tr (P := Forget (List a)) forget
   lifted s₀
 
 /-!
@@ -148,16 +148,16 @@ def nullOfTraversal {s a : Type} [Inhabited (List a)]
     {s t a b u v : Type}
     (outer : Lens s t a b) (inner : Collimator.Fold a b u v) :
     Collimator.Fold s t u v :=
-  fun {P} [Profunctor P] hStrong hChoice puv =>
-    outer.toLens (P := P) hStrong (inner.toFold (P := P) hStrong hChoice puv)
+  fun {P} [Profunctor P] [Strong P] [Choice P] puv =>
+    outer (P := P) (inner (P := P) puv)
 
 /-- Compose two folds to read through nested structures. -/
 @[inline] def composeFold
     {s t a b u v : Type}
     (outer : Collimator.Fold s t a b) (inner : Collimator.Fold a b u v) :
     Collimator.Fold s t u v :=
-  fun {P} [Profunctor P] hStrong hChoice puv =>
-    outer.toFold (P := P) hStrong hChoice (inner.toFold (P := P) hStrong hChoice puv)
+  fun {P} [Profunctor P] [Strong P] [Choice P] puv =>
+    outer (P := P) (inner (P := P) puv)
 
 scoped infixr:80 " ∘ₗf " => composeLensFold
 scoped infixr:80 " ∘f " => composeFold

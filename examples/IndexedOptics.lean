@@ -54,10 +54,10 @@ example : List Int :=
   -- Result: [1000, 20, 3000, 40, 5000]
 
 /-- Filter by both index and value. -/
-example : List Int :=
+example : List Nat :=
   let nums := [5, 10, 15, 20, 25, 30]
   -- Keep only elements where index < value / 5
-  Fold.toListTraversal (ifilteredList fun i v => i < v / 5) nums
+  Fold.toListTraversal (ifilteredList fun i v => decide (i < v / 5)) nums
   -- Elements: (0,5) -> 0 < 1 ✓, (1,10) -> 1 < 2 ✓, (2,15) -> 2 < 3 ✓,
   --           (3,20) -> 3 < 4 ✓, (4,25) -> 4 < 5 ✓, (5,30) -> 5 < 6 ✓
   -- Result: [5, 10, 15, 20, 25, 30] (all pass in this case)

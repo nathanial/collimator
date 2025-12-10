@@ -32,7 +32,7 @@ Uses the Forget profunctor which only applies the pre-processing function.
 -/
 def isoForward {s a : Type} (i : Iso' s a) (x : s) : a :=
   let forget : Forget a a a := fun y => y
-  let result := i.toIso (P := fun α β => Forget a α β) forget
+  let result := i (P := fun α β => Forget a α β) forget
   result x
 
 /--
@@ -40,7 +40,7 @@ Apply an isomorphism in the backward direction.
 Uses the Tagged profunctor which only applies the post-processing function.
 -/
 def isoBackward {s a : Type} (i : Iso' s a) (x : a) : s :=
-  i.toIso (P := fun α β => Tagged α β) x
+  i (P := fun α β => Tagged α β) x
 
 /-! ## Lawful Isomorphism Class -/
 

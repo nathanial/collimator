@@ -58,7 +58,7 @@ Implementation: Uses the Forget profunctor to extract the forward direction.
 instance : HasView (fun (s a : Type) => Iso s s a a) where
   view {_s a} i x :=
     let forget : Forget a a a := fun y => y
-    let result := i.toIso (P := fun α β => Forget a α β) forget
+    let result := i (P := fun α β => Forget a α β) forget
     result x
 
 /-! ## HasOver Instance -/
@@ -74,7 +74,7 @@ This follows the pattern: s → a (forward) → b (transform) → t (backward).
 -/
 @[instance 10000] -- Higher priority than Lens/Prism instances (default is 1000)
 instance : HasOver Iso where
-  over i f := (i.toIso (P := FunArrow) (FunArrow.mk f)).run
+  over i f := (i (P := FunArrow) (FunArrow.mk f)).run
 
 /-! ## HasSet Instance -/
 
@@ -89,7 +89,7 @@ Note: The original `s` value is ignored because an iso is invertible.
 -/
 @[instance 10000] -- Higher priority than Lens/Prism instances (default is 1000)
 instance : HasSet Iso where
-  set i b _s := i.toIso (P := fun α β => Tagged α β) b
+  set i b _s := i (P := fun α β => Tagged α β) b
 
 /-! ## HasPreview Instance -/
 
@@ -105,7 +105,7 @@ Unlike prisms or affine traversals which may fail, isos always succeed.
 instance : HasPreview (fun (s a : Type) => Iso s s a a) where
   preview {_s a} i x :=
     let forget : Forget a a a := fun y => y
-    let result := i.toIso (P := fun α β => Forget a α β) forget
+    let result := i (P := fun α β => Forget a α β) forget
     some (result x)
 
 /-! ## HasReview Instance -/
@@ -122,7 +122,7 @@ rather than modification.
 -/
 @[instance 10000] -- Higher priority than Prism instance (default is 1000)
 instance : HasReview Iso where
-  review i b := i.toIso (P := fun α β => Tagged α β) b
+  review i b := i (P := fun α β => Tagged α β) b
 
 /-! ## HasTraverse Instance -/
 
@@ -142,8 +142,8 @@ This follows the pattern:
 instance : HasTraverse Iso where
   traverse {_s _t a _b F} [Applicative F] i f x :=
     let forget : Forget a a a := fun y => y
-    let aval := (i.toIso (P := fun α β => Forget a α β) forget) x
+    let aval := (i (P := fun α β => Forget a α β) forget) x
     let fb := f aval
-    Functor.map (fun bval => i.toIso (P := fun α β => Tagged α β) bval) fb
+    Functor.map (fun bval => i (P := fun α β => Tagged α β) bval) fb
 
 end Collimator.Poly

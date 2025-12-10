@@ -60,7 +60,7 @@ Uses the Forget profunctor to extract just the getter.
 def Getter.ofLens {s t a b : Type} (l : Lens s t a b) : Getter s a :=
   ⟨fun s =>
     let forget : Forget a a a := fun a => a
-    @l.toLens (Forget a) (instProfunctorForget a) (instStrongForget a) forget s⟩
+    (l (P := Forget a) forget) s⟩
 
 /--
 Compose two Getters.

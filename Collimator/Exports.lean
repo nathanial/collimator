@@ -17,15 +17,9 @@ namespace Collimator
 export Collimator.Poly (view over set preview review traverse)
 
 -- Re-export combinators from Collimator.Combinators
+-- Note: With type-alias optics, standard function composition (∘) is used
+-- instead of explicit compose functions.
 export Collimator.Combinators (filtered filteredList ifilteredList)
-export Collimator.Combinators (
-  composeIso composeLens composePrism composeTraversal
-  composeLensTraversal composeTraversalLens composeIsoTraversal
-  composeLensPrism composeTraversalPrism composeTraversalAffine
-  composeLensAffine composeAffineLens composeAffine
-  composeAffinePrism composePrismAffine composePrismLens
-  composePrismTraversal composeAffineTraversal
-)
 
 -- Re-export helpers
 export Collimator.Helpers (first' second' lensOf lensOfPoly prismOf some' each')
