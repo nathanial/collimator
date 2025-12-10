@@ -29,9 +29,10 @@ def stringTests : List TestCase := [
     name := "String.chars: iso to List Char"
     run := do
       let s := "hello"
-      let cs := Collimator.Poly.view chars s
+      let charsIso : Iso' String (List Char) := chars
+      let cs := view' charsIso s
       ensureEq "chars forward" ['h', 'e', 'l', 'l', 'o'] cs
-      let s' := Collimator.Poly.review chars ['w', 'o', 'r', 'l', 'd']
+      let s' := review' charsIso ['w', 'o', 'r', 'l', 'd']
       ensureEq "chars backward" "world" s'
   },
   {
@@ -144,7 +145,8 @@ def bitraversalTests : List TestCase := [
     name := "swapped: swap pair components"
     run := do
       let pair := (1, 2)
-      let result := Collimator.Poly.view swapped pair
+      let swappedIso : Iso' (Int × Int) (Int × Int) := swapped
+      let result := view' swappedIso pair
       ensureEq "swapped" (2, 1) result
   },
   {
@@ -152,8 +154,9 @@ def bitraversalTests : List TestCase := [
     run := do
       let left : Sum Int Int := Sum.inl 42
       let right : Sum Int Int := Sum.inr 99
-      let l' := Collimator.Poly.view swappedSum left
-      let r' := Collimator.Poly.view swappedSum right
+      let swappedSumIso : Iso' (Sum Int Int) (Sum Int Int) := swappedSum
+      let l' := view' swappedSumIso left
+      let r' := view' swappedSumIso right
       ensureEq "swap left" (Sum.inr 42) l'
       ensureEq "swap right" (Sum.inl 99) r'
   },
@@ -162,7 +165,7 @@ def bitraversalTests : List TestCase := [
     run := do
       let pair := ([1, 2], [3, 4])
       let listTrav : Traversal' (List Int) Int := Collimator.Instances.List.traversed
-      let t := beside listTrav listTrav
+      let t : Traversal' (List Int × List Int) Int := beside listTrav listTrav
       let result := Traversal.over' t (· + 1) pair
       ensureEq "increment both lists" ([2, 3], [4, 5]) result
   },
@@ -171,7 +174,7 @@ def bitraversalTests : List TestCase := [
     run := do
       let pair := (["a", "b"], ["c"])
       let listTrav : Traversal' (List String) String := Collimator.Instances.List.traversed
-      let t := beside listTrav listTrav
+      let t : Traversal' (List String × List String) String := beside listTrav listTrav
       let result := Fold.toListTraversal t pair
       ensureEq "collect all strings" ["a", "b", "c"] result
   },
@@ -180,7 +183,7 @@ def bitraversalTests : List TestCase := [
     run := do
       let pair := ([10, 20], [30])
       let listTrav : Traversal' (List Int) Int := Collimator.Instances.List.traversed
-      let t := beside' listTrav listTrav
+      let t : Traversal' (List Int × List Int) Int := beside' listTrav listTrav
       let result := Traversal.over' t (· * 2) pair
       ensureEq "double all" ([20, 40], [60]) result
   },
@@ -195,7 +198,7 @@ def bitraversalTests : List TestCase := [
           | none => pure none
           | some x => Functor.map some (f x))
       let listTrav : Traversal' (List Int) Int := Collimator.Instances.List.traversed
-      let t := beside optTrav listTrav
+      let t : Traversal' (Option Int × List Int) Int := beside optTrav listTrav
       let result := Traversal.over' t (· + 10) pair
       ensureEq "traverse option and list" (some 15, [11, 12]) result
   }

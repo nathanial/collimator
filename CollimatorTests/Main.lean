@@ -11,7 +11,14 @@ import CollimatorTests.Traversals
 import CollimatorTests.Poly
 import CollimatorTests.PhaseFiveNormalization
 import CollimatorTests.PhaseFiveSubtyping
-import CollimatorTests.AdvancedShowcase
+import CollimatorTests.AdvancedShowcase.PolymorphicIsos
+import CollimatorTests.AdvancedShowcase.AffineWizardry
+import CollimatorTests.AdvancedShowcase.PrismMagic
+import CollimatorTests.AdvancedShowcase.HeterogeneousCompositions
+import CollimatorTests.AdvancedShowcase.MindBending
+import CollimatorTests.AdvancedShowcase.EffectfulTraversals
+import CollimatorTests.AdvancedShowcase.DeepComposition
+-- FilteredIndexed.lean.wip remains WIP
 import CollimatorTests.GetterReview
 import CollimatorTests.PropertyTests
 import CollimatorTests.ConcreteProfunctors
@@ -51,25 +58,24 @@ def main : IO UInt32 := do
   exitCode := exitCode + (← runTests "Phase Five Subtyping" CollimatorTests.PhaseFiveSubtyping.cases)
   exitCode := exitCode + (← runTests "Getter and Review" CollimatorTests.GetterReview.cases)
 
-  -- Advanced Showcase tests
-  exitCode := exitCode + (← runTests "Deep Composition" CollimatorTests.AdvancedShowcase.DeepComposition.cases)
-  exitCode := exitCode + (← runTests "Effectful Traversals" CollimatorTests.AdvancedShowcase.EffectfulTraversals.cases)
-  exitCode := exitCode + (← runTests "Filtered Indexed" CollimatorTests.AdvancedShowcase.FilteredIndexed.cases)
-  exitCode := exitCode + (← runTests "Heterogeneous Compositions" CollimatorTests.AdvancedShowcase.HeterogeneousCompositions.cases)
+  -- Advanced Showcase tests (some WIP)
   exitCode := exitCode + (← runTests "Polymorphic Isos" CollimatorTests.AdvancedShowcase.PolymorphicIsos.cases)
   exitCode := exitCode + (← runTests "Affine Wizardry" CollimatorTests.AdvancedShowcase.AffineWizardry.cases)
   exitCode := exitCode + (← runTests "Prism Magic" CollimatorTests.AdvancedShowcase.PrismMagic.cases)
+  exitCode := exitCode + (← runTests "Heterogeneous Compositions" CollimatorTests.AdvancedShowcase.HeterogeneousCompositions.cases)
   exitCode := exitCode + (← runTests "Mind Bending" CollimatorTests.AdvancedShowcase.MindBending.cases)
+  exitCode := exitCode + (← runTests "Effectful Traversals" CollimatorTests.AdvancedShowcase.EffectfulTraversals.cases)
+  exitCode := exitCode + (← runTests "Deep Composition" CollimatorTests.AdvancedShowcase.DeepComposition.cases)
 
   -- New test suites
-  exitCode := exitCode + (← runTests "Property Tests" CollimatorTests.PropertyTests.cases)
   exitCode := exitCode + (← runTests "Concrete Profunctors" CollimatorTests.ConcreteProfunctors.cases)
-  exitCode := exitCode + (← runTests "Edge Cases" CollimatorTests.EdgeCases.cases)
   exitCode := exitCode + (← runTests "New Combinators" CollimatorTests.NewCombinators.cases)
-  exitCode := exitCode + (← runTests "Debug Utilities" CollimatorTests.Debug.cases)
-  exitCode := exitCode + (← runTests "Advanced Features" CollimatorTests.AdvancedFeatures.cases)
   exitCode := exitCode + (← runTests "Integration Patterns" CollimatorTests.Integration.cases)
   exitCode := exitCode + (← runTests "Tooling" CollimatorTests.Tooling.cases)
+  exitCode := exitCode + (← runTests "Edge Cases" CollimatorTests.EdgeCases.cases)
+  exitCode := exitCode + (← runTests "Property Tests" CollimatorTests.PropertyTests.cases)
+  exitCode := exitCode + (← runTests "Debug Utilities" CollimatorTests.Debug.cases)
+  exitCode := exitCode + (← runTests "Advanced Features" CollimatorTests.AdvancedFeatures.cases)
 
   IO.println ""
   if exitCode == 0 then

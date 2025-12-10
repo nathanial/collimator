@@ -136,7 +136,7 @@ def case_safePartialAccess : TestCase := {
 
     -- Lens ∘ Prism creates an AffineTraversal
     -- Combined: AffineTraversal focusing on the email if present
-    let emailAffine := userEmailLens (somePrism String)
+    let emailAffine : AffineTraversal' UserRecord String := userEmailLens ∘ somePrism String
 
     -- Preview safely extracts the value if present
     let aliceEmail := AffineTraversalOps.preview' emailAffine completeUser
@@ -184,16 +184,12 @@ def case_lensPrismComposition : TestCase := {
     ]
 
     -- Lens into Option ConfigValue, then Prism to String
-    let strValueAffine :=
-      ∘
-        (configValueLens (somePrism ConfigValue))
-        (AffineTraversalOps.ofPrism strConfigPrism)
+    let strValueAffine : AffineTraversal' ConfigEntry String :=
+      (configValueLens ∘ somePrism ConfigValue) ∘ AffineTraversalOps.ofPrism strConfigPrism
 
     -- Lens into Option ConfigValue, then Prism to Int
-    let intValueAffine :=
-      ∘
-        (configValueLens (somePrism ConfigValue))
-        (AffineTraversalOps.ofPrism intConfigPrism)
+    let intValueAffine : AffineTraversal' ConfigEntry Int :=
+      (configValueLens ∘ somePrism ConfigValue) ∘ AffineTraversalOps.ofPrism intConfigPrism
 
     -- Preview string values
     let hostValue := AffineTraversalOps.preview' strValueAffine entries[0]!
@@ -254,13 +250,13 @@ def case_shortCircuit : TestCase := {
 
     -- Build deep affine traversal through 3 levels of Option
     -- With type-alias optics, Lens ∘ Prism gives AffineTraversal
-    let level1 :=
+    let level1 : AffineTraversal' (Container (Container (Container Nat))) (Container (Container Nat)) :=
       (containerValueLens (Container (Container Nat))) ∘
       (somePrism (Container (Container Nat)))
-    let level2 := level1 ∘
+    let level2 : AffineTraversal' (Container (Container (Container Nat))) (Container Nat) := level1 ∘
       (containerValueLens (Container Nat)) ∘
       (somePrism (Container Nat))
-    let deepAffine := level2 ∘
+    let deepAffine : AffineTraversal' (Container (Container (Container Nat))) Nat := level2 ∘
       (containerValueLens Nat) ∘
       (somePrism Nat)
 
@@ -325,16 +321,12 @@ def case_databaseLookup : TestCase := {
     ]
 
     -- Affine traversal to user's bio through optional profile
-    let bioAffine :=
-      ∘
-        (userProfileLens (somePrism ProfileData))
-        (profileBioLens (somePrism String))
+    let bioAffine : AffineTraversal' UserRecord String :=
+      (userProfileLens ∘ somePrism ProfileData) ∘ (profileBioLens ∘ somePrism String)
 
     -- Affine traversal to user's age through optional profile
-    let ageAffine :=
-      ∘
-        (userProfileLens (somePrism ProfileData))
-        (profileAgeLens (somePrism Nat))
+    let ageAffine : AffineTraversal' UserRecord Nat :=
+      (userProfileLens ∘ somePrism ProfileData) ∘ (profileAgeLens ∘ somePrism Nat)
 
     -- Query bios - only Alice and Dave have them
     let aliceBio := AffineTraversalOps.preview' bioAffine users[0]!
@@ -393,7 +385,7 @@ def case_opticConversions : TestCase := {
     let entry := ConfigEntry.mk "test" (some (ConfigValue.int 100))
 
     -- A Lens is an AffineTraversal that always succeeds
-    let fromLens := AffineTraversalOps.ofLens configValueLens
+    let fromLens : AffineTraversal' ConfigEntry (Option ConfigValue) := AffineTraversalOps.ofLens configValueLens
 
     let lensPreview := AffineTraversalOps.preview' fromLens entry
     if lensPreview != some (some (ConfigValue.int 100)) then
@@ -402,7 +394,7 @@ def case_opticConversions : TestCase := {
     IO.println "✓ Conversion: Lens lifts to AffineTraversal (always has focus)"
 
     -- A Prism is an AffineTraversal that may fail to match
-    let fromPrism := AffineTraversalOps.ofPrism (somePrism ConfigValue)
+    let fromPrism : AffineTraversal' (Option ConfigValue) ConfigValue := AffineTraversalOps.ofPrism (somePrism ConfigValue)
 
     let prismPreviewSome := AffineTraversalOps.preview' fromPrism (some (ConfigValue.str "hi"))
     if prismPreviewSome != some (ConfigValue.str "hi") then
@@ -415,8 +407,8 @@ def case_opticConversions : TestCase := {
     IO.println "✓ Conversion: Prism lifts to AffineTraversal (may not have focus)"
 
     -- Composed AffineTraversals combine their optionality
-    let composed := ∘
-      (fromLens ∘ (AffineTraversalOps.ofPrism (somePrism ConfigValue)))
+    let composed : AffineTraversal' ConfigEntry Int :=
+      (fromLens ∘ (AffineTraversalOps.ofPrism (somePrism ConfigValue))) ∘
       (AffineTraversalOps.ofPrism intConfigPrism)
 
     let composedResult := AffineTraversalOps.preview' composed entry

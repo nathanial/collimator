@@ -102,8 +102,8 @@ example : List Int :=
 example : List (List Int) :=
   let matrix : List (List Int) := [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
   -- Modify element at row 1, column 2
-  let rowTrav := ix (s := List (List Int)) (a := List Int) 1  -- Focus row at index 1
-  let colTrav := ix (s := List Int) (a := Int) 2               -- Focus column at index 2
+  let rowTrav : Traversal' (List (List Int)) (List Int) := ix 1  -- Focus row at index 1
+  let colTrav : Traversal' (List Int) Int := ix 2               -- Focus column at index 2
   -- Compose: first row, then column within that row
   Traversal.over' rowTrav
     (fun row => Traversal.over' colTrav (· * 100) row)

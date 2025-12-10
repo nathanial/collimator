@@ -122,7 +122,7 @@ private def case_binaryTreeTraversal : TestCase := {
       (Tree.node (Tree.leaf 10) (Tree.leaf 15))
 
     -- Transform all leaves
-    let doubled := tree & tr %~ (· * 2)
+    let doubled := Traversal.over' tr (· * 2) tree
     let expected := Tree.node
       (Tree.leaf 10)
       (Tree.node (Tree.leaf 20) (Tree.leaf 30))
@@ -134,7 +134,7 @@ private def case_binaryTreeTraversal : TestCase := {
       modify (x :: ·)
       pure x
 
-    let (_, leaves) := (traverse tr collectLeaves tree).run []
+    let (_, leaves) := (Traversal.traverse' tr collectLeaves tree).run []
     ensureEq "All leaves collected" [5, 10, 15] leaves.reverse
 }
 
@@ -201,7 +201,7 @@ private def case_roseTreeTraversal : TestCase := {
     ]
 
     -- Transform all nodes to uppercase
-    let upper := tree & tr %~ String.toUpper
+    let upper := Traversal.over' tr String.toUpper tree
 
     -- Verify root
     match upper with
@@ -221,7 +221,7 @@ private def case_roseTreeTraversal : TestCase := {
       modify (· + 1)
       pure _x
 
-    let (_, count) := (traverse tr countNode tree).run 0
+    let (_, count) := (Traversal.traverse' tr countNode tree).run 0
     ensureEq "Total node count" 7 count
 }
 
@@ -255,7 +255,7 @@ private def case_deeplyNestedRoseTree : TestCase := {
       modify (x :: ·)
       pure x
 
-    let (_, values) := (traverse tr collectValues multiplied).run []
+    let (_, values) := (Traversal.traverse' tr collectValues multiplied).run []
     ensureEq "All values multiplied by 10" [10, 20, 30, 40, 50, 60, 70, 80, 90] values.reverse
 }
 
@@ -273,7 +273,7 @@ private def case_recursiveValidation : TestCase := {
     let validatePositive (x : Int) : Option Int :=
       if x > 0 then some x else none
 
-    let result1 := traverse tr validatePositive tree1
+    let result1 := Traversal.traverse' tr validatePositive tree1
     match result1 with
     | some t => ensureEq "Valid tree passes" tree1 t
     | none => ensure false "Expected validation to succeed"
@@ -283,7 +283,7 @@ private def case_recursiveValidation : TestCase := {
       (Tree.leaf 5)
       (Tree.node (Tree.leaf (-10)) (Tree.leaf 15))
 
-    let result2 := traverse tr validatePositive tree2
+    let result2 := Traversal.traverse' tr validatePositive tree2
     match result2 with
     | none => pure ()  -- Expected: validation fails
     | some _ => ensure false "Expected validation to fail"
@@ -309,7 +309,7 @@ private def case_recursiveStatefulTransform : TestCase := {
       set (sum + x)
       pure sum
 
-    let (transformed, finalSum) := (traverse tr replaceWithSum tree).run 0
+    let (transformed, finalSum) := (Traversal.traverse' tr replaceWithSum tree).run 0
 
     -- Values should be: [0, 10, 30, 60, 100]
     -- Transform: 10->0 (sum before), 20->10, 30->30, 40->60, 50->100
@@ -325,7 +325,7 @@ private def case_recursiveStatefulTransform : TestCase := {
       modify (x :: ·)
       pure x
 
-    let (_, transformedValues) := (traverse tr collectTransformed transformed).run []
+    let (_, transformedValues) := (Traversal.traverse' tr collectTransformed transformed).run []
     ensureEq "All transformed values are running sums" [0, 10, 30, 60, 100] transformedValues.reverse
 }
 
@@ -349,10 +349,10 @@ private def case_composedRecursiveTraversal : TestCase := {
         | some a => pure some <*> f a)
 
     -- Compose: first traverse tree, then traverse options
-    let composed := treeTr ∘ optionTr
+    let composed : Traversal' (Tree (Option Int)) Int := treeTr ∘ optionTr
 
     -- Transform: double all present values, skip None
-    let doubled := treeOfOptions & composed %~ (· * 2)
+    let doubled := Traversal.over' composed (· * 2) treeOfOptions
     let expected := Tree.node
       (Tree.leaf (some 10))
       (Tree.node (Tree.leaf none) (Tree.leaf (some 30)))
@@ -364,7 +364,7 @@ private def case_composedRecursiveTraversal : TestCase := {
       modify (x :: ·)
       pure x
 
-    let (_, collected) := (traverse composed collectPresent treeOfOptions).run []
+    let (_, collected) := (Traversal.traverse' composed collectPresent treeOfOptions).run []
     ensureEq "Collected only present values" [5, 15] collected.reverse
 }
 
@@ -399,7 +399,7 @@ private def case_selfModifyingTraversal : TestCase := {
       else
         pure x     -- Before first large value, keep unchanged
 
-    let (result, _) := (traverse tr modifyBasedOnPrevious tree).run false
+    let (result, _) := (Traversal.traverse' tr modifyBasedOnPrevious tree).run false
 
     -- Verify the self-modification worked
     -- Expected structure after transformation (traversal order: 5,10,15,8,3,20,2):

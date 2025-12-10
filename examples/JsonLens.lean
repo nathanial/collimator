@@ -76,9 +76,7 @@ def updateField (key : String) (f : JsonValue → JsonValue)
 
 /-- AffineTraversal focusing on a specific field of a JSON object -/
 def field (key : String) : AffineTraversal' JsonValue JsonValue :=
-  ⟨fun {P} [Profunctor P] hStrong hChoice pab =>
-    let _ : Strong P := hStrong
-    let _ : Choice P := hChoice
+  fun {P} [Profunctor P] [Strong P] [Choice P] pab =>
     Profunctor.dimap
       (fun json =>
         match json with
@@ -91,15 +89,13 @@ def field (key : String) : AffineTraversal' JsonValue JsonValue :=
         | Sum.inl json => json
         | Sum.inr (newVal, (object fields, k)) => object (updateField k (fun _ => newVal) fields)
         | Sum.inr (_, (other, _)) => other)  -- shouldn't happen
-      (Choice.right (Strong.first pab))⟩
+      (Choice.right (Strong.first pab))
 
 /-! ## Array Index Access -/
 
 /-- AffineTraversal focusing on element at index in a JSON array -/
 def index (i : Nat) : AffineTraversal' JsonValue JsonValue :=
-  ⟨fun {P} [Profunctor P] hStrong hChoice pab =>
-    let _ : Strong P := hStrong
-    let _ : Choice P := hChoice
+  fun {P} [Profunctor P] [Strong P] [Choice P] pab =>
     Profunctor.dimap
       (fun json =>
         match json with
@@ -111,13 +107,13 @@ def index (i : Nat) : AffineTraversal' JsonValue JsonValue :=
       (fun
         | Sum.inl json => json
         | Sum.inr (newVal, (items, idx)) => array (items.set idx newVal))
-      (Choice.right (Strong.first pab))⟩
+      (Choice.right (Strong.first pab))
 
 /-! ## Traversing All Array Elements -/
 
 /-- Traversal over all elements in a JSON array -/
 def elements : Traversal' JsonValue JsonValue :=
-  _array ∘ (Collimator.Instances.List.traversed : Traversal' (List JsonValue) JsonValue)
+  _array ∘ Collimator.Instances.List.traversed
 
 end JsonValue
 

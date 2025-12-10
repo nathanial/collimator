@@ -35,27 +35,27 @@ private def case_optionValidatePositive : TestCase := {
 
     -- Test 1: All positive - succeeds
     let allPositive : List Int := [1, 2, 3, 4, 5]
-    let result1 := traverse traversed validatePositive allPositive
+    let result1 := Traversal.traverse' traversed validatePositive allPositive
     ensureEq "All positive validates" (some [1, 2, 3, 4, 5]) result1
 
     -- Test 2: Contains negative - short-circuits to None
     let hasNegative : List Int := [1, 2, -3, 4, 5]
-    let result2 := traverse traversed validatePositive hasNegative
+    let result2 := Traversal.traverse' traversed validatePositive hasNegative
     ensureEq "Negative causes short-circuit" (none : Option (List Int)) result2
 
     -- Test 3: First element negative - immediate failure
     let firstNegative : List Int := [-1, 2, 3]
-    let result3 := traverse traversed validatePositive firstNegative
+    let result3 := Traversal.traverse' traversed validatePositive firstNegative
     ensureEq "First negative fails immediately" (none : Option (List Int)) result3
 
     -- Test 4: Empty list - succeeds trivially
     let empty : List Int := []
-    let result4 := traverse traversed validatePositive empty
+    let result4 := Traversal.traverse' traversed validatePositive empty
     ensureEq "Empty list validates" (some []) result4
 
     -- Test 5: Zero is not positive - should fail
     let hasZero : List Int := [1, 0, 3]
-    let result5 := traverse traversed validatePositive hasZero
+    let result5 := Traversal.traverse' traversed validatePositive hasZero
     ensureEq "Zero is not positive" (none : Option (List Int)) result5
 }
 
@@ -70,32 +70,32 @@ private def case_optionSafeDivision : TestCase := {
     -- Test 1: All non-zero divisors - succeeds
     let divisors : List Int := [2, 4, 5, 10]
     let dividend := 100
-    let result1 := traverse traversed (safeDivide · dividend) divisors
+    let result1 := Traversal.traverse' traversed (safeDivide · dividend) divisors
     ensureEq "All non-zero divisors succeed" (some [50, 25, 20, 10]) result1
 
     -- Test 2: Contains zero - short-circuits to None
     let hasZero : List Int := [2, 4, 0, 10]
-    let result2 := traverse traversed (safeDivide · dividend) hasZero
+    let result2 := Traversal.traverse' traversed (safeDivide · dividend) hasZero
     ensureEq "Zero divisor causes short-circuit" (none : Option (List Int)) result2
 
     -- Test 3: First element zero - immediate failure
     let firstZero : List Int := [0, 2, 4]
-    let result3 := traverse traversed (safeDivide · dividend) firstZero
+    let result3 := Traversal.traverse' traversed (safeDivide · dividend) firstZero
     ensureEq "First zero fails immediately" (none : Option (List Int)) result3
 
     -- Test 4: Last element zero - processes all then fails
     let lastZero : List Int := [2, 4, 5, 0]
-    let result4 := traverse traversed (safeDivide · dividend) lastZero
+    let result4 := Traversal.traverse' traversed (safeDivide · dividend) lastZero
     ensureEq "Last zero still fails" (none : Option (List Int)) result4
 
     -- Test 5: Empty list - succeeds trivially
     let empty : List Int := []
-    let result5 := traverse traversed (safeDivide · dividend) empty
+    let result5 := Traversal.traverse' traversed (safeDivide · dividend) empty
     ensureEq "Empty list succeeds" (some []) result5
 
     -- Test 6: Negative divisors are fine
     let negatives : List Int := [-2, -5, 10]
-    let result6 := traverse traversed (safeDivide · dividend) negatives
+    let result6 := Traversal.traverse' traversed (safeDivide · dividend) negatives
     ensureEq "Negative divisors are valid" (some [-50, -20, 10]) result6
 }
 
@@ -111,25 +111,25 @@ private def case_stateNumberElements : TestCase := {
 
     -- Test 1: Number elements starting from 0
     let fruits := ["apple", "banana", "cherry"]
-    let (result1, finalCount1) := (traverse traversed numberElement fruits).run 0
+    let (result1, finalCount1) := (Traversal.traverse' traversed numberElement fruits).run 0
     ensureEq "Elements numbered from 0" [(0, "apple"), (1, "banana"), (2, "cherry")] result1
     ensureEq "Final counter is 3" 3 finalCount1
 
     -- Test 2: Number elements starting from 10
     let colors := ["red", "green", "blue"]
-    let (result2, finalCount2) := (traverse traversed numberElement colors).run 10
+    let (result2, finalCount2) := (Traversal.traverse' traversed numberElement colors).run 10
     ensureEq "Elements numbered from 10" [(10, "red"), (11, "green"), (12, "blue")] result2
     ensureEq "Final counter is 13" 13 finalCount2
 
     -- Test 3: Empty list - counter unchanged
     let empty : List String := []
-    let (result3, finalCount3) := (traverse traversed numberElement empty).run 5
+    let (result3, finalCount3) := (Traversal.traverse' traversed numberElement empty).run 5
     ensureEq "Empty list returns empty" [] result3
     ensureEq "Counter unchanged for empty list" 5 finalCount3
 
     -- Test 4: Single element
     let single := ["only"]
-    let (result4, finalCount4) := (traverse traversed numberElement single).run 99
+    let (result4, finalCount4) := (Traversal.traverse' traversed numberElement single).run 99
     ensureEq "Single element numbered" [(99, "only")] result4
     ensureEq "Counter incremented once" 100 finalCount4
 
@@ -140,7 +140,7 @@ private def case_stateNumberElements : TestCase := {
       pure s!"[{idx}]={x}"
 
     let numbers := [10, 20, 30]
-    let (indexed, _) := (traverse traversed addIndex numbers).run 1
+    let (indexed, _) := (Traversal.traverse' traversed addIndex numbers).run 1
     ensureEq "Create indexed strings" ["[1]=10", "[2]=20", "[3]=30"] indexed
 }
 
@@ -248,7 +248,7 @@ private def case_stateAccumulateStats : TestCase := {
     -- Test 1: Accumulate sum, count, and max while doubling
     let numbers := [5, 2, 8, 1, 9]
     let initialStats : Stats := { sum := 0, count := 0, max := 0 }
-    let (doubled, finalStats) := (traverse traversed doubleAndAccumulate numbers).run initialStats
+    let (doubled, finalStats) := (Traversal.traverse' traversed doubleAndAccumulate numbers).run initialStats
     ensureEq "Elements doubled" [10, 4, 16, 2, 18] doubled
     ensureEq "Sum accumulated" 25 finalStats.sum
     ensureEq "Count accumulated" 5 finalStats.count
@@ -263,7 +263,7 @@ private def case_stateAccumulateStats : TestCase := {
       pure (x + 10)  -- Transform: add 10 to each element
 
     let values := [15, 25, 35]
-    let (transformed, (totalSum, totalCount)) := (traverse traversed accumulateForAvg values).run (0, 0)
+    let (transformed, (totalSum, totalCount)) := (Traversal.traverse' traversed accumulateForAvg values).run (0, 0)
     ensureEq "Values transformed (+10)" [25, 35, 45] transformed
     ensureEq "Total sum for average" 75 totalSum
     ensureEq "Total count" 3 totalCount
@@ -271,13 +271,13 @@ private def case_stateAccumulateStats : TestCase := {
 
     -- Test 3: Empty list - stats unchanged
     let empty : List Int := []
-    let (emptyResult, emptyStats) := (traverse traversed doubleAndAccumulate empty).run initialStats
+    let (emptyResult, emptyStats) := (Traversal.traverse' traversed doubleAndAccumulate empty).run initialStats
     ensureEq "Empty list unchanged" [] emptyResult
     ensureEq "Stats remain initial" initialStats emptyStats
 
     -- Test 4: Single element accumulation
     let single := [42]
-    let (singleResult, singleStats) := (traverse traversed doubleAndAccumulate single).run initialStats
+    let (singleResult, singleStats) := (Traversal.traverse' traversed doubleAndAccumulate single).run initialStats
     ensureEq "Single element doubled" [84] singleResult
     ensureEq "Single sum" 42 singleStats.sum
     ensureEq "Single count" 1 singleStats.count
@@ -296,7 +296,7 @@ private def case_writerLogTransformations : TestCase := {
 
     -- Test 1: Log all transformations
     let numbers := [3, 5, 7]
-    let (transformed, log) := (traverse traversed transformAndLog numbers).run
+    let (transformed, log) := (Traversal.traverse' traversed transformAndLog numbers).run
     ensureEq "All elements transformed" [7, 11, 15] transformed
     ensureEq "All transformations logged"
       #["Transform 3 -> 7", "Transform 5 -> 11", "Transform 7 -> 15"]
@@ -304,13 +304,13 @@ private def case_writerLogTransformations : TestCase := {
 
     -- Test 2: Empty list produces empty log
     let empty : List Int := []
-    let (emptyResult, emptyLog) := (traverse traversed transformAndLog empty).run
+    let (emptyResult, emptyLog) := (Traversal.traverse' traversed transformAndLog empty).run
     ensureEq "Empty result" [] emptyResult
     ensureEq "Empty log" #[] emptyLog
 
     -- Test 3: Single element
     let single := [10]
-    let (singleResult, singleLog) := (traverse traversed transformAndLog single).run
+    let (singleResult, singleLog) := (Traversal.traverse' traversed transformAndLog single).run
     ensureEq "Single transformation" [21] singleResult
     ensureEq "Single log entry" #["Transform 10 -> 21"] singleLog
 
@@ -325,7 +325,7 @@ private def case_writerLogTransformations : TestCase := {
       pure (x.natAbs)
 
     let mixed := [-5, 0, 10, -2]
-    let (validated, validationLog) := (traverse traversed validateAndTransform mixed).run
+    let (validated, validationLog) := (Traversal.traverse' traversed validateAndTransform mixed).run
     ensureEq "Validated values" [5, 0, 10, 2] validated
     ensureEq "Validation log collected"
       #["Warning: negative value -5", "Warning: zero value", "OK: 10", "Warning: negative value -2"]
@@ -339,7 +339,7 @@ private def case_writerLogTransformations : TestCase := {
       pure doubled
 
     let inputs := [2, 3]
-    let (computed, computeLog) := (traverse traversed computeWithDetail inputs).run
+    let (computed, computeLog) := (Traversal.traverse' traversed computeWithDetail inputs).run
     ensureEq "Computed results" [8, 18] computed
     ensureEq "Computation steps logged"
       #["2² = 4, then *2 = 8", "3² = 9, then *2 = 18"]
@@ -367,7 +367,7 @@ private def case_writerCollectDiagnostics : TestCase := {
 
     -- Test 1: Collect mixed diagnostics
     let values := [50, -10, 0, 150, 25]
-    let (results, diagnostics) := (traverse traversed processWithDiagnostics values).run
+    let (results, diagnostics) := (Traversal.traverse' traversed processWithDiagnostics values).run
     ensureEq "Values processed" [50, 0, 0, 150, 25] results
     ensureEq "Diagnostics count" 5 diagnostics.size
     ensureEq "First diagnostic is info"
@@ -390,7 +390,7 @@ private def case_writerCollectDiagnostics : TestCase := {
       pure result
 
     let inputs := [10, 30]
-    let (doubled, logs) := (traverse traversed processWithMultipleDiagnostics inputs).run
+    let (doubled, logs) := (Traversal.traverse' traversed processWithMultipleDiagnostics inputs).run
     ensureEq "Results doubled" [20, 60] doubled
     ensureEq "Multiple logs per element" 5 logs.size
     -- 10: start, complete (2)
@@ -401,7 +401,7 @@ private def case_writerCollectDiagnostics : TestCase := {
       diags.foldl (fun acc d => if d.level == level then acc + 1 else acc) 0
 
     let testValues := [5, -1, 200, 0, 10]
-    let (_, allDiags) := (traverse traversed processWithDiagnostics testValues).run
+    let (_, allDiags) := (Traversal.traverse' traversed processWithDiagnostics testValues).run
     let errorCount := countByLevel allDiags DiagLevel.error
     let warningCount := countByLevel allDiags DiagLevel.warning
     let infoCount := countByLevel allDiags DiagLevel.info
@@ -411,7 +411,7 @@ private def case_writerCollectDiagnostics : TestCase := {
 
     -- Test 4: Empty list produces no diagnostics
     let empty : List Int := []
-    let (emptyResults, emptyDiags) := (traverse traversed processWithDiagnostics empty).run
+    let (emptyResults, emptyDiags) := (Traversal.traverse' traversed processWithDiagnostics empty).run
     ensureEq "Empty results" [] emptyResults
     ensureEq "No diagnostics" 0 emptyDiags.size
 }
@@ -429,7 +429,7 @@ private def case_validationAccumulateErrors : TestCase := {
 
     -- Test 1: All valid - succeeds
     let allValid := [1, 2, 3, 4]
-    let result1 := traverse traversed validatePositive allValid
+    let result1 := Traversal.traverse' traversed validatePositive allValid
     match result1 with
     | Validation.success vals =>
       ensureEq "All valid values pass" [1, 2, 3, 4] vals
@@ -438,7 +438,7 @@ private def case_validationAccumulateErrors : TestCase := {
 
     -- Test 2: Multiple failures - ACCUMULATES ALL (not short-circuit like Option)
     let multipleInvalid := [1, -2, 3, -4, 0]
-    let result2 := traverse traversed validatePositive multipleInvalid
+    let result2 := Traversal.traverse' traversed validatePositive multipleInvalid
     match result2 with
     | Validation.success _ =>
       IO.throwServerError "Expected failure but got success"
@@ -452,13 +452,13 @@ private def case_validationAccumulateErrors : TestCase := {
     let optionValidate (x : Int) : Option Int :=
       if x > 0 then some x else none
 
-    let result3Option := traverse traversed optionValidate multipleInvalid
+    let result3Option := Traversal.traverse' traversed optionValidate multipleInvalid
     match result3Option with
     | none => pure ()  -- Option just returns None, doesn't tell us which/how many failed
     | some _ => IO.throwServerError "Expected None"
 
     -- Key insight: Validation gives us ALL errors, Option gives us nothing
-    let result3Validation := traverse traversed validatePositive multipleInvalid
+    let result3Validation := Traversal.traverse' traversed validatePositive multipleInvalid
     match result3Validation with
     | Validation.failure errs =>
       ensureEq "Validation tells us exactly what failed" 3 errs.size
@@ -503,7 +503,7 @@ private def case_validationAccumulateErrors : TestCase := {
 
     -- Test 5: Empty list succeeds trivially
     let empty : List Int := []
-    let result5 := traverse traversed validatePositive empty
+    let result5 := Traversal.traverse' traversed validatePositive empty
     match result5 with
     | Validation.success vals =>
       ensureEq "Empty list succeeds" [] vals
@@ -523,24 +523,24 @@ private def case_stateRunningSum : TestCase := {
 
     -- Test 1: Running sum starting from 0
     let numbers := [5, 10, 15, 20]
-    let (result1, finalSum1) := (traverse traversed replaceWithSum numbers).run 0
+    let (result1, finalSum1) := (Traversal.traverse' traversed replaceWithSum numbers).run 0
     ensureEq "Elements replaced with running sum" [0, 5, 15, 30] result1
     ensureEq "Final sum" 50 finalSum1
 
     -- Test 2: Running sum starting from 100
-    let (result2, finalSum2) := (traverse traversed replaceWithSum numbers).run 100
+    let (result2, finalSum2) := (Traversal.traverse' traversed replaceWithSum numbers).run 100
     ensureEq "Elements replaced with running sum from 100" [100, 105, 115, 130] result2
     ensureEq "Final sum from 100" 150 finalSum2
 
     -- Test 3: Empty list - sum unchanged
     let empty : List Int := []
-    let (result3, finalSum3) := (traverse traversed replaceWithSum empty).run 42
+    let (result3, finalSum3) := (Traversal.traverse' traversed replaceWithSum empty).run 42
     ensureEq "Empty list" [] result3
     ensureEq "Sum unchanged" 42 finalSum3
 
     -- Test 4: Negative numbers
     let mixed := [10, -5, 20, -15]
-    let (result4, finalSum4) := (traverse traversed replaceWithSum mixed).run 0
+    let (result4, finalSum4) := (Traversal.traverse' traversed replaceWithSum mixed).run 0
     ensureEq "Mixed positive/negative" [0, 10, 5, 25] result4
     ensureEq "Final sum with negatives" 10 finalSum4
 
@@ -551,7 +551,7 @@ private def case_stateRunningSum : TestCase := {
       pure currentProduct
 
     let factors := [2, 3, 4]
-    let (products, finalProduct) := (traverse traversed replaceWithProduct factors).run 1
+    let (products, finalProduct) := (Traversal.traverse' traversed replaceWithProduct factors).run 1
     ensureEq "Running products" [1, 2, 6] products
     ensureEq "Final product" 24 finalProduct
 }
@@ -570,7 +570,7 @@ private def case_stateNormalizeByStats : TestCase := {
     -- Test 1: Normalize sequence
     let values := [10, 20, 30, 40]
     let initialState : NormState := { sum := 0, count := 0 }
-    let (normalized, finalState) := (traverse traversed normalizeByMean values).run initialState
+    let (normalized, finalState) := (Traversal.traverse' traversed normalizeByMean values).run initialState
     ensureEq "Normalized by running mean" [10, 10, 15, 20] normalized
     -- [10-0, 20-10, 30-15, 40-20]
     ensureEq "Final sum" 100 finalState.sum
@@ -587,7 +587,7 @@ private def case_stateNormalizeByStats : TestCase := {
         pure 100  -- First element is 100%
 
     let sequence := [50, 100, 75, 200]
-    let (scaled, _) := (traverse traversed scaleByMax sequence).run 0
+    let (scaled, _) := (Traversal.traverse' traversed scaleByMax sequence).run 0
     ensureEq "Scaled by running max" [100, 200, 75, 200] scaled
     -- [100% (first), 100*100/50=200%, 75*100/100=75%, 200*100/100=200%]
 }
@@ -607,22 +607,22 @@ private def case_stateDeduplicateConsecutive : TestCase := {
 
     -- Test 1: Deduplicate consecutive duplicates
     let withDups := [1, 1, 2, 2, 2, 3, 1, 1]
-    let (result1, _) := (traverse traversed (dedup (-1)) withDups).run none
+    let (result1, _) := (Traversal.traverse' traversed (dedup (-1)) withDups).run none
     ensureEq "Consecutive duplicates marked as -1" [1, -1, 2, -1, -1, 3, 1, -1] result1
 
     -- Test 2: No duplicates
     let noDups := [1, 2, 3, 4, 5]
-    let (result2, _) := (traverse traversed (dedup (-1)) noDups).run none
+    let (result2, _) := (Traversal.traverse' traversed (dedup (-1)) noDups).run none
     ensureEq "No duplicates, all kept" [1, 2, 3, 4, 5] result2
 
     -- Test 3: All same
     let allSame := [7, 7, 7, 7]
-    let (result3, _) := (traverse traversed (dedup 0) allSame).run none
+    let (result3, _) := (Traversal.traverse' traversed (dedup 0) allSame).run none
     ensureEq "All same except first" [7, 0, 0, 0] result3
 
     -- Test 4: Empty list
     let empty : List Int := []
-    let (result4, _) := (traverse traversed (dedup (-1)) empty).run none
+    let (result4, _) := (Traversal.traverse' traversed (dedup (-1)) empty).run none
     ensureEq "Empty list" [] result4
 
     -- Test 5: Count consecutive duplicates
@@ -641,7 +641,7 @@ private def case_stateDeduplicateConsecutive : TestCase := {
           pure x
 
     let testSeq := [5, 5, 5, 3, 3, 1]
-    let (_, finalState) := (traverse traversed countDuplicates testSeq).run
+    let (_, finalState) := (Traversal.traverse' traversed countDuplicates testSeq).run
       { prev := none, dupCount := 0 }
     ensureEq "Counted 3 duplicate occurrences" 3 finalState.dupCount
 }
@@ -667,20 +667,20 @@ private def case_stateReplacementMap : TestCase := {
     -- Test 1: Assign unique IDs to strings, reuse for duplicates
     let words := ["apple", "banana", "apple", "cherry", "banana", "apple"]
     let initialState : MapState := { nextId := 0, mapping := [] }
-    let (ids, finalState) := (traverse traversed assignId words).run initialState
+    let (ids, finalState) := (Traversal.traverse' traversed assignId words).run initialState
     ensureEq "Unique IDs assigned and reused" [0, 1, 0, 2, 1, 0] ids
     ensureEq "Three unique strings" 3 finalState.nextId
     ensureEq "Mapping contains 3 entries" 3 finalState.mapping.length
 
     -- Test 2: Empty list
     let empty : List String := []
-    let (emptyIds, emptyState) := (traverse traversed assignId empty).run initialState
+    let (emptyIds, emptyState) := (Traversal.traverse' traversed assignId empty).run initialState
     ensureEq "Empty result" [] emptyIds
     ensureEq "No IDs assigned" 0 emptyState.nextId
 
     -- Test 3: All unique
     let unique := ["a", "b", "c", "d"]
-    let (uniqueIds, uniqueState) := (traverse traversed assignId unique).run initialState
+    let (uniqueIds, uniqueState) := (Traversal.traverse' traversed assignId unique).run initialState
     ensureEq "All unique IDs" [0, 1, 2, 3] uniqueIds
     ensureEq "Four IDs assigned" 4 uniqueState.nextId
 
@@ -700,7 +700,7 @@ private def case_stateReplacementMap : TestCase := {
         pure 1  -- First occurrence
 
     let numbers := [5, 3, 5, 5, 3, 7, 5]
-    let (freqs, _) := (traverse traversed replaceByFrequency numbers).run
+    let (freqs, _) := (Traversal.traverse' traversed replaceByFrequency numbers).run
       { frequencies := [] }
     ensureEq "Replace with occurrence count" [1, 1, 2, 3, 2, 1, 4] freqs
     -- 5 appears: 1st, 2nd, 3rd, 4th time
@@ -724,18 +724,18 @@ private def case_stateSlidingWindow : TestCase := {
     -- Test 1: Window size 2 - average of current and previous
     let numbers := [10, 20, 30, 40, 50]
     let initialState : WindowState := { window := [], maxSize := 2 }
-    let (averages, _) := (traverse traversed windowAverage numbers).run initialState
+    let (averages, _) := (Traversal.traverse' traversed windowAverage numbers).run initialState
     ensureEq "Window averages (size 2)" [10, 15, 25, 35, 45] averages
     -- [10/1, (20+10)/2, (30+20)/2, (40+30)/2, (50+40)/2]
 
     -- Test 2: Window size 3
-    let (averages3, _) := (traverse traversed windowAverage numbers).run
+    let (averages3, _) := (Traversal.traverse' traversed windowAverage numbers).run
       { window := [], maxSize := 3 }
     ensureEq "Window averages (size 3)" [10, 15, 20, 30, 40] averages3
     -- [10/1, (20+10)/2, (30+20+10)/3, (40+30+20)/3, (50+40+30)/3]
 
     -- Test 3: Window size 1 (no averaging)
-    let (averages1, _) := (traverse traversed windowAverage numbers).run
+    let (averages1, _) := (Traversal.traverse' traversed windowAverage numbers).run
       { window := [], maxSize := 1 }
     ensureEq "Window size 1 returns element itself" [10, 20, 30, 40, 50] averages1
 
@@ -748,7 +748,7 @@ private def case_stateSlidingWindow : TestCase := {
       | some p => pure (x - p)
 
     let sequence := [5, 8, 6, 9, 12]
-    let (deltas, _) := (traverse traversed computeDelta sequence).run none
+    let (deltas, _) := (Traversal.traverse' traversed computeDelta sequence).run none
     ensureEq "Deltas from previous" [0, 3, -2, 3, 3] deltas
 
     -- Test 5: Running differences (element minus running mean)
@@ -759,7 +759,7 @@ private def case_stateSlidingWindow : TestCase := {
       pure (x - mean)
 
     let values := [100, 200, 150, 250]
-    let (diffs, _) := (traverse traversed deltaFromMean values).run
+    let (diffs, _) := (Traversal.traverse' traversed deltaFromMean values).run
       { sum := 0, count := 0 }
     ensureEq "Differences from running mean" [0, 100, 0, 100] diffs
     -- [100-100, 200-100, 150-150, 250-150]
@@ -783,7 +783,7 @@ private def case_polymorphicTraversal : TestCase := {
 
     -- Use case 1: Option - fail-fast validation
     let optionProcess := processNumber 5  -- threshold of 5, all values pass
-    let optionResult := traverse traversed
+    let optionResult := Traversal.traverse' traversed
       (fun x => optionProcess x (fun v => some v) (fun _ => none))
       numbers
     match optionResult with
@@ -793,7 +793,7 @@ private def case_polymorphicTraversal : TestCase := {
       IO.throwServerError "Should not fail"
 
     let failNumbers := [5, 3, 15]
-    let optionResult2 := traverse traversed
+    let optionResult2 := Traversal.traverse' traversed
       (fun x => optionProcess x (fun v => some v) (fun _ => none))
       failNumbers
     match optionResult2 with
@@ -809,7 +809,7 @@ private def case_polymorphicTraversal : TestCase := {
         pure x
       else
         pure x
-    let (stateVals, count) := (traverse traversed stateFn numbers).run 0
+    let (stateVals, count) := (Traversal.traverse' traversed stateFn numbers).run 0
     ensureEq "State: values unchanged" [5, 10, 15, 20] stateVals
     ensureEq "State: counted values >= 10" 3 count
 
@@ -820,7 +820,7 @@ private def case_polymorphicTraversal : TestCase := {
       else
         tell #[s!"Below threshold: {x}"]
       pure x
-    let (writerVals, log) := (traverse traversed writerFn numbers).run
+    let (writerVals, log) := (Traversal.traverse' traversed writerFn numbers).run
     ensureEq "Writer: values unchanged" [5, 10, 15, 20] writerVals
     ensureEq "Writer: logged all operations" 4 log.size
     ensureEq "Writer: first log entry" "Below threshold: 5" log[0]!
@@ -832,7 +832,7 @@ private def case_polymorphicTraversal : TestCase := {
         Validation.success x
       else
         Validation.failure #[s!"Value {x} is below threshold 10"]
-    let validationResult := traverse traversed validationFn failNumbers
+    let validationResult := Traversal.traverse' traversed validationFn failNumbers
     match validationResult with
     | Validation.failure errs =>
       ensureEq "Validation: collected both errors" 2 errs.size
@@ -841,7 +841,7 @@ private def case_polymorphicTraversal : TestCase := {
     | Validation.success _ =>
       IO.throwServerError "Should accumulate errors"
 
-    -- Key insight demonstration: The traversal is the SAME (`traverse traversed`)
+    -- Key insight demonstration: The traversal is the SAME (`Traversal.traverse' traversed`)
     -- Only the effectful function changes!
     -- - Option: fail-fast, returns Some or None
     -- - State: thread state through traversal
@@ -860,7 +860,7 @@ private def case_polymorphicTraversal : TestCase := {
     -- With Option: validate all are adults
     let optionValidate (p : Person) : Option Person :=
       if p.age >= 18 then some p else none
-    let optionPeople := traverse traversed optionValidate people
+    let optionPeople := Traversal.traverse' traversed optionValidate people
     match optionPeople with
     | none => pure ()  -- Bob is 17, fails
     | some _ => IO.throwServerError "Should fail on Bob"
@@ -872,7 +872,7 @@ private def case_polymorphicTraversal : TestCase := {
       else
         tell #[s!"{p.name} (age {p.age}): minor"]
       pure p
-    let (_, peopleLog) := (traverse traversed writerValidate people).run
+    let (_, peopleLog) := (Traversal.traverse' traversed writerValidate people).run
     ensureEq "People log count" 3 peopleLog.size
     ensureEq "Alice logged as adult" "Alice (age 25): adult" peopleLog[0]!
     ensureEq "Bob logged as minor" "Bob (age 17): minor" peopleLog[1]!
@@ -883,7 +883,7 @@ private def case_polymorphicTraversal : TestCase := {
         Validation.success p
       else
         Validation.failure #[s!"{p.name} is {p.age} years old (under 18)"]
-    let validationPeople := traverse traversed validationValidate people
+    let validationPeople := Traversal.traverse' traversed validationValidate people
     match validationPeople with
     | Validation.failure errs =>
       ensureEq "Found one minor" 1 errs.size

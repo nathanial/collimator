@@ -97,9 +97,9 @@ def rootValue {α : Type} : Lens' (RoseTree α) α :=
 def childrenLens {α : Type} : Lens' (RoseTree α) (List (RoseTree α)) :=
   lens' (·.children) (fun t cs => { t with children := cs })
 
-/-- Traversal over immediate children using explicit composition function -/
+/-- Traversal over immediate children using standard function composition -/
 def immediateChildren {α : Type} : Traversal' (RoseTree α) (RoseTree α) :=
-  composeLensTraversal childrenLens Collimator.Instances.List.traversed
+  childrenLens ∘ Collimator.Instances.List.traversed
 
 /-- Collect all values from a rose tree (depth-first) -/
 partial def collectValues {α : Type} (t : RoseTree α) : List α :=
@@ -257,7 +257,7 @@ def examples : IO Unit := do
 
   -- Rose tree
   IO.println "Rose Tree:"
-  IO.println s!"  Root value: {sampleRoseTree ^. RoseTree.rootValue}"
+  IO.println s!"  Root value: {sampleRoseTree ^.' RoseTree.rootValue}"
   IO.println s!"  Size: {RoseTree.size sampleRoseTree}"
   IO.println s!"  Depth: {RoseTree.depth sampleRoseTree}"
 

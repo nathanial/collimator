@@ -84,14 +84,14 @@ concrete types, so we annotate `traversed` with its expected type.
 def Employee.cityLens : Lens' Employee String :=
   Employee.addressLens ∘ Address.cityLens
 
--- Lens ∘ Traversal = Traversal (with type annotation on traversed)
+-- Lens ∘ Traversal = Traversal (no type annotation on traversed!)
 def Department.employeesTraversal : Traversal' Department Employee :=
-  Department.employeesLens ∘ (traversed : Traversal' (List Employee) Employee)
+  Department.employeesLens ∘ traversed
 
 -- Chain of compositions: Lens ∘ Traversal ∘ Lens ∘ Traversal = Traversal
 def Company.allEmployees : Traversal' Company Employee :=
-  Company.departmentsLens ∘ (traversed : Traversal' (List Department) Department)
-    ∘ Department.employeesLens ∘ (traversed : Traversal' (List Employee) Employee)
+  Company.departmentsLens ∘ traversed
+    ∘ Department.employeesLens ∘ traversed
 
 /-! ## Type-Safe Composition Tracing
 

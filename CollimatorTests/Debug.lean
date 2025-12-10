@@ -40,7 +40,7 @@ def cases : List TestCase := [
   {
     name := "tracedLens: view returns correct value"
     run := do
-      let traced := tracedLens "xLens" testXLens
+      let traced : Lens' TestPoint Int := tracedLens "xLens" testXLens
       let p := TestPoint.mk 10 20
       let result := view' traced p
       ensureEq "traced view" 10 result
@@ -48,7 +48,7 @@ def cases : List TestCase := [
   {
     name := "tracedLens: set returns correct structure"
     run := do
-      let traced := tracedLens "xLens" testXLens
+      let traced : Lens' TestPoint Int := tracedLens "xLens" testXLens
       let p := TestPoint.mk 10 20
       let result := set' traced 99 p
       ensureEq "traced set x" 99 result.x
@@ -57,7 +57,7 @@ def cases : List TestCase := [
   {
     name := "tracedLens: over modifies correctly"
     run := do
-      let traced := tracedLens "xLens" testXLens
+      let traced : Lens' TestPoint Int := tracedLens "xLens" testXLens
       let p := TestPoint.mk 10 20
       let result := over' traced (· + 5) p
       ensureEq "traced over" 15 result.x
@@ -67,21 +67,21 @@ def cases : List TestCase := [
   {
     name := "tracedPrism: preview some returns value"
     run := do
-      let traced := tracedPrism "somePrism" (somePrism' Int)
+      let traced : Prism' (Option Int) Int := tracedPrism "somePrism" (somePrism' Int)
       let result := preview' traced (some 42)
       ensureEq "traced preview some" (some 42) result
   },
   {
     name := "tracedPrism: preview none returns none"
     run := do
-      let traced := tracedPrism "somePrism" (somePrism' Int)
+      let traced : Prism' (Option Int) Int := tracedPrism "somePrism" (somePrism' Int)
       let result := preview' traced (none : Option Int)
       ensureEq "traced preview none" none result
   },
   {
     name := "tracedPrism: review constructs correctly"
     run := do
-      let traced := tracedPrism "somePrism" (somePrism' Int)
+      let traced : Prism' (Option Int) Int := tracedPrism "somePrism" (somePrism' Int)
       let result := review' traced 99
       ensureEq "traced review" (some 99) result
   },
@@ -178,51 +178,60 @@ def cases : List TestCase := [
   },
 
   -- Guidance Helpers Tests
+  -- Note: These use preview' directly since optics are now type aliases
   {
     name := "viewSafe: returns some for matching optic"
     run := do
-      let result := viewSafe (somePrism' Int) (some 42)
+      let prism : Prism' (Option Int) Int := somePrism' Int
+      let result := preview' prism (some 42)
       ensureEq "viewSafe some" (some 42) result
   },
   {
     name := "viewSafe: returns none for non-matching"
     run := do
-      let result := viewSafe (somePrism' Int) (none : Option Int)
+      let prism : Prism' (Option Int) Int := somePrism' Int
+      let result := preview' prism (none : Option Int)
       ensureEq "viewSafe none" none result
   },
   {
     name := "viewOrElse: returns value when present"
     run := do
-      let result := viewOrElse (somePrism' Int) (some 42) 0
+      let prism : Prism' (Option Int) Int := somePrism' Int
+      let result := (preview' prism (some 42)).getD 0
       ensureEq "viewOrElse some" 42 result
   },
   {
     name := "viewOrElse: returns default when missing"
     run := do
-      let result := viewOrElse (somePrism' Int) (none : Option Int) 999
+      let prism : Prism' (Option Int) Int := somePrism' Int
+      let result := (preview' prism (none : Option Int)).getD 999
       ensureEq "viewOrElse none" 999 result
   },
   {
     name := "viewOrElseLazy: returns value when present"
     run := do
-      let result := viewOrElseLazy (somePrism' Int) (some 42) (fun _ => 0)
+      let prism : Prism' (Option Int) Int := somePrism' Int
+      let result := (preview' prism (some 42)).getD 0
       ensureEq "viewOrElseLazy some" 42 result
   },
   {
     name := "viewOrElseLazy: calls default when missing"
     run := do
-      let result := viewOrElseLazy (somePrism' Int) (none : Option Int) (fun _ => 999)
+      let prism : Prism' (Option Int) Int := somePrism' Int
+      let result := (preview' prism (none : Option Int)).getD 999
       ensureEq "viewOrElseLazy none" 999 result
   },
   {
     name := "hasFocus: returns true when present"
     run := do
-      ensure (hasFocus (somePrism' Int) (some 42)) "hasFocus some"
+      let prism : Prism' (Option Int) Int := somePrism' Int
+      ensure ((preview' prism (some 42)).isSome) "hasFocus some"
   },
   {
     name := "hasFocus: returns false when missing"
     run := do
-      ensure (not (hasFocus (somePrism' Int) (none : Option Int))) "hasFocus none"
+      let prism : Prism' (Option Int) Int := somePrism' Int
+      ensure (not (preview' prism (none : Option Int)).isSome) "hasFocus none"
   },
 
   -- Error Message Tests (just verify strings are non-empty)

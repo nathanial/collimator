@@ -432,13 +432,13 @@ syntax "trace![" term ", " term ", " term ", " term ", " term "]" : term
 
 macro_rules
   | `(trace![$o1, $o2]) =>
-    `(traceAndReturn₂ $o1 $o2 (Collimator.Operators.Composable.comp $o1 $o2))
+    `(traceAndReturn₂ $o1 $o2 ($o1 ∘ $o2))
   | `(trace![$o1, $o2, $o3]) =>
-    `(traceAndReturn₃ $o1 $o2 $o3 (Collimator.Operators.Composable.comp $o1 (Collimator.Operators.Composable.comp $o2 $o3)))
+    `(traceAndReturn₃ $o1 $o2 $o3 ($o1 ∘ $o2 ∘ $o3))
   | `(trace![$o1, $o2, $o3, $o4]) =>
-    `(traceAndReturn₄ $o1 $o2 $o3 $o4 (Collimator.Operators.Composable.comp $o1 (Collimator.Operators.Composable.comp $o2 (Collimator.Operators.Composable.comp $o3 $o4))))
+    `(traceAndReturn₄ $o1 $o2 $o3 $o4 ($o1 ∘ $o2 ∘ $o3 ∘ $o4))
   | `(trace![$o1, $o2, $o3, $o4, $o5]) =>
-    `(traceAndReturn₅ $o1 $o2 $o3 $o4 $o5 (Collimator.Operators.Composable.comp $o1 (Collimator.Operators.Composable.comp $o2 (Collimator.Operators.Composable.comp $o3 (Collimator.Operators.Composable.comp $o4 $o5)))))
+    `(traceAndReturn₅ $o1 $o2 $o3 $o4 $o5 ($o1 ∘ $o2 ∘ $o3 ∘ $o4 ∘ $o5))
 
 /-- Describe an optic with its kind -/
 def describeOpticInstance {α : Type 1} [OpticKind α] (optic : α) : IO Unit := do
