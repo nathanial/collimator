@@ -8,10 +8,8 @@ import CollimatorTests.TraversalLaws
 import CollimatorTests.AffineLaws
 import CollimatorTests.Combinators
 import CollimatorTests.Traversals
-import CollimatorTests.Poly
 import CollimatorTests.PhaseFiveNormalization
 import CollimatorTests.PhaseFiveSubtyping
-import CollimatorTests.AdvancedShowcase.PolymorphicIsos
 import CollimatorTests.AdvancedShowcase.AffineWizardry
 import CollimatorTests.AdvancedShowcase.PrismMagic
 import CollimatorTests.AdvancedShowcase.HeterogeneousCompositions
@@ -53,13 +51,11 @@ def main : IO UInt32 := do
   exitCode := exitCode + (← runTests "Affine Laws" CollimatorTests.AffineLaws.cases)
   exitCode := exitCode + (← runTests "Combinators" CollimatorTests.Combinators.cases)
   exitCode := exitCode + (← runTests "Traversals" CollimatorTests.Traversals.cases)
-  exitCode := exitCode + (← runTests "Polymorphic API" CollimatorTests.Poly.cases)
   exitCode := exitCode + (← runTests "Phase Five Normalization" CollimatorTests.PhaseFiveNormalization.allTests)
   exitCode := exitCode + (← runTests "Phase Five Subtyping" CollimatorTests.PhaseFiveSubtyping.cases)
   exitCode := exitCode + (← runTests "Getter and Review" CollimatorTests.GetterReview.cases)
 
   -- Advanced Showcase tests (some WIP)
-  exitCode := exitCode + (← runTests "Polymorphic Isos" CollimatorTests.AdvancedShowcase.PolymorphicIsos.cases)
   exitCode := exitCode + (← runTests "Affine Wizardry" CollimatorTests.AdvancedShowcase.AffineWizardry.cases)
   exitCode := exitCode + (← runTests "Prism Magic" CollimatorTests.AdvancedShowcase.PrismMagic.cases)
   exitCode := exitCode + (← runTests "Heterogeneous Compositions" CollimatorTests.AdvancedShowcase.HeterogeneousCompositions.cases)

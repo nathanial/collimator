@@ -55,8 +55,6 @@ import Collimator.Concrete.Tagged
 -- Optic type definitions
 import Collimator.Optics
 
--- Polymorphic API
-import Collimator.Poly
 
 -- Combinators and operators
 import Collimator.Combinators
@@ -85,7 +83,6 @@ import Collimator.Helpers
 -- Debug utilities
 import Collimator.Debug
 import Collimator.Debug.LawCheck
-import Collimator.Poly.Guidance
 
 -- Integration patterns
 import Collimator.Integration

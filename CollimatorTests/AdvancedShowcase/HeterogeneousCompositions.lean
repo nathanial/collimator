@@ -1,14 +1,12 @@
 import Collimator.Optics
 import Collimator.Combinators
 import Collimator.Operators
-import Collimator.Poly
 import Collimator.Instances
 import CollimatorTests.Framework
 
 namespace CollimatorTests.AdvancedShowcase.HeterogeneousCompositions
 
 open Collimator
-open Collimator.Poly
 open Collimator.Combinators
 open Collimator.Operators
 open Collimator.Instances

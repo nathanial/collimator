@@ -15,7 +15,6 @@ Tests for the combinators added in the improvements:
 
 open CollimatorTests
 open Collimator
-open Collimator.Poly
 open Collimator.Combinators
 open Collimator.Instances.List
 open Collimator.Instances.Option
@@ -240,39 +239,39 @@ def orElseTests : List TestCase := [
 /-! ## Monomorphic Operator Tests -/
 
 def monomorphicOpTests : List TestCase := [
-  { name := "^.' operator: view"
+  { name := "^. operator: view"
     run := do
       let pair := (10, "hello")
       let lens : Lens' (Int × String) Int := _1
-      let result := pair ^.' lens
+      let result := pair ^. lens
       ensureEq "view first" 10 result
   },
-  { name := ".~' operator: set"
+  { name := ".~ operator: set"
     run := do
       let pair := (10, "hello")
       let lens : Lens' (Int × String) Int := _1
-      let setter := lens .~' 99
+      let setter := lens .~ 99
       let result := setter pair
       ensureEq "set first" (99, "hello") result
   },
-  { name := "%~' operator: over"
+  { name := "%~ operator: over"
     run := do
       let pair := (10, "hello")
       let lens : Lens' (Int × String) Int := _1
-      let modifier := lens %~' (· * 2)
+      let modifier := lens %~ (· * 2)
       let result := modifier pair
       ensureEq "double first" (20, "hello") result
   },
-  { name := "^?' operator: preview some"
+  { name := "^? operator: preview some"
     run := do
       let opt : Option Int := some 42
-      let result := opt ^?' (somePrism' Int)
+      let result := opt ^? (somePrism' Int)
       ensureEq "preview some" (some 42) result
   },
-  { name := "^?' operator: preview none"
+  { name := "^? operator: preview none"
     run := do
       let opt : Option Int := none
-      let result := opt ^?' (somePrism' Int)
+      let result := opt ^? (somePrism' Int)
       ensureEq "preview none" none result
   }
 ]

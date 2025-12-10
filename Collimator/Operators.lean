@@ -1,5 +1,4 @@
 import Collimator.Optics
-import Collimator.Poly
 import Collimator.Combinators
 
 /-!
@@ -7,10 +6,10 @@ import Collimator.Combinators
 
 Infix operators for optic operations:
 - `∘` - standard function composition (works naturally with type alias optics!)
-- `^.` / `^.'` - view
-- `^?` / `^?'` - preview
-- `%~` / `%~'` - over
-- `.~` / `.~'` - set
+- `^.` - view (for lenses)
+- `^?` - preview (for prisms/affine)
+- `%~` - over (modify)
+- `.~` - set
 - `&` - reverse application
 
 ## Composition
@@ -98,8 +97,7 @@ scoped infixl:10 " & " => fun x f => f x
 /--
 View through a lens using infix notation.
 
-Extracts the focused value from the source. Works with any optic that
-supports viewing (Iso, Lens, Getter).
+Extracts the focused value from the source. Works with Lens' and Iso'.
 
 ```lean
 let point := Point.mk 10 20
@@ -110,13 +108,15 @@ let nested := { outer := { inner := 42 } }
 nested ^. (outerLens ∘ innerLens)  -- 42
 ```
 -/
-scoped infixl:60 " ^. " => fun s l => Collimator.Poly.view l s
+scoped syntax:60 term:61 " ^. " term:61 : term
+scoped macro_rules
+  | `($s ^. $l) => `(Collimator.view' $l $s)
 
 /--
 Preview through a prism using infix notation.
 
 Attempts to extract the focused value, returning `Option`. Returns `some`
-if the prism matches, `none` otherwise. Works with Prism, AffineTraversal.
+if the prism matches, `none` otherwise. Works with Prism', AffineTraversal'.
 
 ```lean
 (some 42) ^? somePrism'    -- some 42
@@ -127,12 +127,14 @@ none ^? somePrism'         -- none
 [] ^? _head                -- none
 ```
 -/
-scoped infixl:60 " ^? " => fun s p => Collimator.Poly.preview p s
+scoped syntax:60 term:61 " ^? " term:61 : term
+scoped macro_rules
+  | `($s ^? $p) => `(Collimator.preview' $p $s)
 
 /--
 Modify the focus of a setter-like optic.
 
-Returns a function `s → t` that modifies the focused part(s). Use with `&`
+Returns a function `s → s` that modifies the focused part(s). Use with `&`
 for a fluent syntax.
 
 ```lean
@@ -146,12 +148,14 @@ point & xLens %~ (· + 1)           -- increment x
 point & xLens %~ (· * 2) & yLens %~ (· + 10)
 ```
 -/
-scoped infixr:80 "%~" => fun optic f => Collimator.Poly.over optic f
+scoped syntax:80 term:81 " %~ " term:81 : term
+scoped macro_rules
+  | `($optic %~ $f) => `(Collimator.over' $optic $f)
 
 /--
 Set the focus of a setter-like optic to a constant value.
 
-Returns a function `s → t` that replaces the focused part(s). Use with `&`
+Returns a function `s → s` that replaces the focused part(s). Use with `&`
 for a fluent syntax.
 
 ```lean
@@ -165,36 +169,8 @@ point & xLens .~ 100               -- { x := 100, y := 20 }
 point & xLens .~ 10 & yLens .~ 20  -- { x := 10, y := 20 }
 ```
 -/
-scoped infixr:80 ".~" => fun optic value => Collimator.Poly.set optic value
-
-/-!
-## Monomorphic Operators
-
-These operators work directly with the monomorphic API functions (`view'`, `over'`, etc.),
-avoiding type class resolution overhead for simple cases where you're working with
-monomorphic optics like `Lens'` or `Prism'`.
--/
-
-/-- View through a lens using monomorphic API. Avoids typeclass resolution. -/
-scoped syntax:60 term:61 " ^.' " term:61 : term
+scoped syntax:80 term:81 " .~ " term:81 : term
 scoped macro_rules
-  | `($s ^.' $l) => `(Collimator.view' $l $s)
-
-/-- Set through a lens using monomorphic API. Avoids typeclass resolution.
-    Returns a function `s → t` for use with `&`. -/
-scoped syntax:80 term:81 " .~' " term:81 : term
-scoped macro_rules
-  | `($l .~' $v) => `(Collimator.set' $l $v)
-
-/-- Modify through a lens using monomorphic API. Avoids typeclass resolution.
-    Returns a function `s → t` for use with `&`. -/
-scoped syntax:80 term:81 " %~' " term:81 : term
-scoped macro_rules
-  | `($l %~' $f) => `(Collimator.over' $l $f)
-
-/-- Preview through a prism using monomorphic API. Avoids typeclass resolution. -/
-scoped syntax:60 term:61 " ^?' " term:61 : term
-scoped macro_rules
-  | `($s ^?' $p) => `(Collimator.preview' $p $s)
+  | `($optic .~ $value) => `(Collimator.set' $optic $value)
 
 end Collimator.Operators

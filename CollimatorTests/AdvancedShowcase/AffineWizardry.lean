@@ -1,13 +1,11 @@
 import Collimator.Optics
 import Collimator.Combinators
 import Collimator.Operators
-import Collimator.Poly
 import CollimatorTests.Framework
 
 namespace CollimatorTests.AdvancedShowcase.AffineWizardry
 
 open Collimator
-open Collimator.Poly
 open Collimator.Combinators
 open Collimator.AffineTraversalOps
 open CollimatorTests

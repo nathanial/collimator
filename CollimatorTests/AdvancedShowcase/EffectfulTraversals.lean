@@ -1,14 +1,12 @@
 import Collimator.Optics
 import Collimator.Concrete.FunArrow
 import Collimator.Instances
-import Collimator.Poly
 import CollimatorTests.Framework
 import Mathlib.Control.Monad.Writer
 
 namespace CollimatorTests.AdvancedShowcase.EffectfulTraversals
 
 open Collimator
-open Collimator.Poly
 open Collimator.Instances.List (traversed)
 open CollimatorTests
 

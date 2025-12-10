@@ -1,13 +1,11 @@
 import Collimator.Optics
 import Collimator.Core.Profunctor
-import Collimator.Poly
 import CollimatorTests.Framework
 
 namespace CollimatorTests.GetterReview
 
 open Collimator
 open Collimator.Core
-open Collimator.Poly
 open CollimatorTests
 
 /-!

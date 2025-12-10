@@ -1,7 +1,6 @@
 import CollimatorTests.Framework
 import Collimator.Prelude
 import Collimator.Instances
-import Collimator.Poly
 
 /-!
 # Tests for Priority 5: Advanced Features

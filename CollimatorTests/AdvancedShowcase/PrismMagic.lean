@@ -2,13 +2,11 @@ import Collimator.Optics
 import Collimator.Instances
 import Collimator.Combinators
 import Collimator.Operators
-import Collimator.Poly
 import CollimatorTests.Framework
 
 namespace CollimatorTests.AdvancedShowcase.PrismMagic
 
 open Collimator
-open Collimator.Poly
 open Collimator.Combinators
 open CollimatorTests
 

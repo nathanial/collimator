@@ -1,6 +1,5 @@
 import Collimator.Optics
 import Collimator.Combinators
-import Collimator.Poly
 
 /-!
 # Debug Utilities for Collimator Optics

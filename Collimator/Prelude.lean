@@ -4,9 +4,6 @@ import Collimator.Exports
 -- Core types and optics
 import Collimator.Optics
 
--- Polymorphic API
-import Collimator.Poly
-
 -- Combinators and operators
 import Collimator.Combinators
 import Collimator.Operators
@@ -28,12 +25,12 @@ everything most users need and re-exports commonly used functions.
 ```lean
 import Collimator.Prelude
 
-open Collimator                    -- Core types + polymorphic API
-open scoped Collimator.Operators   -- Infix operators (⊚, ^., %~, .~, &)
+open Collimator                    -- Core types and optics
+open scoped Collimator.Operators   -- Infix operators (^., ^?, %~, .~, &)
 
 -- You now have access to:
 -- - All optic types (Lens, Prism, Iso, Traversal, etc.)
--- - Polymorphic API (view, over, set, preview, review, traverse)
+-- - Monomorphic API (view', over', set', preview', review')
 -- - Fold functions (toListOf, sumOf, lengthOf, anyOf, allOf, etc.)
 -- - Combinators (filtered, filteredList, composition functions)
 -- - Helpers (first', second', lensOf, prismOf, some', each')
@@ -45,17 +42,16 @@ open scoped Collimator.Operators   -- Infix operators (⊚, ^., %~, .~, &)
 
 With `open Collimator` you get:
 - Core optic types and constructors
-- Polymorphic API (`view`, `over`, `set`, `preview`, `review`, `traverse`)
+- Monomorphic API (`view'`, `over'`, `set'`, `preview'`, `review'`)
 - Fold functions (`toListOf`, `sumOf`, `lengthOf`, etc.)
 - Combinators (`filtered`, `filteredList`, composition functions)
 - Type inference helpers (`first'`, `second'`, `lensOf`, etc.)
 
 With `open scoped Collimator.Operators` you get:
-- `⊚` - composition
-- `^.` / `^.'` - view
-- `^?` / `^?'` - preview
-- `%~` / `%~'` - over
-- `.~` / `.~'` - set
+- `^.` - view
+- `^?` - preview
+- `%~` - over
+- `.~` - set
 - `&` - reverse application
 
 ## Advanced Namespaces (opt-in)

@@ -1,13 +1,11 @@
 import Collimator.Optics
 import Collimator.Combinators
 import Collimator.Operators
-import Collimator.Poly
 import CollimatorTests.Framework
 
 namespace CollimatorTests.AdvancedShowcase.MindBending
 
 open Collimator
-open Collimator.Poly
 open Collimator.Combinators
 open scoped Collimator.Operators
 open CollimatorTests

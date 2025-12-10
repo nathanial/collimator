@@ -2,7 +2,6 @@ import CollimatorTests.Framework
 import Collimator.Prelude
 import Collimator.Debug
 import Collimator.Debug.LawCheck
-import Collimator.Poly.Guidance
 import Collimator.Helpers
 
 /-!
@@ -17,7 +16,6 @@ Tests for:
 open Collimator
 open Collimator.Debug
 open Collimator.Debug.LawCheck
-open Collimator.Poly.Guidance
 open Collimator.Instances.Option
 open CollimatorTests
 
@@ -232,27 +230,6 @@ def cases : List TestCase := [
     run := do
       let prism : Prism' (Option Int) Int := somePrism' Int
       ensure (not (preview' prism (none : Option Int)).isSome) "hasFocus none"
-  },
-
-  -- Error Message Tests (just verify strings are non-empty)
-  {
-    name := "prismViewError: provides helpful message"
-    run := do
-      ensure (prismViewError.length > 50) "prismViewError should have content"
-      ensure (prismViewError.containsSubstr "preview") "prismViewError mentions preview"
-  },
-  {
-    name := "lensReviewError: provides helpful message"
-    run := do
-      ensure (lensReviewError.length > 50) "lensReviewError should have content"
-      ensure (lensReviewError.containsSubstr "set") "lensReviewError mentions set"
-  },
-  {
-    name := "capabilityMatrix: provides reference"
-    run := do
-      ensure (capabilityMatrix.length > 100) "capabilityMatrix should have content"
-      ensure (capabilityMatrix.containsSubstr "Lens") "capabilityMatrix mentions Lens"
-      ensure (capabilityMatrix.containsSubstr "Prism") "capabilityMatrix mentions Prism"
   }
 ]
 

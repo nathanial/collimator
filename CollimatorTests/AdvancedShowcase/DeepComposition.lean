@@ -8,14 +8,12 @@ import Collimator.Operators
 import Collimator.Concrete.FunArrow
 import Collimator.Concrete.Forget
 import Collimator.Instances
-import Collimator.Poly
 import CollimatorTests.Framework
 
 namespace CollimatorTests.AdvancedShowcase.DeepComposition
 
 open Collimator
 open Collimator.Core
-open Collimator.Poly
 open Collimator.Instances.List
 open Collimator.Instances.Prod
 open Collimator.Instances.Option (somePrism somePrism')
@@ -92,7 +90,7 @@ private def case_nestedTuples : TestCase := {
       lens1 ∘ lens2
 
     -- View the deeply nested value
-    let str := view (optic := fun s a => Lens s s a a) composed data
+    let str := view' composed data
     ensureEq "View nested string" "hello" str
 
     -- Modify the deeply nested value
@@ -169,7 +167,7 @@ private def case_companyZipCode : TestCase := {
       headLens (α := Employee) ∘ addressLens ∘ zipCodeLens
 
     -- View the deeply nested zip code
-    let zip := view (optic := fun s a => Lens s s a a) companyToZip company
+    let zip := view' companyToZip company
     ensureEq "View nested zip code" "12345" zip
 
     -- Modify the deeply nested zip code
@@ -845,7 +843,7 @@ private def case_nestedOptions : TestCase := {
     -- Key insights:
     -- 1. Prism composition enables safe navigation through optional fields
     -- 2. Preview short-circuits on None, returning none
-    -- 3. Set and over are no-ops when encountering None
+    -- 3. Set and over' are no-ops when encountering None
     -- 4. Multiple Prisms can be chained for deep optional navigation
     -- 5. AffineTraversal combines "exactly one" (Lens) + "at most one" (Prism)
 }

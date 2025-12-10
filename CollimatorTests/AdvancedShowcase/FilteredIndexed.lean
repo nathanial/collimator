@@ -14,7 +14,6 @@ Demonstrate advanced traversal combinators:
 
 open CollimatorTests
 open Collimator
-open Collimator.Poly
 open Collimator.Combinators (filteredList ifilteredList)
 open Collimator.Indexed
 open Collimator.Instances.List

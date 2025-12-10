@@ -1,4 +1,3 @@
-import Collimator.Poly
 import Collimator.Optics
 import Collimator.Combinators
 import Collimator.Helpers
@@ -12,9 +11,6 @@ most use cases.
 -/
 
 namespace Collimator
-
--- Re-export polymorphic API from Collimator.Poly
-export Collimator.Poly (view over set preview review traverse)
 
 -- Re-export combinators from Collimator.Combinators
 -- Note: With type-alias optics, standard function composition (∘) is used
