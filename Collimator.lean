@@ -86,3 +86,6 @@ import Collimator.Helpers
 import Collimator.Debug
 import Collimator.Debug.LawCheck
 import Collimator.Poly.Guidance
+
+-- Integration patterns
+import Collimator.Integration
