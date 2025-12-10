@@ -179,8 +179,8 @@ def case_patternMatching : TestCase := {
     -- JSON value extraction
     let jsonStr := JsonValue.str "hello"
     let jsonNum := JsonValue.num 42
-    let jsonBool := JsonValue.bool true
-    let jsonNull := JsonValue.null
+    let _jsonBool := JsonValue.bool true
+    let _jsonNull := JsonValue.null
 
     -- Successful preview extracts the value
     let strResult := preview' jsonStrPrism jsonStr
@@ -197,7 +197,7 @@ def case_patternMatching : TestCase := {
     -- HTTP status categorization
     let ok200 := HttpStatus.success 200
     let notFound := HttpStatus.clientErr 404
-    let serverDown := HttpStatus.serverErr 503
+    let _serverDown := HttpStatus.serverErr 503
 
     let isSuccess := preview' httpSuccessPrism ok200
     if isSuccess != some 200 then

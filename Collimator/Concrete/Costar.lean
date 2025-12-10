@@ -35,7 +35,7 @@ instance instProfunctorCostar (F : Type u → Type u) [Functor F] :
 instance instClosedCostar (F : Type u → Type u) [Functor F] :
     Closed (Costar F) where
   closed :=
-    fun {α β γ} p =>
+    fun {_ _ _} p =>
       Costar.mk (fun fga =>
         fun γVal => p.run (Functor.map (fun h => h γVal) fga))
 
