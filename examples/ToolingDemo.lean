@@ -96,32 +96,47 @@ def Company.allEmployees : Traversal' Company Employee :=
 
 /-! ## Type-Safe Composition Tracing
 
-These use actual optics, not strings! The type system tells us what we're composing.
+Two ways to trace compositions:
+
+1. `traceCompose![o1, o2, ...]` - prints trace to IO, returns Unit
+2. `trace![o1, o2, ...]` - prints trace via dbg_trace, returns the composed optic
+
+The second form is useful when you want to define an optic and see the trace at the same time.
 -/
 
--- Two lenses compose to a lens
-#eval traceCompose₂ Employee.addressLens Address.cityLens
+-- traceCompose! prints to IO (useful in #eval)
+#eval traceCompose![Employee.addressLens, Address.cityLens]
 
--- Lens + Traversal = Traversal
-#eval traceCompose₂ Department.employeesLens (traversed : Traversal' (List Employee) Employee)
+-- trace! returns the composed optic (useful in definitions)
+-- The dbg_trace output appears during elaboration
+def Employee.cityLens' : Lens' Employee String :=
+  trace![Employee.addressLens, Address.cityLens]
 
--- Three optics: Lens ⊚ Traversal ⊚ Lens = Traversal
-#eval traceCompose₃ Department.employeesLens (traversed : Traversal' (List Employee) Employee) Employee.salaryLens
+-- Heterogeneous: Lens ⊚ Traversal ⊚ Lens = Traversal
+def Department.allSalaries : Traversal' Department Int :=
+  trace![
+    Department.employeesLens,
+    (traversed : Traversal' (List Employee) Employee),
+    Employee.salaryLens
+  ]
 
--- Four optics deep
-#eval traceCompose₄
-  Company.departmentsLens
-  (traversed : Traversal' (List Department) Department)
-  Department.employeesLens
-  (traversed : Traversal' (List Employee) Employee)
+-- Four optics deep - trace! returns the optic so you can compose further
+def Company.allEmployeeNames : Traversal' Company String :=
+  trace![
+    Company.departmentsLens,
+    (traversed : Traversal' (List Department) Department),
+    Department.employeesLens,
+    (traversed : Traversal' (List Employee) Employee)
+  ] ⊚ Employee.nameLens
 
--- Five optics: Company → all employee cities
-#eval traceCompose₅
-  Company.departmentsLens
-  (traversed : Traversal' (List Department) Department)
-  Department.employeesLens
-  (traversed : Traversal' (List Employee) Employee)
+-- Use traceCompose! for quick checks (IO-based, good for #eval)
+#eval traceCompose![
+  Company.departmentsLens,
+  (traversed : Traversal' (List Department) Department),
+  Department.employeesLens,
+  (traversed : Traversal' (List Employee) Employee),
   Employee.addressLens
+]
 
 -- Describe what an optic can do
 #eval describeOpticInstance Employee.addressLens

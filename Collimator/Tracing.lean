@@ -1,4 +1,5 @@
 import Collimator.Optics.Types
+import Collimator.Combinators.Operators
 
 /-!
 # Optic Composition Tracing
@@ -29,6 +30,7 @@ import Collimator.Prelude
 namespace Collimator.Tracing
 
 open Collimator
+open scoped Collimator.Operators
 
 /-! ## Helper Functions -/
 
@@ -302,47 +304,102 @@ def composeTypes (outer inner : String) : String :=
 
 /-! ## Type-Safe Composition Tracing -/
 
-/-- Trace composition of two optics, returning the result type -/
+/-- Trace composition of a list of optic kinds, showing step-by-step reduction -/
+def traceComposeKinds (kinds : List OpticType) : IO Unit := do
+  match kinds with
+  | [] =>
+    IO.println "Empty composition"
+  | [k] =>
+    IO.println s!"{k}"
+  | k :: ks =>
+    -- Print the full chain
+    let chainStr := String.intercalate " ⊚ " (kinds.map toString)
+    IO.println chainStr
+    -- Reduce and show final result
+    let mut current := k
+    for next in ks do
+      current := composeOpticTypes current next
+    IO.println s!"  = {current}"
+
+/-- Trace composition of two optics -/
 def traceCompose₂ {α β : Type 1} [OpticKind α] [OpticKind β]
-    (o1 : α) (o2 : β) : IO OpticType := do
-  let k1 := opticKind o1
-  let k2 := opticKind o2
-  let result := composeOpticTypes k1 k2
-  IO.println s!"{k1} ⊚ {k2} = {result}"
-  return result
+    (o1 : α) (o2 : β) : IO Unit :=
+  traceComposeKinds [opticKind o1, opticKind o2]
 
 /-- Trace composition of three optics -/
 def traceCompose₃ {α β γ : Type 1} [OpticKind α] [OpticKind β] [OpticKind γ]
-    (o1 : α) (o2 : β) (o3 : γ) : IO OpticType := do
+    (o1 : α) (o2 : β) (o3 : γ) : IO Unit :=
+  traceComposeKinds [opticKind o1, opticKind o2, opticKind o3]
+
+/-- Trace composition of four optics -/
+def traceCompose₄ {α β γ δ : Type 1} [OpticKind α] [OpticKind β] [OpticKind γ] [OpticKind δ]
+    (o1 : α) (o2 : β) (o3 : γ) (o4 : δ) : IO Unit :=
+  traceComposeKinds [opticKind o1, opticKind o2, opticKind o3, opticKind o4]
+
+/-- Trace composition of five optics -/
+def traceCompose₅ {α β γ δ ε : Type 1} [OpticKind α] [OpticKind β] [OpticKind γ] [OpticKind δ] [OpticKind ε]
+    (o1 : α) (o2 : β) (o3 : γ) (o4 : δ) (o5 : ε) : IO Unit :=
+  traceComposeKinds [opticKind o1, opticKind o2, opticKind o3, opticKind o4, opticKind o5]
+
+/-- Trace composition using variadic syntax: traceCompose![lens1, trav, lens2] -/
+syntax "traceCompose![" term,* "]" : term
+
+macro_rules
+  | `(traceCompose![$o1:term, $o2:term]) =>
+    `(traceCompose₂ $o1 $o2)
+  | `(traceCompose![$o1:term, $o2:term, $o3:term]) =>
+    `(traceCompose₃ $o1 $o2 $o3)
+  | `(traceCompose![$o1:term, $o2:term, $o3:term, $o4:term]) =>
+    `(traceCompose₄ $o1 $o2 $o3 $o4)
+  | `(traceCompose![$o1:term, $o2:term, $o3:term, $o4:term, $o5:term]) =>
+    `(traceCompose₅ $o1 $o2 $o3 $o4 $o5)
+
+/-! ## Tracing with Normal Composition Syntax
+
+The `trace!` macro lets you write normal composition expressions and get tracing output.
+It parses the `⊚` chain, prints the composition trace, and returns the composed optic.
+
+```lean
+-- Instead of: traceCompose![lens1, trav, lens2]
+-- Write:      trace! lens1 ⊚ trav ⊚ lens2
+
+def myOptic := trace! addressLens ⊚ cityLens  -- prints trace, returns Lens
+```
+-/
+
+/-- Trace and return: prints composition info, then returns the composed optic -/
+def traceAndReturn₂ {α β γ : Type 1} [OpticKind α] [OpticKind β]
+    (o1 : α) (o2 : β) (composed : γ) : γ :=
+  let k1 := opticKind o1
+  let k2 := opticKind o2
+  let result := composeOpticTypes k1 k2
+  dbg_trace s!"{k1} ⊚ {k2} = {result}"
+  composed
+
+def traceAndReturn₃ {α β γ δ : Type 1} [OpticKind α] [OpticKind β] [OpticKind γ]
+    (o1 : α) (o2 : β) (o3 : γ) (composed : δ) : δ :=
   let k1 := opticKind o1
   let k2 := opticKind o2
   let k3 := opticKind o3
   let r1 := composeOpticTypes k1 k2
-  let r2 := composeOpticTypes r1 k3
-  IO.println s!"{k1} ⊚ {k2} ⊚ {k3}"
-  IO.println s!"  = {r1} ⊚ {k3}"
-  IO.println s!"  = {r2}"
-  return r2
+  let result := composeOpticTypes r1 k3
+  dbg_trace s!"{k1} ⊚ {k2} ⊚ {k3} = {result}"
+  composed
 
-/-- Trace composition of four optics -/
-def traceCompose₄ {α β γ δ : Type 1} [OpticKind α] [OpticKind β] [OpticKind γ] [OpticKind δ]
-    (o1 : α) (o2 : β) (o3 : γ) (o4 : δ) : IO OpticType := do
+def traceAndReturn₄ {α β γ δ ε : Type 1} [OpticKind α] [OpticKind β] [OpticKind γ] [OpticKind δ]
+    (o1 : α) (o2 : β) (o3 : γ) (o4 : δ) (composed : ε) : ε :=
   let k1 := opticKind o1
   let k2 := opticKind o2
   let k3 := opticKind o3
   let k4 := opticKind o4
   let r1 := composeOpticTypes k1 k2
   let r2 := composeOpticTypes r1 k3
-  let r3 := composeOpticTypes r2 k4
-  IO.println s!"{k1} ⊚ {k2} ⊚ {k3} ⊚ {k4}"
-  IO.println s!"  = {r1} ⊚ {k3} ⊚ {k4}"
-  IO.println s!"  = {r2} ⊚ {k4}"
-  IO.println s!"  = {r3}"
-  return r3
+  let result := composeOpticTypes r2 k4
+  dbg_trace s!"{k1} ⊚ {k2} ⊚ {k3} ⊚ {k4} = {result}"
+  composed
 
-/-- Trace composition of five optics -/
-def traceCompose₅ {α β γ δ ε : Type 1} [OpticKind α] [OpticKind β] [OpticKind γ] [OpticKind δ] [OpticKind ε]
-    (o1 : α) (o2 : β) (o3 : γ) (o4 : δ) (o5 : ε) : IO OpticType := do
+def traceAndReturn₅ {α β γ δ ε ζ : Type 1} [OpticKind α] [OpticKind β] [OpticKind γ] [OpticKind δ] [OpticKind ε]
+    (o1 : α) (o2 : β) (o3 : γ) (o4 : δ) (o5 : ε) (composed : ζ) : ζ :=
   let k1 := opticKind o1
   let k2 := opticKind o2
   let k3 := opticKind o3
@@ -351,13 +408,37 @@ def traceCompose₅ {α β γ δ ε : Type 1} [OpticKind α] [OpticKind β] [Opt
   let r1 := composeOpticTypes k1 k2
   let r2 := composeOpticTypes r1 k3
   let r3 := composeOpticTypes r2 k4
-  let r4 := composeOpticTypes r3 k5
-  IO.println s!"{k1} ⊚ {k2} ⊚ {k3} ⊚ {k4} ⊚ {k5}"
-  IO.println s!"  = {r1} ⊚ {k3} ⊚ {k4} ⊚ {k5}"
-  IO.println s!"  = {r2} ⊚ {k4} ⊚ {k5}"
-  IO.println s!"  = {r3} ⊚ {k5}"
-  IO.println s!"  = {r4}"
-  return r4
+  let result := composeOpticTypes r3 k5
+  dbg_trace s!"{k1} ⊚ {k2} ⊚ {k3} ⊚ {k4} ⊚ {k5} = {result}"
+  composed
+
+/--
+Trace a composition expression using `trace![]` syntax with comma-separated optics.
+Prints composition info and returns the composed optic.
+
+```lean
+-- Traces "Lens ⊚ Lens = Lens" and returns the composed lens
+def myLens := trace![addressLens, cityLens]
+
+-- Works with heterogeneous composition too
+def myTrav := trace![deptLens, traversed, empLens]
+```
+-/
+
+syntax "trace![" term ", " term "]" : term
+syntax "trace![" term ", " term ", " term "]" : term
+syntax "trace![" term ", " term ", " term ", " term "]" : term
+syntax "trace![" term ", " term ", " term ", " term ", " term "]" : term
+
+macro_rules
+  | `(trace![$o1, $o2]) =>
+    `(traceAndReturn₂ $o1 $o2 (Collimator.Operators.Composable.comp $o1 $o2))
+  | `(trace![$o1, $o2, $o3]) =>
+    `(traceAndReturn₃ $o1 $o2 $o3 (Collimator.Operators.Composable.comp $o1 (Collimator.Operators.Composable.comp $o2 $o3)))
+  | `(trace![$o1, $o2, $o3, $o4]) =>
+    `(traceAndReturn₄ $o1 $o2 $o3 $o4 (Collimator.Operators.Composable.comp $o1 (Collimator.Operators.Composable.comp $o2 (Collimator.Operators.Composable.comp $o3 $o4))))
+  | `(trace![$o1, $o2, $o3, $o4, $o5]) =>
+    `(traceAndReturn₅ $o1 $o2 $o3 $o4 $o5 (Collimator.Operators.Composable.comp $o1 (Collimator.Operators.Composable.comp $o2 (Collimator.Operators.Composable.comp $o3 (Collimator.Operators.Composable.comp $o4 $o5)))))
 
 /-- Describe an optic with its kind -/
 def describeOpticInstance {α : Type 1} [OpticKind α] (optic : α) : IO Unit := do
