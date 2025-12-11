@@ -1,5 +1,5 @@
 ---
-name: collimator-optics
+name: collimator
 description: Guide for using Collimator, a profunctor optics library for Lean 4. Use when writing code with lenses, prisms, traversals, or when accessing/modifying nested data structures.
 ---
 
