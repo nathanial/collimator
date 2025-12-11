@@ -113,29 +113,19 @@ def case_safePartialAccess : TestCase := {
     let emailAffine := optic% userEmailLens ∘ somePrism String : AffineTraversal' UserRecord String
 
     -- Preview safely extracts the value if present
-    let aliceEmail := completeUser ^? emailAffine
-    if aliceEmail != some "alice@example.com" then
-      throw (IO.userError s!"Expected Some alice@example.com, got {repr aliceEmail}")
-
-    let bobEmail := partialUser ^? emailAffine
-    if bobEmail != some "bob@example.com" then
-      throw (IO.userError s!"Expected Some bob@example.com, got {repr bobEmail}")
-
-    let carolEmail := minimalUser ^? emailAffine
-    if carolEmail != none then
-      throw (IO.userError s!"Expected None, got {repr carolEmail}")
+    (completeUser ^? emailAffine) ≡? "alice@example.com"
+    (partialUser ^? emailAffine) ≡? "bob@example.com"
+    shouldBeNone (minimalUser ^? emailAffine)
 
     IO.println "✓ Safe partial access: preview returns Option based on focus presence"
 
     -- Set only modifies when focus is present
     let updatedAlice := completeUser & emailAffine .~ "newalice@example.com"
-    if updatedAlice.email != some "newalice@example.com" then
-      throw (IO.userError s!"Expected email update, got {repr updatedAlice.email}")
+    updatedAlice.email ≡? "newalice@example.com"
 
     let updatedCarol := minimalUser & emailAffine .~ "carol@example.com"
     -- Carol has no email, so set with the affine leaves it unchanged
-    if updatedCarol.email != none then
-      throw (IO.userError s!"Expected unchanged none email, got {repr updatedCarol.email}")
+    shouldBeNone updatedCarol.email
 
     IO.println "✓ Safe partial access: set only modifies when focus exists"
 }
@@ -168,39 +158,26 @@ def case_lensPrismComposition : TestCase := {
       : AffineTraversal' ConfigEntry Int
 
     -- Preview string values
-    let hostValue := entries[0]! ^? strValueAffine
-    if hostValue != some "localhost" then
-      throw (IO.userError s!"Expected Some localhost, got {repr hostValue}")
-
-    let portStrValue := entries[1]! ^? strValueAffine
-    if portStrValue != none then  -- port is Int, not String
-      throw (IO.userError s!"Expected None for Int value, got {repr portStrValue}")
+    (entries[0]! ^? strValueAffine) ≡? "localhost"
+    shouldBeNone (entries[1]! ^? strValueAffine)  -- port is Int, not String
 
     IO.println "✓ Lens + Prism: composition correctly filters by type"
 
     -- Preview int values
-    let portIntValue := entries[1]! ^? intValueAffine
-    if portIntValue != some 8080 then
-      throw (IO.userError s!"Expected Some 8080, got {repr portIntValue}")
-
-    let hostIntValue := entries[0]! ^? intValueAffine
-    if hostIntValue != none then  -- host is String, not Int
-      throw (IO.userError s!"Expected None for String value, got {repr hostIntValue}")
+    (entries[1]! ^? intValueAffine) ≡? 8080
+    shouldBeNone (entries[0]! ^? intValueAffine)  -- host is String, not Int
 
     IO.println "✓ Lens + Prism: type-safe extraction of sum type variants"
 
     -- Modify string value
     let updatedHost := entries[0]! & strValueAffine %~ (· ++ ":3000")
     match updatedHost.value with
-    | some (ConfigValue.str s) =>
-        if s != "localhost:3000" then
-          throw (IO.userError s!"Expected localhost:3000, got {s}")
+    | some (ConfigValue.str s) => s ≡ "localhost:3000"
     | _ => throw (IO.userError "Expected string config value")
 
     -- Trying to modify with wrong prism leaves value unchanged
     let notUpdatedPort := entries[1]! & strValueAffine %~ (· ++ "!")
-    if notUpdatedPort.value != some (ConfigValue.int 8080) then
-      throw (IO.userError "Expected port value unchanged")
+    notUpdatedPort.value ≡ some (ConfigValue.int 8080)
 
     IO.println "✓ Lens + Prism: modifications only apply when prism matches"
 }
@@ -237,36 +214,27 @@ def case_shortCircuit : TestCase := {
       : AffineTraversal' (Container (Container (Container Nat))) Nat
 
     -- All present - we can access the value
-    let presentResult := deepPresent ^? deepAffine
-    if presentResult != some 42 then
-      throw (IO.userError s!"Expected Some 42, got {repr presentResult}")
+    (deepPresent ^? deepAffine) ≡? 42
 
     IO.println "✓ Short-circuit: deep access succeeds when all levels present"
 
     -- Missing in middle - short circuits
-    let midResult := midMissing ^? deepAffine
-    if midResult != none then
-      throw (IO.userError s!"Expected None for mid-missing, got {repr midResult}")
+    shouldBeNone (midMissing ^? deepAffine)
 
     IO.println "✓ Short-circuit: stops at first missing level (middle)"
 
     -- Missing at top - short circuits immediately
-    let topResult := topMissing ^? deepAffine
-    if topResult != none then
-      throw (IO.userError s!"Expected None for top-missing, got {repr topResult}")
+    shouldBeNone (topMissing ^? deepAffine)
 
     IO.println "✓ Short-circuit: stops at first missing level (top)"
 
     -- Modification also short-circuits
     let modifiedPresent := deepPresent & deepAffine %~ (· * 2)
-    let checkModified := modifiedPresent ^? deepAffine
-    if checkModified != some 84 then
-      throw (IO.userError s!"Expected Some 84 after modification, got {repr checkModified}")
+    (modifiedPresent ^? deepAffine) ≡? 84
 
     let modifiedMissing := midMissing & deepAffine %~ (· * 2)
     -- Structure unchanged since there's nothing to modify
-    if modifiedMissing.value != some ⟨none⟩ then
-      throw (IO.userError "Expected structure unchanged")
+    modifiedMissing.value ≡ some ⟨none⟩
 
     IO.println "✓ Short-circuit: over operation also short-circuits on missing focus"
 }
@@ -307,46 +275,26 @@ def case_databaseLookup : TestCase := {
       : AffineTraversal' UserRecord Nat
 
     -- Query bios - only Alice and Dave have them
-    let aliceBio := users[0]! ^? bioAffine
-    if aliceBio != some "Engineering lead" then
-      throw (IO.userError s!"Expected Alice's bio, got {repr aliceBio}")
-
-    let bobBio := users[1]! ^? bioAffine
-    if bobBio != none then
-      throw (IO.userError s!"Expected None for Bob's bio, got {repr bobBio}")
-
-    let carolBio := users[2]! ^? bioAffine
-    if carolBio != none then
-      throw (IO.userError s!"Expected None for Carol's bio (no profile), got {repr carolBio}")
-
-    let daveBio := users[3]! ^? bioAffine
-    if daveBio != some "Contractor" then
-      throw (IO.userError s!"Expected Dave's bio, got {repr daveBio}")
+    (users[0]! ^? bioAffine) ≡? "Engineering lead"
+    shouldBeNone (users[1]! ^? bioAffine)
+    shouldBeNone (users[2]! ^? bioAffine)  -- Carol has no profile
+    (users[3]! ^? bioAffine) ≡? "Contractor"
 
     IO.println "✓ Database lookup: safely query nested optional bio field"
 
     -- Query ages
-    let aliceAge := users[0]! ^? ageAffine
-    if aliceAge != some 35 then
-      throw (IO.userError s!"Expected Alice's age 35, got {repr aliceAge}")
-
-    let daveAge := users[3]! ^? ageAffine
-    if daveAge != none then
-      throw (IO.userError s!"Expected None for Dave's age, got {repr daveAge}")
+    (users[0]! ^? ageAffine) ≡? 35
+    shouldBeNone (users[3]! ^? ageAffine)
 
     IO.println "✓ Database lookup: safely query nested optional age field"
 
     -- Update pattern: increment age for users who have one
     let updatedAlice := users[0]! & ageAffine %~ (· + 1)
-    let newAliceAge := updatedAlice ^? ageAffine
-    if newAliceAge != some 36 then
-      throw (IO.userError s!"Expected updated age 36, got {repr newAliceAge}")
+    (updatedAlice ^? ageAffine) ≡? 36
 
     -- Update on missing field is no-op
     let updatedDave := users[3]! & ageAffine %~ (· + 1)
-    let newDaveAge := updatedDave ^? ageAffine
-    if newDaveAge != none then
-      throw (IO.userError s!"Expected age still None, got {repr newDaveAge}")
+    shouldBeNone (updatedDave ^? ageAffine)
 
     IO.println "✓ Database lookup: safe updates only affect present fields"
 }
@@ -365,22 +313,15 @@ def case_opticConversions : TestCase := {
     -- A Lens is an AffineTraversal that always succeeds
     let fromLens : AffineTraversal' ConfigEntry (Option ConfigValue) := configValueLens
 
-    let lensPreview := entry ^? fromLens
-    if lensPreview != some (some (ConfigValue.int 100)) then
-      throw (IO.userError s!"Expected Some (Some int 100), got {repr lensPreview}")
+    (entry ^? fromLens) ≡? some (ConfigValue.int 100)
 
     IO.println "✓ Conversion: Lens lifts to AffineTraversal (always has focus)"
 
     -- A Prism is an AffineTraversal that may fail to match
     let fromPrism : AffineTraversal' (Option ConfigValue) ConfigValue := somePrism ConfigValue
 
-    let prismPreviewSome := (some (ConfigValue.str "hi")) ^? fromPrism
-    if prismPreviewSome != some (ConfigValue.str "hi") then
-      throw (IO.userError s!"Expected Some str hi, got {repr prismPreviewSome}")
-
-    let prismPreviewNone := (none : Option ConfigValue) ^? fromPrism
-    if prismPreviewNone != none then
-      throw (IO.userError s!"Expected None, got {repr prismPreviewNone}")
+    (some (ConfigValue.str "hi") ^? fromPrism) ≡? ConfigValue.str "hi"
+    shouldBeNone ((none : Option ConfigValue) ^? fromPrism)
 
     IO.println "✓ Conversion: Prism lifts to AffineTraversal (may not have focus)"
 
@@ -389,14 +330,10 @@ def case_opticConversions : TestCase := {
       (fromLens ∘ somePrism ConfigValue) ∘ intConfigPrism
       : AffineTraversal' ConfigEntry Int
 
-    let composedResult := entry ^? composed
-    if composedResult != some 100 then
-      throw (IO.userError s!"Expected Some 100, got {repr composedResult}")
+    (entry ^? composed) ≡? 100
 
     let entryWithString := ConfigEntry.mk "test" (some (ConfigValue.str "hello"))
-    let composedNoMatch := entryWithString ^? composed
-    if composedNoMatch != none then
-      throw (IO.userError s!"Expected None for string value, got {repr composedNoMatch}")
+    shouldBeNone (entryWithString ^? composed)
 
     IO.println "✓ Conversion: composed AffineTraversals combine optionality correctly"
 }
