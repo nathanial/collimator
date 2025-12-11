@@ -43,19 +43,20 @@ open Collimator.Traversal
 
 /-! ## Filtering Combinators -/
 
+section Filtering
+variable {s a : Type}
+
 /--
 Restrict a traversal to focuses that satisfy a predicate. The traversal is
 monomorphic because the predicate must be evaluated on both the input and the
 output type.
 -/
-def filtered {s : Type} {a : Type}
-    (tr : Traversal' s a) (pred : a → Bool) : Traversal' s a :=
+def filtered (tr : Traversal' s a) (pred : a → Bool) : Traversal' s a :=
   Collimator.traversal
-    (fun {F : Type → Type} [Applicative F]
-      (f : a → F a) (s₀ : s) =>
-        Traversal.traverse' (tr := tr)
-          (fun a => if pred a then f a else pure a)
-          s₀)
+    (fun {F : Type → Type} [Applicative F] (f : a → F a) (s₀ : s) =>
+      Traversal.traverse' (tr := tr)
+        (fun a => if pred a then f a else pure a)
+        s₀)
 
 /--
 Focus only on list elements matching a predicate.
@@ -68,18 +69,17 @@ over (filteredList (· > 0)) (· * 2) [-1, 2, -3, 4]
 -- Result: [-1, 4, -3, 8]
 ```
 -/
-def filteredList {a : Type} (pred : a → Bool) : Traversal' (List a) a :=
+def filteredList (pred : a → Bool) : Traversal' (List a) a :=
   Collimator.traversal
-    (fun {F : Type → Type} [Applicative F]
-      (f : a → F a) (xs : List a) =>
-        let rec go : List a → F (List a)
-          | [] => pure []
-          | x :: rest =>
-              if pred x then
-                (· :: ·) <$> f x <*> go rest
-              else
-                (x :: ·) <$> go rest
-        go xs)
+    (fun {F : Type → Type} [Applicative F] (f : a → F a) (xs : List a) =>
+      let rec go : List a → F (List a)
+        | [] => pure []
+        | x :: rest =>
+            if pred x then
+              (· :: ·) <$> f x <*> go rest
+            else
+              (x :: ·) <$> go rest
+      go xs)
 
 /--
 Focus on list elements where a predicate on both index and value holds.
@@ -92,21 +92,25 @@ over (ifilteredList fun i _ => i % 2 == 0) (· ++ "!") ["a", "b", "c", "d"]
 -- Result: ["a!", "b", "c!", "d"]
 ```
 -/
-def ifilteredList {a : Type} (pred : Nat → a → Bool) : Traversal' (List a) a :=
+def ifilteredList (pred : Nat → a → Bool) : Traversal' (List a) a :=
   Collimator.traversal
-    (fun {F : Type → Type} [Applicative F]
-      (f : a → F a) (xs : List a) =>
-        let rec go : Nat → List a → F (List a)
-          | _, [] => pure []
-          | idx, x :: rest =>
-              if pred idx x then
-                (· :: ·) <$> f x <*> go (idx + 1) rest
-              else
-                (x :: ·) <$> go (idx + 1) rest
-        go 0 xs)
+    (fun {F : Type → Type} [Applicative F] (f : a → F a) (xs : List a) =>
+      let rec go : Nat → List a → F (List a)
+        | _, [] => pure []
+        | idx, x :: rest =>
+            if pred idx x then
+              (· :: ·) <$> f x <*> go (idx + 1) rest
+            else
+              (x :: ·) <$> go (idx + 1) rest
+      go 0 xs)
+
+end Filtering
 
 
 /-! ## Safe List Operations -/
+
+section ListOps
+variable {a : Type}
 
 /--
 Safely access the head of a list.
@@ -121,9 +125,8 @@ over _head (· * 10) [1, 2, 3]  -- [10, 2, 3]
 over _head (· * 10) []         -- []
 ```
 -/
-def _head {a : Type} : AffineTraversal' (List a) a :=
+def _head : AffineTraversal' (List a) a :=
   fun {P} [Profunctor P] [Strong P] [Choice P] pab =>
-    -- Split list into Either [] (head, tail)
     Profunctor.dimap
       (fun xs : List a => match xs with
         | [] => Sum.inl []
@@ -144,9 +147,8 @@ preview _last []         -- none
 over _last (· * 10) [1, 2, 3]  -- [1, 2, 30]
 ```
 -/
-def _last {a : Type} : AffineTraversal' (List a) a :=
+def _last : AffineTraversal' (List a) a :=
   fun {P} [Profunctor P] [Strong P] [Choice P] pab =>
-    -- Split list into Either [] (init, last)
     let splitLast : List a → Sum (List a) (List a × a) :=
       fun xs =>
         let rec getInitLast : List a → List a → Option (List a × a)
@@ -174,15 +176,14 @@ over (taking 0) (· * 10) [1, 2, 3]     -- [1, 2, 3]
 over (taking 10) (· * 10) [1, 2]       -- [10, 20]
 ```
 -/
-def taking {a : Type} (n : Nat) : Traversal' (List a) a :=
+def taking (n : Nat) : Traversal' (List a) a :=
   Collimator.traversal
-    (fun {F : Type → Type} [Applicative F]
-      (f : a → F a) (xs : List a) =>
-        let (prefix_, suffix) := xs.splitAt n
-        let rec traverseList : List a → F (List a)
-          | [] => pure []
-          | x :: rest => (· :: ·) <$> f x <*> traverseList rest
-        (· ++ suffix) <$> traverseList prefix_)
+    (fun {F : Type → Type} [Applicative F] (f : a → F a) (xs : List a) =>
+      let (prefix_, suffix) := xs.splitAt n
+      let rec traverseList : List a → F (List a)
+        | [] => pure []
+        | x :: rest => (· :: ·) <$> f x <*> traverseList rest
+      (· ++ suffix) <$> traverseList prefix_)
 
 /--
 Skip the first `n` elements and traverse the rest.
@@ -195,18 +196,22 @@ over (dropping 0) (· * 10) [1, 2, 3]     -- [10, 20, 30]
 over (dropping 10) (· * 10) [1, 2]       -- [1, 2]
 ```
 -/
-def dropping {a : Type} (n : Nat) : Traversal' (List a) a :=
+def dropping (n : Nat) : Traversal' (List a) a :=
   Collimator.traversal
-    (fun {F : Type → Type} [Applicative F]
-      (f : a → F a) (xs : List a) =>
-        let (prefix_, suffix) := xs.splitAt n
-        let rec traverseList : List a → F (List a)
-          | [] => pure []
-          | x :: rest => (· :: ·) <$> f x <*> traverseList rest
-        (prefix_ ++ ·) <$> traverseList suffix)
+    (fun {F : Type → Type} [Applicative F] (f : a → F a) (xs : List a) =>
+      let (prefix_, suffix) := xs.splitAt n
+      let rec traverseList : List a → F (List a)
+        | [] => pure []
+        | x :: rest => (· :: ·) <$> f x <*> traverseList rest
+      (prefix_ ++ ·) <$> traverseList suffix)
+
+end ListOps
 
 
 /-! ## Prism Combinators -/
+
+section PrismOps
+variable {s a : Type}
 
 /--
 Try the first prism, and if it fails, try the second.
@@ -225,24 +230,19 @@ preview evenOrDiv3 9   -- some 9 (div by 3)
 preview evenOrDiv3 7   -- none (neither)
 ```
 -/
-def orElse {s a : Type}
-    (p1 : Prism' s a) (p2 : Prism' s a) : AffineTraversal' s a :=
+def orElse (p1 : Prism' s a) (p2 : Prism' s a) : AffineTraversal' s a :=
   fun {P} [Profunctor P] [Strong P] [Choice P] pab =>
-    -- Try p1 first, if Sum.inl (failed), try p2
-    -- This requires constructing the affine traversal manually
     let tryBoth : s → Sum s (a × s) := fun s =>
       match preview' p1 s with
       | some a => Sum.inr (a, s)
       | none => match preview' p2 s with
         | some a => Sum.inr (a, s)
         | none => Sum.inl s
-    -- Build the affine traversal
     Profunctor.dimap
       tryBoth
       (fun
         | Sum.inl s => s
         | Sum.inr (a, origS) =>
-          -- Determine which prism matched and use appropriate modification
           match preview' p1 origS with
           | some _ => review' p1 a
           | none => review' p2 a)
@@ -262,7 +262,7 @@ def headAffine : AffineTraversal' (List a) a :=
       | _ :: rest => a :: rest)
 ```
 -/
-def affineFromPartial {s a : Type}
+def affineFromPartial
     (preview_ : s → Option a)
     (set_ : s → a → s) : AffineTraversal' s a :=
   fun {P} [Profunctor P] [Strong P] [Choice P] pab =>
@@ -275,6 +275,8 @@ def affineFromPartial {s a : Type}
         | Sum.inr (a, s) => set_ s a)
       (Choice.right (Strong.first pab))
 
+end PrismOps
+
 end Collimator.Combinators
 
 
@@ -284,6 +286,8 @@ namespace Collimator.Indexed
 
 open Collimator
 
+section
+variable {ι s a : Type}
 
 /--
 Capability for focusing a single position identified by an index.
@@ -300,16 +304,16 @@ class HasAt (ι : Type) (s : Type) (a : Type) where
 /--
 Retrieve the traversal focusing a particular index.
 -/
-@[inline] def ix {ι : Type} {s : Type} {a : Type}
-    [HasIx ι s a] (i : ι) : Traversal' s a :=
+@[inline] def ix [HasIx ι s a] (i : ι) : Traversal' s a :=
   HasIx.ix i
 
 /--
 Retrieve the lens exposing an optional focus at a particular index.
 -/
-@[inline] def atLens {ι : Type} {s : Type} {a : Type}
-    [HasAt ι s a] (i : ι) : Lens' s (Option a) :=
+@[inline] def atLens [HasAt ι s a] (i : ι) : Lens' s (Option a) :=
   HasAt.focus i
+
+end
 
 end Collimator.Indexed
 
@@ -320,6 +324,8 @@ namespace Collimator.Combinators.Bitraversal
 
 open Collimator
 
+section
+variable {α β : Type}
 
 /--
 Traverse both components of a homogeneous pair.
@@ -338,14 +344,64 @@ toListOf both (1, 2)
 -- [1, 2]
 ```
 -/
-def both {α β : Type} : Traversal (α × α) (β × β) α β :=
+def both : Traversal (α × α) (β × β) α β :=
   Collimator.traversal
-    (fun {F : Type → Type} [Applicative F]
-      (f : α → F β) (pair : α × α) =>
-        pure Prod.mk <*> f pair.1 <*> f pair.2)
+    (fun {F : Type → Type} [Applicative F] (f : α → F β) (pair : α × α) =>
+      pure Prod.mk <*> f pair.1 <*> f pair.2)
+
+/--
+Traverse whichever branch is present in a homogeneous sum.
+
+This traversal always has exactly one focus - either the left
+or right value, whichever is present.
+
+## Example
+
+```lean
+over chosen (* 2) (Sum.inl 5)   -- Sum.inl 10
+over chosen (* 2) (Sum.inr 7)   -- Sum.inr 14
+
+preview chosen (Sum.inl "hi")   -- some "hi"
+```
+-/
+def chosen : Traversal (Sum α α) (Sum β β) α β :=
+  Collimator.traversal
+    (fun {F : Type → Type} [Applicative F] (f : α → F β) (s : Sum α α) =>
+      match s with
+      | Sum.inl a => Functor.map Sum.inl (f a)
+      | Sum.inr a => Functor.map Sum.inr (f a))
+
+/--
+Swap the components of a homogeneous pair.
+
+This is an isomorphism, but provided here for completeness with
+bifunctor operations.
+-/
+def swapped : Iso' (α × α) (α × α) :=
+  Collimator.iso (forward := fun (a, b) => (b, a)) (back := fun (a, b) => (b, a))
+
+/--
+Swap the branches of a homogeneous sum.
+-/
+def swappedSum : Iso' (Sum α α) (Sum α α) :=
+  Collimator.iso
+    (forward := fun
+      | Sum.inl a => Sum.inr a
+      | Sum.inr a => Sum.inl a)
+    (back := fun
+      | Sum.inl a => Sum.inr a
+      | Sum.inr a => Sum.inl a)
+
+end
 
 /-- Monomorphic version of `both`. -/
 def both' (α : Type) : Traversal' (α × α) α := both
+
+/-- Monomorphic version of `chosen`. -/
+def chosen' (α : Type) : Traversal' (Sum α α) α := chosen
+
+section Beside
+variable {s t s' t' a b : Type}
 
 /--
 Traverse both parts of a pair, using separate traversals for each.
@@ -367,66 +423,17 @@ toListOf (beside traversed traversed) (["a", "b"], ["c"])
 -- ["a", "b", "c"]
 ```
 -/
-def beside {s t s' t' a b : Type}
-    (l : Traversal s t a b) (r : Traversal s' t' a b)
+def beside (l : Traversal s t a b) (r : Traversal s' t' a b)
     : Traversal (s × s') (t × t') a b :=
   Collimator.traversal
-    (fun {F : Type → Type} [Applicative F]
-      (f : a → F b) (pair : s × s') =>
-        -- Traverse left side with l, right side with r, combine results
-        pure Prod.mk <*> Traversal.traverse' l f pair.1 <*> Traversal.traverse' r f pair.2)
+    (fun {F : Type → Type} [Applicative F] (f : a → F b) (pair : s × s') =>
+      pure Prod.mk <*> Traversal.traverse' l f pair.1 <*> Traversal.traverse' r f pair.2)
+
+end Beside
 
 /-- Monomorphic version of `beside`. -/
-def beside' {s s' a : Type}
-    (l : Traversal' s a) (r : Traversal' s' a)
+def beside' {s s' a : Type} (l : Traversal' s a) (r : Traversal' s' a)
     : Traversal' (s × s') a := beside l r
-
-/--
-Traverse whichever branch is present in a homogeneous sum.
-
-This traversal always has exactly one focus - either the left
-or right value, whichever is present.
-
-## Example
-
-```lean
-over chosen (* 2) (Sum.inl 5)   -- Sum.inl 10
-over chosen (* 2) (Sum.inr 7)   -- Sum.inr 14
-
-preview chosen (Sum.inl "hi")   -- some "hi"
-```
--/
-def chosen {α β : Type} : Traversal (Sum α α) (Sum β β) α β :=
-  Collimator.traversal
-    (fun {F : Type → Type} [Applicative F]
-      (f : α → F β) (s : Sum α α) =>
-        match s with
-        | Sum.inl a => Functor.map Sum.inl (f a)
-        | Sum.inr a => Functor.map Sum.inr (f a))
-
-/-- Monomorphic version of `chosen`. -/
-def chosen' (α : Type) : Traversal' (Sum α α) α := chosen
-
-/--
-Swap the components of a homogeneous pair.
-
-This is an isomorphism, but provided here for completeness with
-bifunctor operations.
--/
-def swapped {α : Type} : Iso' (α × α) (α × α) :=
-  Collimator.iso (forward := fun (a, b) => (b, a)) (back := fun (a, b) => (b, a))
-
-/--
-Swap the branches of a homogeneous sum.
--/
-def swappedSum {α : Type} : Iso' (Sum α α) (Sum α α) :=
-  Collimator.iso
-    (forward := fun
-      | Sum.inl a => Sum.inr a
-      | Sum.inr a => Sum.inl a)
-    (back := fun
-      | Sum.inl a => Sum.inr a
-      | Sum.inr a => Sum.inl a)
 
 end Collimator.Combinators.Bitraversal
 
@@ -436,7 +443,6 @@ end Collimator.Combinators.Bitraversal
 namespace Collimator.Combinators.Plated
 
 open Collimator
-
 
 /--
 Typeclass for types with a self-similar recursive structure.
@@ -453,24 +459,27 @@ class Plated (α : Type) where
   /-- Traversal focusing on immediate children of the same type. -/
   plate : Traversal' α α
 
+section
+variable {α : Type} [Plated α]
+
 /--
 Access the immediate children of a plated structure.
 
 This is just the `plate` traversal from the typeclass.
 -/
-@[inline] def children {α : Type} [Plated α] : Traversal' α α :=
+@[inline] def children : Traversal' α α :=
   Plated.plate
 
 /--
 Collect all immediate children into a list.
 -/
-def childrenOf {α : Type} [Plated α] (x : α) : List α :=
+def childrenOf (x : α) : List α :=
   Fold.toListTraversal Plated.plate x
 
 /--
 Apply a transformation to all immediate children.
 -/
-def overChildren {α : Type} [Plated α] (f : α → α) (x : α) : α :=
+def overChildren (f : α → α) (x : α) : α :=
   Traversal.over' Plated.plate f x
 
 /--
@@ -492,7 +501,7 @@ def simplify : Expr → Expr
 transform simplify expr  -- applies simplify to all subexpressions
 ```
 -/
-partial def transform {α : Type} [Plated α] (f : α → α) (x : α) : α :=
+partial def transform (f : α → α) (x : α) : α :=
   f (overChildren (transform f) x)
 
 /--
@@ -500,7 +509,7 @@ Transform a structure top-down.
 
 Applies the transformation first, then recursively transforms children.
 -/
-partial def transformDown {α : Type} [Plated α] (f : α → α) (x : α) : α :=
+partial def transformDown (f : α → α) (x : α) : α :=
   overChildren (transformDown f) (f x)
 
 /--
@@ -521,16 +530,16 @@ def trySimplify : Expr → Option Expr
 rewrite trySimplify expr
 ```
 -/
-partial def rewrite {α : Type} [Plated α] (f : α → Option α) (x : α) : α :=
+partial def rewrite (f : α → Option α) (x : α) : α :=
   let x' := overChildren (rewrite f) x
   match f x' with
-  | some y => rewrite f y  -- Keep rewriting if f succeeds
-  | none => x'             -- Done rewriting this node
+  | some y => rewrite f y
+  | none => x'
 
 /--
 Rewrite top-down: try to rewrite at each node before recursing.
 -/
-partial def rewriteDown {α : Type} [Plated α] (f : α → Option α) (x : α) : α :=
+partial def rewriteDown (f : α → Option α) (x : α) : α :=
   let x' := match f x with
     | some y => y
     | none => x
@@ -541,8 +550,7 @@ Descend one level into children, applying a monadic action.
 
 This is the effectful version of `overChildren`.
 -/
-def descendM {α : Type} {M : Type → Type} [Plated α] [Monad M]
-    (f : α → M α) (x : α) : M α :=
+def descendM {M : Type → Type} [Monad M] (f : α → M α) (x : α) : M α :=
   Traversal.traverse' Plated.plate f x
 
 /--
@@ -558,40 +566,42 @@ Includes the root value itself.
 toListOf universe expr
 ```
 -/
-partial def universeList {α : Type} [Plated α] (x : α) : List α :=
+partial def universeList (x : α) : List α :=
   x :: (childrenOf x).flatMap universeList
 
 /--
 Count the total number of nodes in a recursive structure.
 -/
-partial def cosmosCount {α : Type} [Plated α] (x : α) : Nat :=
+partial def cosmosCount (x : α) : Nat :=
   1 + (childrenOf x).foldl (fun acc child => acc + cosmosCount child) 0
 
 /--
 Find the maximum depth of a recursive structure.
 -/
-partial def depth {α : Type} [Plated α] (x : α) : Nat :=
+partial def depth (x : α) : Nat :=
   let childDepths := (childrenOf x).map depth
   1 + (childDepths.foldl max 0)
 
 /--
 Check if a predicate holds for all nodes in the structure.
 -/
-partial def allOf {α : Type} [Plated α] (p : α → Bool) (x : α) : Bool :=
+partial def allOf (p : α → Bool) (x : α) : Bool :=
   p x && (childrenOf x).all (allOf p)
 
 /--
 Check if a predicate holds for any node in the structure.
 -/
-partial def anyOf {α : Type} [Plated α] (p : α → Bool) (x : α) : Bool :=
+partial def anyOf (p : α → Bool) (x : α) : Bool :=
   p x || (childrenOf x).any (anyOf p)
 
 /--
 Find the first node matching a predicate (depth-first).
 -/
-partial def findOf {α : Type} [Plated α] (p : α → Bool) (x : α) : Option α :=
+partial def findOf (p : α → Bool) (x : α) : Option α :=
   if p x then some x
   else (childrenOf x).findSome? (findOf p)
+
+end
 
 /-! ## Common Instances -/
 
@@ -599,17 +609,15 @@ partial def findOf {α : Type} [Plated α] (p : α → Bool) (x : α) : Option �
     Note: This is one interpretation. Another would be no children (leaves only). -/
 instance instPlatedList {α : Type} : Plated (List α) where
   plate := Collimator.traversal
-    (fun {F : Type → Type} [Applicative F]
-      (f : List α → F (List α)) (xs : List α) =>
-        match xs with
-        | [] => pure []
-        | x :: rest => Functor.map (List.cons x) (f rest))
+    (fun {F : Type → Type} [Applicative F] (f : List α → F (List α)) (xs : List α) =>
+      match xs with
+      | [] => pure []
+      | x :: rest => Functor.map (List.cons x) (f rest))
 
 /-- Option has no recursive structure (no children). -/
 instance instPlatedOption {α : Type} : Plated (Option α) where
   plate := Collimator.traversal
-    (fun {F : Type → Type} [Applicative F]
-      (_f : Option α → F (Option α)) (x : Option α) =>
-        pure x)
+    (fun {F : Type → Type} [Applicative F] (_f : Option α → F (Option α)) (x : Option α) =>
+      pure x)
 
 end Collimator.Combinators.Plated
