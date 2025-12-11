@@ -1,31 +1,14 @@
 import CollimatorTests.Framework
-import CollimatorTests.Core
-import CollimatorTests.BasicOperations
-import CollimatorTests.IsoLaws
-import CollimatorTests.LensLaws
-import CollimatorTests.PrismLaws
-import CollimatorTests.TraversalLaws
-import CollimatorTests.AffineLaws
-import CollimatorTests.Combinators
-import CollimatorTests.Traversals
-import CollimatorTests.PhaseFiveNormalization
-import CollimatorTests.PhaseFiveSubtyping
-import CollimatorTests.AdvancedShowcase.AffineWizardry
-import CollimatorTests.AdvancedShowcase.PrismMagic
-import CollimatorTests.AdvancedShowcase.HeterogeneousCompositions
-import CollimatorTests.AdvancedShowcase.MindBending
-import CollimatorTests.AdvancedShowcase.EffectfulTraversals
-import CollimatorTests.AdvancedShowcase.DeepComposition
-import CollimatorTests.AdvancedShowcase.FilteredIndexed
-import CollimatorTests.GetterReview
-import CollimatorTests.PropertyTests
-import CollimatorTests.ConcreteProfunctors
-import CollimatorTests.EdgeCases
-import CollimatorTests.NewCombinators
-import CollimatorTests.Debug
-import CollimatorTests.AdvancedFeatures
-import CollimatorTests.Integration
-import CollimatorTests.Tooling
+import CollimatorTests.ProfunctorTests
+import CollimatorTests.IsoTests
+import CollimatorTests.LensTests
+import CollimatorTests.PrismTests
+import CollimatorTests.TraversalTests
+import CollimatorTests.AffineTests
+import CollimatorTests.CombinatorTests
+import CollimatorTests.CompositionTests
+import CollimatorTests.IntegrationTests
+import CollimatorTests.DevToolsTests
 
 /-!
 # Test Runner for Collimator
@@ -42,37 +25,16 @@ def main : IO UInt32 := do
 
   let mut exitCode : UInt32 := 0
 
-  exitCode := exitCode + (← runTests "Core Profunctor Tests" CollimatorTests.Core.cases)
-  exitCode := exitCode + (← runTests "Basic Operations" CollimatorTests.BasicOperations.cases)
-  exitCode := exitCode + (← runTests "Iso Laws" CollimatorTests.IsoLaws.cases)
-  exitCode := exitCode + (← runTests "Lens Laws" CollimatorTests.LensLaws.cases)
-  exitCode := exitCode + (← runTests "Prism Laws" CollimatorTests.PrismLaws.cases)
-  exitCode := exitCode + (← runTests "Traversal Laws" CollimatorTests.TraversalLaws.cases)
-  exitCode := exitCode + (← runTests "Affine Laws" CollimatorTests.AffineLaws.cases)
-  exitCode := exitCode + (← runTests "Combinators" CollimatorTests.Combinators.cases)
-  exitCode := exitCode + (← runTests "Traversals" CollimatorTests.Traversals.cases)
-  exitCode := exitCode + (← runTests "Phase Five Normalization" CollimatorTests.PhaseFiveNormalization.cases)
-  exitCode := exitCode + (← runTests "Phase Five Subtyping" CollimatorTests.PhaseFiveSubtyping.cases)
-  exitCode := exitCode + (← runTests "Getter and Review" CollimatorTests.GetterReview.cases)
-
-  -- Advanced Showcase tests (some WIP)
-  exitCode := exitCode + (← runTests "Affine Wizardry" CollimatorTests.AdvancedShowcase.AffineWizardry.cases)
-  exitCode := exitCode + (← runTests "Prism Magic" CollimatorTests.AdvancedShowcase.PrismMagic.cases)
-  exitCode := exitCode + (← runTests "Heterogeneous Compositions" CollimatorTests.AdvancedShowcase.HeterogeneousCompositions.cases)
-  exitCode := exitCode + (← runTests "Mind Bending" CollimatorTests.AdvancedShowcase.MindBending.cases)
-  exitCode := exitCode + (← runTests "Effectful Traversals" CollimatorTests.AdvancedShowcase.EffectfulTraversals.cases)
-  exitCode := exitCode + (← runTests "Deep Composition" CollimatorTests.AdvancedShowcase.DeepComposition.cases)
-  exitCode := exitCode + (← runTests "Filtered & Indexed" CollimatorTests.AdvancedShowcase.FilteredIndexed.cases)
-
-  -- New test suites
-  exitCode := exitCode + (← runTests "Concrete Profunctors" CollimatorTests.ConcreteProfunctors.cases)
-  exitCode := exitCode + (← runTests "New Combinators" CollimatorTests.NewCombinators.cases)
-  exitCode := exitCode + (← runTests "Integration Patterns" CollimatorTests.Integration.cases)
-  exitCode := exitCode + (← runTests "Tooling" CollimatorTests.Tooling.cases)
-  exitCode := exitCode + (← runTests "Edge Cases" CollimatorTests.EdgeCases.cases)
-  exitCode := exitCode + (← runTests "Property Tests" CollimatorTests.PropertyTests.cases)
-  exitCode := exitCode + (← runTests "Debug Utilities" CollimatorTests.Debug.cases)
-  exitCode := exitCode + (← runTests "Advanced Features" CollimatorTests.AdvancedFeatures.cases)
+  exitCode := exitCode + (← runTests "Profunctor Tests" CollimatorTests.ProfunctorTests.cases)
+  exitCode := exitCode + (← runTests "Iso Tests" CollimatorTests.IsoTests.cases)
+  exitCode := exitCode + (← runTests "Lens Tests" CollimatorTests.LensTests.cases)
+  exitCode := exitCode + (← runTests "Prism Tests" CollimatorTests.PrismTests.cases)
+  exitCode := exitCode + (← runTests "Traversal Tests" CollimatorTests.TraversalTests.cases)
+  exitCode := exitCode + (← runTests "Affine Tests" CollimatorTests.AffineTests.cases)
+  exitCode := exitCode + (← runTests "Combinator Tests" CollimatorTests.CombinatorTests.cases)
+  exitCode := exitCode + (← runTests "Composition Tests" CollimatorTests.CompositionTests.cases)
+  exitCode := exitCode + (← runTests "Integration Tests" CollimatorTests.IntegrationTests.cases)
+  exitCode := exitCode + (← runTests "DevTools Tests" CollimatorTests.DevTools.cases)
 
   IO.println ""
   if exitCode == 0 then

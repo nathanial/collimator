@@ -3,7 +3,7 @@ import Collimator.Prelude
 import Collimator.Integration
 
 /-!
-# Tests for Integration Patterns
+# Integration Tests
 
 Tests for Collimator's integration utilities with Except, StateM, ReaderM, etc.
 -/
@@ -14,9 +14,9 @@ open Collimator.Instances.Option
 open Collimator.Instances.List
 open CollimatorTests
 
-namespace CollimatorTests.Integration
+namespace CollimatorTests.IntegrationTests
 
-testSuite "Integration Patterns"
+testSuite "Integration Tests"
 
 /-! ## Test Data -/
 
@@ -196,4 +196,4 @@ test "traverseOption: short-circuits on failure" := do
 
 #generate_tests
 
-end CollimatorTests.Integration
+end CollimatorTests.IntegrationTests

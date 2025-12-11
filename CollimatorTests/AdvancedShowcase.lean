@@ -1,8 +1,0 @@
--- CollimatorTests.AdvancedShowcase module
-import CollimatorTests.AdvancedShowcase.AffineWizardry
-import CollimatorTests.AdvancedShowcase.DeepComposition
-import CollimatorTests.AdvancedShowcase.EffectfulTraversals
-import CollimatorTests.AdvancedShowcase.FilteredIndexed
-import CollimatorTests.AdvancedShowcase.HeterogeneousCompositions
-import CollimatorTests.AdvancedShowcase.MindBending
-import CollimatorTests.AdvancedShowcase.PrismMagic

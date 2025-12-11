@@ -1,137 +1,183 @@
+import Batteries
+import Collimator.Core
 import Collimator.Optics
+import Collimator.Operators
 import Collimator.Concrete.FunArrow
+import Collimator.Theorems.TraversalLaws
+import Collimator.Combinators
 import Collimator.Instances
 import CollimatorTests.Framework
 import Mathlib.Control.Monad.Writer
 
-namespace CollimatorTests.AdvancedShowcase.EffectfulTraversals
-
-open Collimator
-open Collimator.Instances.List (traversed)
-open CollimatorTests
-
-testSuite "Effectful Traversals"
-
 /-!
-# Effectful Traversals
+# Traversal Tests
 
-Demonstrate traversals working with different applicative functors:
-- Option applicative for validation and short-circuiting
-- State applicative for stateful transformations
-- Writer applicative for logging transformations
-- IO applicative for effectful operations (if applicable)
-- Custom applicatives for domain-specific effects
-
-Show how the same traversal can be reused with different effect types.
+Comprehensive test suite for traversals, including:
+- Traversal laws (identity, naturality)
+- Basic traversal operations (over, traverse)
+- Composed traversals
+- Effectful traversals with different applicative functors
+- Property-based tests for traversals
 -/
 
-test "Option applicative: validate all positive (short-circuit)" := do
-    -- Validation function: accept only positive numbers
-    let validatePositive : Int → Option Int :=
-      fun n => if n > 0 then some n else none
+namespace CollimatorTests.TraversalTests
 
-    -- Test 1: All positive - succeeds
-    let allPositive : List Int := [1, 2, 3, 4, 5]
-    let result1 := Traversal.traverse' traversed validatePositive allPositive
-    ensureEq "All positive validates" (some [1, 2, 3, 4, 5]) result1
+open Batteries
+open Collimator
+open Collimator.Core
+open Collimator.Concrete
+open Collimator.Theorems
+open Collimator.Combinators
+open Collimator.Traversal
+open Collimator.Fold
+open Collimator.Setter
+open Collimator.AffineTraversalOps
+open Collimator.Instances.List (traversed)
+open CollimatorTests
+open scoped Collimator.Operators
 
-    -- Test 2: Contains negative - short-circuits to None
-    let hasNegative : List Int := [1, 2, -3, 4, 5]
-    let result2 := Traversal.traverse' traversed validatePositive hasNegative
-    ensureEq "Negative causes short-circuit" (none : Option (List Int)) result2
+testSuite "Traversal Tests"
 
-    -- Test 3: First element negative - immediate failure
-    let firstNegative : List Int := [-1, 2, 3]
-    let result3 := Traversal.traverse' traversed validatePositive firstNegative
-    ensureEq "First negative fails immediately" (none : Option (List Int)) result3
+/-! ## Test Structures -/
 
-    -- Test 4: Empty list - succeeds trivially
-    let empty : List Int := []
-    let result4 := Traversal.traverse' traversed validatePositive empty
-    ensureEq "Empty list validates" (some []) result4
+inductive Tree (α : Type _) where
+  | leaf : α → Tree α
+  | node : Tree α → Tree α → Tree α
+  deriving BEq, Repr
 
-    -- Test 5: Zero is not positive - should fail
-    let hasZero : List Int := [1, 0, 3]
-    let result5 := Traversal.traverse' traversed validatePositive hasZero
-    ensureEq "Zero is not positive" (none : Option (List Int)) result5
+structure Point where
+  x : Int
+  y : Int
+  deriving BEq, Repr, DecidableEq
 
-test "Option applicative: safe division (short-circuit on zero)" := do
-    -- Safe division function: returns None if divisor is zero
-    let safeDivide (divisor : Int) (dividend : Int) : Option Int :=
-      if divisor = 0 then none else some (dividend / divisor)
+structure Rectangle where
+  topLeft : Point
+  bottomRight : Point
+  deriving BEq, Repr, DecidableEq
 
-    -- Test 1: All non-zero divisors - succeeds
-    let divisors : List Int := [2, 4, 5, 10]
-    let dividend := 100
-    let result1 := Traversal.traverse' traversed (safeDivide · dividend) divisors
-    ensureEq "All non-zero divisors succeed" (some [50, 25, 20, 10]) result1
+/-! ## Traversal Definitions -/
 
-    -- Test 2: Contains zero - short-circuits to None
-    let hasZero : List Int := [2, 4, 0, 10]
-    let result2 := Traversal.traverse' traversed (safeDivide · dividend) hasZero
-    ensureEq "Zero divisor causes short-circuit" (none : Option (List Int)) result2
+private def Tree.walkMon {α : Type _} {F : Type _ → Type _} [Applicative F]
+    (f : α → F α) : Tree α → F (Tree α)
+  | Tree.leaf a => pure Tree.leaf <*> f a
+  | Tree.node l r =>
+      pure Tree.node <*> Tree.walkMon f l <*> Tree.walkMon f r
 
-    -- Test 3: First element zero - immediate failure
-    let firstZero : List Int := [0, 2, 4]
-    let result3 := Traversal.traverse' traversed (safeDivide · dividend) firstZero
-    ensureEq "First zero fails immediately" (none : Option (List Int)) result3
+private def List.walkMon {α : Type _} {F : Type _ → Type _} [Applicative F]
+    (f : α → F α) : List α → F (List α)
+  | [] => pure []
+  | x :: xs => pure List.cons <*> f x <*> List.walkMon f xs
 
-    -- Test 4: Last element zero - processes all then fails
-    let lastZero : List Int := [2, 4, 5, 0]
-    let result4 := Traversal.traverse' traversed (safeDivide · dividend) lastZero
-    ensureEq "Last zero still fails" (none : Option (List Int)) result4
+private def Option.walkMon {α : Type _} {F : Type _ → Type _} [Applicative F]
+    (f : α → F α) : Option α → F (Option α)
+  | none => pure none
+  | some a => pure Option.some <*> f a
 
-    -- Test 5: Empty list - succeeds trivially
-    let empty : List Int := []
-    let result5 := Traversal.traverse' traversed (safeDivide · dividend) empty
-    ensureEq "Empty list succeeds" (some []) result5
+/-! ## Lawful Instances -/
 
-    -- Test 6: Negative divisors are fine
-    let negatives : List Int := [-2, -5, 10]
-    let result6 := Traversal.traverse' traversed (safeDivide · dividend) negatives
-    ensureEq "Negative divisors are valid" (some [-50, -20, 10]) result6
+instance {α : Type _} : LawfulTraversal (@Tree.walkMon α) where
+  traverse_identity := by
+    intro x
+    induction x with
+    | leaf a => rfl
+    | node l r ihl ihr =>
+      unfold Tree.walkMon
+      simp only [ihl, ihr]
+      rfl
+  traverse_naturality := by
+    intro F G _ _ η h_pure h_seq f x
+    induction x with
+    | leaf a =>
+      unfold Tree.walkMon
+      rw [h_seq, h_pure]
+    | node l r ihl ihr =>
+      unfold Tree.walkMon
+      rw [h_seq, h_seq, ihl, ihr, h_pure]
 
+instance {α : Type _} : LawfulTraversal (@List.walkMon α) where
+  traverse_identity := by
+    intro x
+    induction x with
+    | nil => rfl
+    | cons h t ih =>
+      unfold List.walkMon
+      simp only [ih]
+      rfl
+  traverse_naturality := by
+    intro F G _ _ η h_pure h_seq f x
+    induction x with
+    | nil =>
+      unfold List.walkMon
+      simp only [h_pure]
+    | cons h t ih =>
+      unfold List.walkMon
+      rw [h_seq, h_seq, ih]
+      simp only [h_pure]
 
-test "State applicative: number elements sequentially" := do
-    -- Stateful function: pair each element with current counter, then increment
-    let numberElement (x : String) : StateT Nat Id (Nat × String) := do
-      let n ← get
-      set (n + 1)
-      pure (n, x)
+instance {α : Type _} : LawfulTraversal (@Option.walkMon α) where
+  traverse_identity := by
+    intro x
+    cases x <;> rfl
+  traverse_naturality := by
+    intro F G _ _ η h_pure h_seq f x
+    cases x with
+    | none =>
+      unfold Option.walkMon
+      simp only [h_pure]
+    | some a =>
+      unfold Option.walkMon
+      rw [h_seq, h_pure]
 
-    -- Test 1: Number elements starting from 0
-    let fruits := ["apple", "banana", "cherry"]
-    let (result1, finalCount1) := (Traversal.traverse' traversed numberElement fruits).run 0
-    ensureEq "Elements numbered from 0" [(0, "apple"), (1, "banana"), (2, "cherry")] result1
-    ensureEq "Final counter is 3" 3 finalCount1
+/-! ## Lens and Prism Definitions -/
 
-    -- Test 2: Number elements starting from 10
-    let colors := ["red", "green", "blue"]
-    let (result2, finalCount2) := (Traversal.traverse' traversed numberElement colors).run 10
-    ensureEq "Elements numbered from 10" [(10, "red"), (11, "green"), (12, "blue")] result2
-    ensureEq "Final counter is 13" 13 finalCount2
+private def pointLens : Lens Point Point Int Int :=
+  lens' (fun p => p.x) (fun p x' => { p with x := x' })
 
-    -- Test 3: Empty list - counter unchanged
-    let empty : List String := []
-    let (result3, finalCount3) := (Traversal.traverse' traversed numberElement empty).run 5
-    ensureEq "Empty list returns empty" [] result3
-    ensureEq "Counter unchanged for empty list" 5 finalCount3
+private def Point.xLens : Lens' Point Int :=
+  lens' (fun p => p.x) (fun p x' => { p with x := x' })
 
-    -- Test 4: Single element
-    let single := ["only"]
-    let (result4, finalCount4) := (Traversal.traverse' traversed numberElement single).run 99
-    ensureEq "Single element numbered" [(99, "only")] result4
-    ensureEq "Counter incremented once" 100 finalCount4
+private def Rectangle.topLeftLens : Lens' Rectangle Point :=
+  lens' (fun r => r.topLeft) (fun r p => { r with topLeft := p })
 
-    -- Test 5: Demonstrate state threading - use counter to create indices
-    let addIndex (x : Int) : StateT Nat Id String := do
-      let idx ← get
-      set (idx + 1)
-      pure s!"[{idx}]={x}"
+private def optionPrism : Prism (Option Int) (Option Int) Int Int :=
+  prism (s := Option Int) (t := Option Int) (a := Int) (b := Int)
+    (build := Option.some)
+    (split := fun | some n => Sum.inr n | none => Sum.inl none)
 
-    let numbers := [10, 20, 30]
-    let (indexed, _) := (Traversal.traverse' traversed addIndex numbers).run 1
-    ensureEq "Create indexed strings" ["[1]=10", "[2]=20", "[3]=30"] indexed
+/-! ## Random Value Generation for Property Tests -/
+
+/-- Generate a pseudo-random Int from a seed -/
+private def randomInt (seed : Nat) : Int :=
+  let h := seed * 1103515245 + 12345
+  ((h / 65536) % 32768 : Nat) - 16384
+
+/-- Generate a pseudo-random Point from a seed -/
+private def randomPoint (seed : Nat) : Point :=
+  { x := randomInt seed, y := randomInt (seed + 1) }
+
+/-- Generate a pseudo-random Rectangle from a seed -/
+private def randomRectangle (seed : Nat) : Rectangle :=
+  { topLeft := randomPoint seed, bottomRight := randomPoint (seed + 2) }
+
+/-! ## Property Test Functions -/
+
+/--
+Identity law: over t id s = s
+-/
+private def traversal_identity_prop (seed : Nat) : Bool :=
+  let xs : List Int := (List.range ((seed % 10) + 1)).map (Int.ofNat ·)
+  let tr : Traversal' (List Int) Int := Traversal.eachList
+  (xs & tr %~ id) == xs
+
+/--
+Traversal preserves list length
+-/
+private def traversal_length_prop (seed : Nat) : Bool :=
+  let xs : List Int := (List.range ((seed % 20) + 1)).map (Int.ofNat ·)
+  let tr : Traversal' (List Int) Int := Traversal.eachList
+  (xs & tr %~ (· + 1)).length == xs.length
+
+/-! ## Effectful Traversals - Helper Types and Structures -/
 
 -- Statistics accumulator for state test
 private structure Stats where
@@ -220,10 +266,275 @@ private structure MeanState where
   count : Nat
 deriving Repr, BEq
 
+/-! ## Traversal Laws Tests -/
+
+test "Traversal Identity law: traverse id = id" := do
+  let tr : Traversal' (List Int) Int := traversal List.walkMon
+  let xs := [1, 2, 3]
+  let result := xs & tr %~ (fun a => a)
+  ensureEq "Identity law" xs result
+
+test "Tree traversal satisfies identity law" := do
+  let tr : Traversal' (Tree Int) Int := traversal Tree.walkMon
+  let tree := Tree.node (Tree.leaf 1) (Tree.leaf 2)
+  let result := tree & tr %~ (fun a => a)
+  ensureEq "Tree identity" tree result
+
+test "Traversal over modifies all focuses" := do
+  let tr : Traversal' (List Int) Int := traversal List.walkMon
+  let xs := [1, 2, 3]
+  let result := xs & tr %~ (· + 10)
+  ensureEq "Over all elements" [11, 12, 13] result
+
+test "Traverse with Option applicative short-circuits on none" := do
+  let tr : Traversal' (List Int) Int := traversal List.walkMon
+  let f : Int → Option Int := fun n => if n >= 0 then some (n + 1) else none
+
+  let success := Traversal.traverse' tr f [0, 1, 2]
+  ensureEq "Success case" (some [1, 2, 3]) success
+
+  let failure := Traversal.traverse' tr f [0, -1, 2]
+  ensureEq "Failure case" (none : Option (List Int)) failure
+
+test "Composed traversals satisfy identity law" := do
+  let outer : Traversal' (List (Option Int)) (Option Int) := traversal List.walkMon
+  let inner : Traversal' (Option Int) Int := traversal Option.walkMon
+  let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
+
+  let xs := [some 1, none, some 3]
+  let result := xs & composed %~ (fun a => a)
+  ensureEq "Composed identity" xs result
+
+test "Composed traversals modify all nested focuses" := do
+  let outer : Traversal' (List (Option Int)) (Option Int) := traversal List.walkMon
+  let inner : Traversal' (Option Int) Int := traversal Option.walkMon
+  let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
+
+  let xs := [some 1, none, some 3]
+  let result := xs & composed %~ (· * 2)
+  ensureEq "Composed over" [some 2, none, some 6] result
+
+test "Tree traversal modifies all leaves" := do
+  let tr : Traversal' (Tree Int) Int := traversal Tree.walkMon
+  let tree := Tree.node (Tree.leaf 5) (Tree.node (Tree.leaf 10) (Tree.leaf 15))
+  let result := tree & tr %~ (· + 1)
+  let expected := Tree.node (Tree.leaf 6) (Tree.node (Tree.leaf 11) (Tree.leaf 16))
+  ensureEq "Tree traversal" expected result
+
+test "Traversal law theorems can be invoked" := do
+  let tr : Traversal' (List Int) Int := traversal List.walkMon
+
+  -- Identity law: over tr id = id
+  let test1 := [1, 2, 3] & tr %~ (fun a => a)
+  ensureEq "Law theorem identity" [1, 2, 3] test1
+
+  -- Traverse with Id functor
+  let test2 := Traversal.traverse' tr (F := Theorems.Id) (fun a => a + 5) [10, 20]
+  ensureEq "Traverse with Id" [15, 25] test2
+
+test "Composition lawfulness instance is usable" := do
+  -- Test via explicit composition instead of private composed_walk
+  let outer : Traversal' (List (Option Int)) (Option Int) := traversal List.walkMon
+  let inner : Traversal' (Option Int) Int := traversal Option.walkMon
+  let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
+
+  -- Test identity
+  let xs : List (Option Int) := [some 1, none, some 2]
+  let result := xs & composed %~ (fun a => a)
+  ensureEq "Composed lawful identity" xs result
+
+  -- Test modification
+  let result2 := xs & composed %~ (· + 10)
+  ensureEq "Composed lawful over" [some 11, none, some 12] result2
+
+test "Option traversal handles some and none correctly" := do
+  let tr : Traversal' (Option Int) Int := traversal Option.walkMon
+
+  -- Test with some
+  let result1 := (some 4) & tr %~ (· * 3)
+  ensureEq "Option some" (some 12) result1
+
+  -- Test with none
+  let result2 := (none : Option Int) & tr %~ (· * 3)
+  ensureEq "Option none" none result2
+
+  -- Test traverse with Option applicative
+  let f : Int → Option Int := fun n => if n < 10 then some (n + 1) else none
+  let success := Traversal.traverse' tr f (some 5)
+  let failure := Traversal.traverse' tr f (some 15)
+  ensureEq "Option traverse success" (some (some 6)) success
+  ensureEq "Option traverse failure" (none : Option (Option Int)) failure
+
+test "Tree traversal with Option applicative validates all leaves" := do
+  let tr : Traversal' (Tree Int) Int := traversal Tree.walkMon
+  let tree := Tree.node (Tree.leaf 5) (Tree.leaf 3)
+
+  let validate : Int → Option Int := fun n => if n > 0 then some n else none
+  let result := Traversal.traverse' tr validate tree
+  ensureEq "Tree validate success" (some tree) result
+
+  let badTree := Tree.node (Tree.leaf 5) (Tree.leaf (-1))
+  let badResult := Traversal.traverse' tr validate badTree
+  ensureEq "Tree validate failure" (none : Option (Tree Int)) badResult
+
+/-! ## Basic Traversal Tests -/
+
+test "traversal over updates each list element" := do
+  let tr : Traversal' (List Int) Int := Traversal.eachList
+  let updated := [1, 2, 3] & tr %~ (· + 1)
+  updated ≡ [2, 3, 4]
+
+test "traversal traverse short-circuits via option applicative" := do
+  let tr : Traversal' (List Int) Int := Traversal.eachList
+  let step : Int → Option Int := fun n => if n ≥ 0 then some (n + 1) else none
+  let success := Traversal.traverse' tr step [0, 2]
+  let failure := Traversal.traverse' tr step [0, -1, 3]
+  success ≡? [1, 3]
+  shouldBeNone failure
+
+test "fold toList collects focuses in order" := do
+  let fld : Fold' (Option Int) Int :=
+    Fold.ofAffine (s := Option Int) (t := Option Int) (a := Int) (b := Int)
+      (AffineTraversalOps.ofPrism optionPrism)
+  Fold.toList fld (some 7) ≡ [7]
+  Fold.toList fld none ≡ ([] : List Int)
+
+test "fold foldMap aggregates via monoid" := do
+  let fld : Fold' Point Int := Fold.ofLens pointLens
+  let points := [{ x := 2, y := 1 }, { x := -1, y := 5 }, { x := 4, y := 9 }]
+  let lifted := points.map (Fold.toList fld)
+  lifted ≡ ([[2], [-1], [4]] : List (List Int))
+
+test "fold length counts focuses" := do
+  let fld : Fold' Point Int := Fold.ofLens pointLens
+  (Fold.toList fld { x := 5, y := 0 }).length ≡ 1
+
+test "setter set updates value" := do
+  let st : Lens' Point Int := pointLens
+  let updated := { x := 1, y := 2 } & st .~ 42
+  updated ≡ { x := 42, y := 2 }
+
+test "affine traversal preview and set behaves correctly" := do
+  let affine : AffineTraversal' (Option Int) Int :=
+    AffineTraversalOps.ofPrism optionPrism
+  (some 5) ^? affine ≡? 5
+  shouldBeNone (none ^? affine)
+  let reset := (some 1) & affine .~ 99
+  reset ≡ some 99
+
+/-! ## Effectful Traversals Tests -/
+
+test "Option applicative: validate all positive (short-circuit)" := do
+    -- Validation function: accept only positive numbers
+    let validatePositive : Int → Option Int :=
+      fun n => if n > 0 then some n else none
+
+    -- Test 1: All positive - succeeds
+    let allPositive : List Int := [1, 2, 3, 4, 5]
+    let result1 := Traversal.traverse' traversed validatePositive allPositive
+    ensureEq "All positive validates" (some [1, 2, 3, 4, 5]) result1
+
+    -- Test 2: Contains negative - short-circuits to None
+    let hasNegative : List Int := [1, 2, -3, 4, 5]
+    let result2 := Traversal.traverse' traversed validatePositive hasNegative
+    ensureEq "Negative causes short-circuit" (none : Option (List Int)) result2
+
+    -- Test 3: First element negative - immediate failure
+    let firstNegative : List Int := [-1, 2, 3]
+    let result3 := Traversal.traverse' traversed validatePositive firstNegative
+    ensureEq "First negative fails immediately" (none : Option (List Int)) result3
+
+    -- Test 4: Empty list - succeeds trivially
+    let empty : List Int := []
+    let result4 := Traversal.traverse' traversed validatePositive empty
+    ensureEq "Empty list validates" (some []) result4
+
+    -- Test 5: Zero is not positive - should fail
+    let hasZero : List Int := [1, 0, 3]
+    let result5 := Traversal.traverse' traversed validatePositive hasZero
+    ensureEq "Zero is not positive" (none : Option (List Int)) result5
+
+test "Option applicative: safe division (short-circuit on zero)" := do
+    -- Safe division function: returns None if divisor is zero
+    let safeDivide (divisor : Int) (dividend : Int) : Option Int :=
+      if divisor = 0 then none else some (dividend / divisor)
+
+    -- Test 1: All non-zero divisors - succeeds
+    let divisors : List Int := [2, 4, 5, 10]
+    let dividend := 100
+    let result1 := Traversal.traverse' traversed (safeDivide · dividend) divisors
+    ensureEq "All non-zero divisors succeed" (some [50, 25, 20, 10]) result1
+
+    -- Test 2: Contains zero - short-circuits to None
+    let hasZero : List Int := [2, 4, 0, 10]
+    let result2 := Traversal.traverse' traversed (safeDivide · dividend) hasZero
+    ensureEq "Zero divisor causes short-circuit" (none : Option (List Int)) result2
+
+    -- Test 3: First element zero - immediate failure
+    let firstZero : List Int := [0, 2, 4]
+    let result3 := Traversal.traverse' traversed (safeDivide · dividend) firstZero
+    ensureEq "First zero fails immediately" (none : Option (List Int)) result3
+
+    -- Test 4: Last element zero - processes all then fails
+    let lastZero : List Int := [2, 4, 5, 0]
+    let result4 := Traversal.traverse' traversed (safeDivide · dividend) lastZero
+    ensureEq "Last zero still fails" (none : Option (List Int)) result4
+
+    -- Test 5: Empty list - succeeds trivially
+    let empty : List Int := []
+    let result5 := Traversal.traverse' traversed (safeDivide · dividend) empty
+    ensureEq "Empty list succeeds" (some []) result5
+
+    -- Test 6: Negative divisors are fine
+    let negatives : List Int := [-2, -5, 10]
+    let result6 := Traversal.traverse' traversed (safeDivide · dividend) negatives
+    ensureEq "Negative divisors are valid" (some [-50, -20, 10]) result6
+
+
+test "State applicative: number elements sequentially" := do
+    -- Stateful function: pair each element with current counter, then increment
+    let numberElement (x : String) : StateT Nat _root_.Id (Nat × String) := do
+      let n ← get
+      set (n + 1)
+      pure (n, x)
+
+    -- Test 1: Number elements starting from 0
+    let fruits := ["apple", "banana", "cherry"]
+    let (result1, finalCount1) := (Traversal.traverse' traversed numberElement fruits).run 0
+    ensureEq "Elements numbered from 0" [(0, "apple"), (1, "banana"), (2, "cherry")] result1
+    ensureEq "Final counter is 3" 3 finalCount1
+
+    -- Test 2: Number elements starting from 10
+    let colors := ["red", "green", "blue"]
+    let (result2, finalCount2) := (Traversal.traverse' traversed numberElement colors).run 10
+    ensureEq "Elements numbered from 10" [(10, "red"), (11, "green"), (12, "blue")] result2
+    ensureEq "Final counter is 13" 13 finalCount2
+
+    -- Test 3: Empty list - counter unchanged
+    let empty : List String := []
+    let (result3, finalCount3) := (Traversal.traverse' traversed numberElement empty).run 5
+    ensureEq "Empty list returns empty" [] result3
+    ensureEq "Counter unchanged for empty list" 5 finalCount3
+
+    -- Test 4: Single element
+    let single := ["only"]
+    let (result4, finalCount4) := (Traversal.traverse' traversed numberElement single).run 99
+    ensureEq "Single element numbered" [(99, "only")] result4
+    ensureEq "Counter incremented once" 100 finalCount4
+
+    -- Test 5: Demonstrate state threading - use counter to create indices
+    let addIndex (x : Int) : StateT Nat _root_.Id String := do
+      let idx ← get
+      set (idx + 1)
+      pure s!"[{idx}]={x}"
+
+    let numbers := [10, 20, 30]
+    let (indexed, _) := (Traversal.traverse' traversed addIndex numbers).run 1
+    ensureEq "Create indexed strings" ["[1]=10", "[2]=20", "[3]=30"] indexed
 
 test "State applicative: accumulate statistics with transformations" := do
     -- Stateful function: double each number and accumulate statistics
-    let doubleAndAccumulate (x : Int) : StateT Stats Id Int := do
+    let doubleAndAccumulate (x : Int) : StateT Stats _root_.Id Int := do
       let stats ← get
       set ({
         sum := stats.sum + x,
@@ -242,7 +553,7 @@ test "State applicative: accumulate statistics with transformations" := do
     ensureEq "Max tracked" 9 finalStats.max
 
     -- Test 2: Transform with running average calculation
-    let accumulateForAvg (x : Int) : StateT (Int × Nat) Id Int := do
+    let accumulateForAvg (x : Int) : StateT (Int × Nat) _root_.Id Int := do
       let (sum, count) ← get
       let newSum := sum + x
       let newCount := count + 1
@@ -250,10 +561,10 @@ test "State applicative: accumulate statistics with transformations" := do
       pure (x + 10)  -- Transform: add 10 to each element
 
     let values := [15, 25, 35]
-    let (transformed, (totalSum, totalCount)) := (Traversal.traverse' traversed accumulateForAvg values).run (0, 0)
-    ensureEq "Values transformed (+10)" [25, 35, 45] transformed
-    ensureEq "Total sum for average" 75 totalSum
-    ensureEq "Total count" 3 totalCount
+    let result2 := (Traversal.traverse' traversed accumulateForAvg values).run (0, 0)
+    ensureEq "Values transformed (+10)" [25, 35, 45] result2.1
+    ensureEq "Total sum for average" 75 result2.2.1
+    ensureEq "Total count" 3 result2.2.2
     -- Average would be: totalSum / totalCount = 75 / 3 = 25
 
     -- Test 3: Empty list - stats unchanged
@@ -273,7 +584,7 @@ test "State applicative: accumulate statistics with transformations" := do
 
 test "Writer applicative: log each transformation step" := do
     -- Transformation function that logs before/after for each element
-    let transformAndLog (x : Int) : WriterT (Array String) Id Int := do
+    let transformAndLog (x : Int) : WriterT (Array String) _root_.Id Int := do
       let result := x * 2 + 1
       tell #[s!"Transform {x} -> {result}"]
       pure result
@@ -299,7 +610,7 @@ test "Writer applicative: log each transformation step" := do
     ensureEq "Single log entry" #["Transform 10 -> 21"] singleLog
 
     -- Test 4: Log validation messages during transformation
-    let validateAndTransform (x : Int) : WriterT (Array String) Id Int := do
+    let validateAndTransform (x : Int) : WriterT (Array String) _root_.Id Int := do
       if x < 0 then
         tell #[s!"Warning: negative value {x}"]
       else if x = 0 then
@@ -309,30 +620,30 @@ test "Writer applicative: log each transformation step" := do
       pure (x.natAbs)
 
     let mixed := [-5, 0, 10, -2]
-    let (validated, validationLog) := (Traversal.traverse' traversed validateAndTransform mixed).run
-    ensureEq "Validated values" [5, 0, 10, 2] validated
+    let result4 := (Traversal.traverse' traversed validateAndTransform mixed).run
+    ensureEq "Validated values" [5, 0, 10, 2] result4.1
     ensureEq "Validation log collected"
       #["Warning: negative value -5", "Warning: zero value", "OK: 10", "Warning: negative value -2"]
-      validationLog
+      result4.2
 
     -- Test 5: Accumulate computations with details
-    let computeWithDetail (x : Int) : WriterT (Array String) Id Int := do
+    let computeWithDetail (x : Int) : WriterT (Array String) _root_.Id Int := do
       let squared := x * x
       let doubled := squared * 2
       tell #[s!"{x}² = {squared}, then *2 = {doubled}"]
       pure doubled
 
     let inputs := [2, 3]
-    let (computed, computeLog) := (Traversal.traverse' traversed computeWithDetail inputs).run
-    ensureEq "Computed results" [8, 18] computed
+    let result5 := (Traversal.traverse' traversed computeWithDetail inputs).run
+    ensureEq "Computed results" [8, 18] result5.1
     ensureEq "Computation steps logged"
       #["2² = 4, then *2 = 8", "3² = 9, then *2 = 18"]
-      computeLog
+      result5.2
 
 
 test "Writer applicative: collect diagnostics during traversal" := do
     -- Transformation with diagnostic collection
-    let processWithDiagnostics (x : Int) : WriterT (Array Diagnostic) Id Int := do
+    let processWithDiagnostics (x : Int) : WriterT (Array Diagnostic) _root_.Id Int := do
       if x < 0 then
         tell #[{ level := DiagLevel.error, message := s!"Negative value: {x}" }]
         pure 0
@@ -348,21 +659,21 @@ test "Writer applicative: collect diagnostics during traversal" := do
 
     -- Test 1: Collect mixed diagnostics
     let values := [50, -10, 0, 150, 25]
-    let (results, diagnostics) := (Traversal.traverse' traversed processWithDiagnostics values).run
-    ensureEq "Values processed" [50, 0, 0, 150, 25] results
-    ensureEq "Diagnostics count" 5 diagnostics.size
+    let result := (Traversal.traverse' traversed processWithDiagnostics values).run
+    ensureEq "Values processed" [50, 0, 0, 150, 25] result.1
+    ensureEq "Diagnostics count" 5 result.2.size
     ensureEq "First diagnostic is info"
       { level := DiagLevel.info, message := "Processing: 50" }
-      diagnostics[0]!
+      result.2[0]!
     ensureEq "Second diagnostic is error"
       { level := DiagLevel.error, message := "Negative value: -10" }
-      diagnostics[1]!
+      result.2[1]!
     ensureEq "Third diagnostic is warning"
       { level := DiagLevel.warning, message := "Zero value encountered" }
-      diagnostics[2]!
+      result.2[2]!
 
     -- Test 2: Multiple diagnostics per element
-    let processWithMultipleDiagnostics (x : Int) : WriterT (Array Diagnostic) Id Int := do
+    let processWithMultipleDiagnostics (x : Int) : WriterT (Array Diagnostic) _root_.Id Int := do
       tell #[{ level := DiagLevel.info, message := s!"Starting process: {x}" }]
       let result := x * 2
       if result > 50 then
@@ -371,9 +682,9 @@ test "Writer applicative: collect diagnostics during traversal" := do
       pure result
 
     let inputs := [10, 30]
-    let (doubled, logs) := (Traversal.traverse' traversed processWithMultipleDiagnostics inputs).run
-    ensureEq "Results doubled" [20, 60] doubled
-    ensureEq "Multiple logs per element" 5 logs.size
+    let result2 := (Traversal.traverse' traversed processWithMultipleDiagnostics inputs).run
+    ensureEq "Results doubled" [20, 60] result2.1
+    ensureEq "Multiple logs per element" 5 result2.2.size
     -- 10: start, complete (2)
     -- 30: start, warning, complete (3)
 
@@ -382,19 +693,19 @@ test "Writer applicative: collect diagnostics during traversal" := do
       diags.foldl (fun acc d => if d.level == level then acc + 1 else acc) 0
 
     let testValues := [5, -1, 200, 0, 10]
-    let (_, allDiags) := (Traversal.traverse' traversed processWithDiagnostics testValues).run
-    let errorCount := countByLevel allDiags DiagLevel.error
-    let warningCount := countByLevel allDiags DiagLevel.warning
-    let infoCount := countByLevel allDiags DiagLevel.info
+    let result3 := (Traversal.traverse' traversed processWithDiagnostics testValues).run
+    let errorCount := countByLevel result3.2 DiagLevel.error
+    let warningCount := countByLevel result3.2 DiagLevel.warning
+    let infoCount := countByLevel result3.2 DiagLevel.info
     ensureEq "Error count" 1 errorCount
     ensureEq "Warning count" 2 warningCount
     ensureEq "Info count" 2 infoCount
 
     -- Test 4: Empty list produces no diagnostics
     let empty : List Int := []
-    let (emptyResults, emptyDiags) := (Traversal.traverse' traversed processWithDiagnostics empty).run
-    ensureEq "Empty results" [] emptyResults
-    ensureEq "No diagnostics" 0 emptyDiags.size
+    let result4 := (Traversal.traverse' traversed processWithDiagnostics empty).run
+    ensureEq "Empty results" [] result4.1
+    ensureEq "No diagnostics" 0 result4.2.size
 
 
 test "Validation applicative: accumulate all errors (vs Option short-circuit)" := do
@@ -491,7 +802,7 @@ test "Validation applicative: accumulate all errors (vs Option short-circuit)" :
 
 test "State applicative: replace elements with running sum" := do
     -- Stateful function: replace each element with current sum, then add element to sum
-    let replaceWithSum (x : Int) : StateT Int Id Int := do
+    let replaceWithSum (x : Int) : StateT Int _root_.Id Int := do
       let currentSum ← get
       set (currentSum + x)
       pure currentSum  -- Return sum BEFORE adding current element
@@ -520,20 +831,20 @@ test "State applicative: replace elements with running sum" := do
     ensureEq "Final sum with negatives" 10 finalSum4
 
     -- Test 5: Replace with running product
-    let replaceWithProduct (x : Int) : StateT Int Id Int := do
+    let replaceWithProduct (x : Int) : StateT Int _root_.Id Int := do
       let currentProduct ← get
       set (currentProduct * x)
       pure currentProduct
 
     let factors := [2, 3, 4]
-    let (products, finalProduct) := (Traversal.traverse' traversed replaceWithProduct factors).run 1
-    ensureEq "Running products" [1, 2, 6] products
-    ensureEq "Final product" 24 finalProduct
+    let result5 := (Traversal.traverse' traversed replaceWithProduct factors).run 1
+    ensureEq "Running products" [1, 2, 6] result5.1
+    ensureEq "Final product" 24 result5.2
 
 
 test "State applicative: normalize values by running mean" := do
     -- Normalize by running mean: transform each value, then update statistics
-    let normalizeByMean (x : Int) : StateT NormState Id Int := do
+    let normalizeByMean (x : Int) : StateT NormState _root_.Id Int := do
       let state ← get
       let currentMean := if state.count > 0 then state.sum / state.count else 0
       set ({ sum := state.sum + x, count := state.count + 1 } : NormState)
@@ -542,14 +853,14 @@ test "State applicative: normalize values by running mean" := do
     -- Test 1: Normalize sequence
     let values := [10, 20, 30, 40]
     let initialState : NormState := { sum := 0, count := 0 }
-    let (normalized, finalState) := (Traversal.traverse' traversed normalizeByMean values).run initialState
-    ensureEq "Normalized by running mean" [10, 10, 15, 20] normalized
+    let result := (Traversal.traverse' traversed normalizeByMean values).run initialState
+    ensureEq "Normalized by running mean" [10, 10, 15, 20] result.1
     -- [10-0, 20-10, 30-15, 40-20]
-    ensureEq "Final sum" 100 finalState.sum
-    ensureEq "Final count" 4 finalState.count
+    ensureEq "Final sum" 100 result.2.sum
+    ensureEq "Final count" 4 result.2.count
 
     -- Test 2: Scale by running max
-    let scaleByMax (x : Int) : StateT Int Id Int := do
+    let scaleByMax (x : Int) : StateT Int _root_.Id Int := do
       let currentMax ← get
       let newMax := max currentMax x
       set newMax
@@ -559,15 +870,15 @@ test "State applicative: normalize values by running mean" := do
         pure 100  -- First element is 100%
 
     let sequence := [50, 100, 75, 200]
-    let (scaled, _) := (Traversal.traverse' traversed scaleByMax sequence).run 0
-    ensureEq "Scaled by running max" [100, 200, 75, 200] scaled
+    let result2 := (Traversal.traverse' traversed scaleByMax sequence).run 0
+    ensureEq "Scaled by running max" [100, 200, 75, 200] result2.1
     -- [100% (first), 100*100/50=200%, 75*100/100=75%, 200*100/100=200%]
 
 
 test "State applicative: mark duplicates of previous element" := do
     -- State tracks the previous element
     -- Replace duplicates with a marker value
-    let dedup (marker : Int) (x : Int) : StateT (Option Int) Id Int := do
+    let dedup (marker : Int) (x : Int) : StateT (Option Int) _root_.Id Int := do
       let prev ← get
       set (some x)
       match prev with
@@ -595,7 +906,7 @@ test "State applicative: mark duplicates of previous element" := do
     ensureEq "Empty list" [] result4
 
     -- Test 5: Count consecutive duplicates
-    let countDuplicates (x : Int) : StateT DedupState Id Int := do
+    let countDuplicates (x : Int) : StateT DedupState _root_.Id Int := do
       let state ← get
       match state.prev with
       | none =>
@@ -610,14 +921,14 @@ test "State applicative: mark duplicates of previous element" := do
           pure x
 
     let testSeq := [5, 5, 5, 3, 3, 1]
-    let (_, finalState) := (Traversal.traverse' traversed countDuplicates testSeq).run
+    let result5 := (Traversal.traverse' traversed countDuplicates testSeq).run
       { prev := none, dupCount := 0 }
-    ensureEq "Counted 3 duplicate occurrences" 3 finalState.dupCount
+    ensureEq "Counted 3 duplicate occurrences" 3 result5.2.dupCount
 
 
 test "State applicative: build replacement map during traversal" := do
     -- Build a replacement map as we traverse: first occurrence gets ID, repeats use that ID
-    let assignId (s : String) : StateT MapState Id Nat := do
+    let assignId (s : String) : StateT MapState _root_.Id Nat := do
       let state ← get
       -- Look up if we've seen this string before
       match state.mapping.find? (fun pair => pair.1 == s) with
@@ -633,25 +944,25 @@ test "State applicative: build replacement map during traversal" := do
     -- Test 1: Assign unique IDs to strings, reuse for duplicates
     let words := ["apple", "banana", "apple", "cherry", "banana", "apple"]
     let initialState : MapState := { nextId := 0, mapping := [] }
-    let (ids, finalState) := (Traversal.traverse' traversed assignId words).run initialState
-    ensureEq "Unique IDs assigned and reused" [0, 1, 0, 2, 1, 0] ids
-    ensureEq "Three unique strings" 3 finalState.nextId
-    ensureEq "Mapping contains 3 entries" 3 finalState.mapping.length
+    let result := (Traversal.traverse' traversed assignId words).run initialState
+    ensureEq "Unique IDs assigned and reused" [0, 1, 0, 2, 1, 0] result.1
+    ensureEq "Three unique strings" 3 result.2.nextId
+    ensureEq "Mapping contains 3 entries" 3 result.2.mapping.length
 
     -- Test 2: Empty list
     let empty : List String := []
-    let (emptyIds, emptyState) := (Traversal.traverse' traversed assignId empty).run initialState
-    ensureEq "Empty result" [] emptyIds
-    ensureEq "No IDs assigned" 0 emptyState.nextId
+    let result2 := (Traversal.traverse' traversed assignId empty).run initialState
+    ensureEq "Empty result" [] result2.1
+    ensureEq "No IDs assigned" 0 result2.2.nextId
 
     -- Test 3: All unique
     let unique := ["a", "b", "c", "d"]
-    let (uniqueIds, uniqueState) := (Traversal.traverse' traversed assignId unique).run initialState
-    ensureEq "All unique IDs" [0, 1, 2, 3] uniqueIds
-    ensureEq "Four IDs assigned" 4 uniqueState.nextId
+    let result3 := (Traversal.traverse' traversed assignId unique).run initialState
+    ensureEq "All unique IDs" [0, 1, 2, 3] result3.1
+    ensureEq "Four IDs assigned" 4 result3.2.nextId
 
     -- Test 4: Replace based on accumulated frequency
-    let replaceByFrequency (x : Int) : StateT FreqState Id Nat := do
+    let replaceByFrequency (x : Int) : StateT FreqState _root_.Id Nat := do
       let state ← get
       match state.frequencies.find? (fun pair => pair.1 == x) with
       | some pair =>
@@ -666,9 +977,9 @@ test "State applicative: build replacement map during traversal" := do
         pure 1  -- First occurrence
 
     let numbers := [5, 3, 5, 5, 3, 7, 5]
-    let (freqs, _) := (Traversal.traverse' traversed replaceByFrequency numbers).run
+    let result4 := (Traversal.traverse' traversed replaceByFrequency numbers).run
       { frequencies := [] }
-    ensureEq "Replace with occurrence count" [1, 1, 2, 3, 2, 1, 4] freqs
+    ensureEq "Replace with occurrence count" [1, 1, 2, 3, 2, 1, 4] result4.1
     -- 5 appears: 1st, 2nd, 3rd, 4th time
     -- 3 appears: 1st, 2nd time
     -- 7 appears: 1st time
@@ -676,7 +987,7 @@ test "State applicative: build replacement map during traversal" := do
 
 test "State applicative: sliding window transformations" := do
     -- Replace each element with average of current window
-    let windowAverage (x : Int) : StateT WindowState Id Int := do
+    let windowAverage (x : Int) : StateT WindowState _root_.Id Int := do
       let state ← get
       let newWindow := (x :: state.window).take state.maxSize
       set ({ window := newWindow, maxSize := state.maxSize } : WindowState)
@@ -703,7 +1014,7 @@ test "State applicative: sliding window transformations" := do
     ensureEq "Window size 1 returns element itself" [10, 20, 30, 40, 50] averages1
 
     -- Test 4: Compute differences from previous element
-    let computeDelta (x : Int) : StateT (Option Int) Id Int := do
+    let computeDelta (x : Int) : StateT (Option Int) _root_.Id Int := do
       let prev ← get
       set (some x)
       match prev with
@@ -711,20 +1022,20 @@ test "State applicative: sliding window transformations" := do
       | some p => pure (x - p)
 
     let sequence := [5, 8, 6, 9, 12]
-    let (deltas, _) := (Traversal.traverse' traversed computeDelta sequence).run none
-    ensureEq "Deltas from previous" [0, 3, -2, 3, 3] deltas
+    let result4 := (Traversal.traverse' traversed computeDelta sequence).run none
+    ensureEq "Deltas from previous" [0, 3, -2, 3, 3] result4.1
 
     -- Test 5: Running differences (element minus running mean)
-    let deltaFromMean (x : Int) : StateT MeanState Id Int := do
+    let deltaFromMean (x : Int) : StateT MeanState _root_.Id Int := do
       let state ← get
       let mean := if state.count > 0 then state.sum / state.count else x
       set ({ sum := state.sum + x, count := state.count + 1 } : MeanState)
       pure (x - mean)
 
     let values := [100, 200, 150, 250]
-    let (diffs, _) := (Traversal.traverse' traversed deltaFromMean values).run
+    let result5 := (Traversal.traverse' traversed deltaFromMean values).run
       { sum := 0, count := 0 }
-    ensureEq "Differences from running mean" [0, 100, 0, 100] diffs
+    ensureEq "Differences from running mean" [0, 100, 0, 100] result5.1
     -- [100-100, 200-100, 150-150, 250-150]
 
 test "Polymorphism: same traversal, multiple effect types" := do
@@ -762,28 +1073,28 @@ test "Polymorphism: same traversal, multiple effect types" := do
       IO.throwServerError "Should fail"
 
     -- Use case 2: State - count how many values meet threshold
-    let stateFn (x : Int) : StateT Nat Id Int :=
+    let stateFn (x : Int) : StateT Nat _root_.Id Int :=
       if x >= 10 then do
         modify (· + 1)
         pure x
       else
         pure x
-    let (stateVals, count) := (Traversal.traverse' traversed stateFn numbers).run 0
-    ensureEq "State: values unchanged" [5, 10, 15, 20] stateVals
-    ensureEq "State: counted values >= 10" 3 count
+    let stateResult := (Traversal.traverse' traversed stateFn numbers).run 0
+    ensureEq "State: values unchanged" [5, 10, 15, 20] stateResult.1
+    ensureEq "State: counted values >= 10" 3 stateResult.2
 
     -- Use case 3: Writer - log which values are processed
-    let writerFn (x : Int) : WriterT (Array String) Id Int := do
+    let writerFn (x : Int) : WriterT (Array String) _root_.Id Int := do
       if x >= 10 then
         tell #[s!"Accepted: {x}"]
       else
         tell #[s!"Below threshold: {x}"]
       pure x
-    let (writerVals, log) := (Traversal.traverse' traversed writerFn numbers).run
-    ensureEq "Writer: values unchanged" [5, 10, 15, 20] writerVals
-    ensureEq "Writer: logged all operations" 4 log.size
-    ensureEq "Writer: first log entry" "Below threshold: 5" log[0]!
-    ensureEq "Writer: second log entry" "Accepted: 10" log[1]!
+    let writerResult := (Traversal.traverse' traversed writerFn numbers).run
+    ensureEq "Writer: values unchanged" [5, 10, 15, 20] writerResult.1
+    ensureEq "Writer: logged all operations" 4 writerResult.2.size
+    ensureEq "Writer: first log entry" "Below threshold: 5" writerResult.2[0]!
+    ensureEq "Writer: second log entry" "Accepted: 10" writerResult.2[1]!
 
     -- Use case 4: Validation - collect ALL failures (not fail-fast)
     let validationFn (x : Int) : Validation String Int :=
@@ -825,16 +1136,16 @@ test "Polymorphism: same traversal, multiple effect types" := do
     | some _ => IO.throwServerError "Should fail on Bob"
 
     -- With Writer: log age checks
-    let writerValidate (p : Person) : WriterT (Array String) Id Person := do
+    let writerValidate (p : Person) : WriterT (Array String) _root_.Id Person := do
       if p.age >= 18 then
         tell #[s!"{p.name} (age {p.age}): adult"]
       else
         tell #[s!"{p.name} (age {p.age}): minor"]
       pure p
-    let (_, peopleLog) := (Traversal.traverse' traversed writerValidate people).run
-    ensureEq "People log count" 3 peopleLog.size
-    ensureEq "Alice logged as adult" "Alice (age 25): adult" peopleLog[0]!
-    ensureEq "Bob logged as minor" "Bob (age 17): minor" peopleLog[1]!
+    let peopleWriterResult := (Traversal.traverse' traversed writerValidate people).run
+    ensureEq "People log count" 3 peopleWriterResult.2.size
+    ensureEq "Alice logged as adult" "Alice (age 25): adult" peopleWriterResult.2[0]!
+    ensureEq "Bob logged as minor" "Bob (age 17): minor" peopleWriterResult.2[1]!
 
     -- With Validation: collect all minors
     let validationValidate (p : Person) : Validation String Person :=
@@ -850,6 +1161,23 @@ test "Polymorphism: same traversal, multiple effect types" := do
     | Validation.success _ =>
       IO.throwServerError "Should report minor"
 
+/-! ## Property-Based Tests -/
+
+test "Property: Traversal identity law (100 samples)" := do
+  for i in [:100] do
+    ensure (traversal_identity_prop i) s!"Identity failed for seed {i}"
+
+test "Property: Traversal preserves length (100 samples)" := do
+  for i in [:100] do
+    ensure (traversal_length_prop i) s!"Length failed for seed {i}"
+
+test "Stress: Large list (1000 elements) traversal" := do
+  let largeList : List Int := (List.range 1000).map (Int.ofNat ·)
+  let tr : Traversal' (List Int) Int := Traversal.eachList
+  let result := largeList & tr %~ (· + 1)
+  result.length ≡ 1000
+  result.head? ≡? 1
+
 #generate_tests
 
-end CollimatorTests.AdvancedShowcase.EffectfulTraversals
+end CollimatorTests.TraversalTests

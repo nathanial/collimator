@@ -3,6 +3,8 @@ open Lake DSL
 
 package collimator where
   version := v!"0.1.0"
+  -- Disable docPrime linter (warns about primed names like Lens')
+  weakLeanArgs := #["-Dlinter.docPrime=false"]
 
 require mathlib from git
   "https://github.com/leanprover-community/mathlib4" @ "v4.15.0"
