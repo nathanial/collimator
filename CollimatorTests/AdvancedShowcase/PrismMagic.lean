@@ -65,102 +65,31 @@ inductive AuthState : Type where
   deriving BEq, Repr, Inhabited
 
 -- ## Prisms for Pattern Matching
+-- Using ctorPrism% macro for concise prism definitions
 
-def resultOkPrism (α : Type) : Prism' (Result α) α :=
-  prism (fun a => Result.ok a)
-        (fun r => match r with
-         | Result.ok a => Sum.inr a
-         | Result.err e => Sum.inl (Result.err e))
+def resultOkPrism (α : Type) : Prism' (Result α) α := ctorPrism% Result.ok
+def resultErrPrism (α : Type) : Prism' (Result α) String := ctorPrism% Result.err
 
-def resultErrPrism (α : Type) : Prism' (Result α) String :=
-  prism (fun e => Result.err e)
-        (fun r => match r with
-         | Result.err e => Sum.inr e
-         | Result.ok a => Sum.inl (Result.ok a))
+def jsonNullPrism : Prism' JsonValue Unit := ctorPrism% JsonValue.null
+def jsonBoolPrism : Prism' JsonValue Bool := ctorPrism% JsonValue.bool
+def jsonNumPrism : Prism' JsonValue Int := ctorPrism% JsonValue.num
+def jsonStrPrism : Prism' JsonValue String := ctorPrism% JsonValue.str
+def jsonArrPrism : Prism' JsonValue (List JsonValue) := ctorPrism% JsonValue.arr
+def jsonObjPrism : Prism' JsonValue (List (String × JsonValue)) := ctorPrism% JsonValue.obj
 
-def jsonNullPrism : Prism' JsonValue Unit :=
-  prism (fun _ => JsonValue.null)
-        (fun v => match v with
-         | JsonValue.null => Sum.inr ()
-         | other => Sum.inl other)
+def httpInfoPrism : Prism' HttpStatus Nat := ctorPrism% HttpStatus.info
+def httpSuccessPrism : Prism' HttpStatus Nat := ctorPrism% HttpStatus.success
+def httpRedirectPrism : Prism' HttpStatus Nat := ctorPrism% HttpStatus.redirect
+def httpClientErrPrism : Prism' HttpStatus Nat := ctorPrism% HttpStatus.clientErr
+def httpServerErrPrism : Prism' HttpStatus Nat := ctorPrism% HttpStatus.serverErr
 
-def jsonBoolPrism : Prism' JsonValue Bool :=
-  prism (fun b => JsonValue.bool b)
-        (fun v => match v with
-         | JsonValue.bool b => Sum.inr b
-         | other => Sum.inl other)
+def cliFlagPrism : Prism' CliArg String := ctorPrism% CliArg.flag
+def cliOptionPrism : Prism' CliArg (String × String) := ctorPrism% CliArg.option
+def cliPositionalPrism : Prism' CliArg String := ctorPrism% CliArg.positional
 
-def jsonNumPrism : Prism' JsonValue Int :=
-  prism (fun n => JsonValue.num n)
-        (fun v => match v with
-         | JsonValue.num n => Sum.inr n
-         | other => Sum.inl other)
-
-def jsonStrPrism : Prism' JsonValue String :=
-  prism (fun s => JsonValue.str s)
-        (fun v => match v with
-         | JsonValue.str s => Sum.inr s
-         | other => Sum.inl other)
-
-def jsonArrPrism : Prism' JsonValue (List JsonValue) :=
-  prism (fun arr => JsonValue.arr arr)
-        (fun v => match v with
-         | JsonValue.arr arr => Sum.inr arr
-         | other => Sum.inl other)
-
-def jsonObjPrism : Prism' JsonValue (List (String × JsonValue)) :=
-  prism (fun obj => JsonValue.obj obj)
-        (fun v => match v with
-         | JsonValue.obj obj => Sum.inr obj
-         | other => Sum.inl other)
-
-def httpSuccessPrism : Prism' HttpStatus Nat :=
-  prism (fun code => HttpStatus.success code)
-        (fun s => match s with
-         | HttpStatus.success code => Sum.inr code
-         | other => Sum.inl other)
-
-def httpClientErrPrism : Prism' HttpStatus Nat :=
-  prism (fun code => HttpStatus.clientErr code)
-        (fun s => match s with
-         | HttpStatus.clientErr code => Sum.inr code
-         | other => Sum.inl other)
-
-def httpServerErrPrism : Prism' HttpStatus Nat :=
-  prism (fun code => HttpStatus.serverErr code)
-        (fun s => match s with
-         | HttpStatus.serverErr code => Sum.inr code
-         | other => Sum.inl other)
-
-def cliFlagPrism : Prism' CliArg String :=
-  prism (fun name => CliArg.flag name)
-        (fun arg => match arg with
-         | CliArg.flag name => Sum.inr name
-         | other => Sum.inl other)
-
-def cliOptionPrism : Prism' CliArg (String × String) :=
-  prism (fun (name, val) => CliArg.option name val)
-        (fun arg => match arg with
-         | CliArg.option name val => Sum.inr (name, val)
-         | other => Sum.inl other)
-
-def cliPositionalPrism : Prism' CliArg String :=
-  prism (fun val => CliArg.positional val)
-        (fun arg => match arg with
-         | CliArg.positional val => Sum.inr val
-         | other => Sum.inl other)
-
-def authAuthenticatedPrism : Prism' AuthState (String × Nat) :=
-  prism (fun (user, perms) => AuthState.authenticated user perms)
-        (fun s => match s with
-         | AuthState.authenticated user perms => Sum.inr (user, perms)
-         | other => Sum.inl other)
-
-def authPendingPrism : Prism' AuthState String :=
-  prism (fun token => AuthState.pending token)
-        (fun s => match s with
-         | AuthState.pending token => Sum.inr token
-         | other => Sum.inl other)
+def authAnonymousPrism : Prism' AuthState Unit := ctorPrism% AuthState.anonymous
+def authPendingPrism : Prism' AuthState String := ctorPrism% AuthState.pending
+def authAuthenticatedPrism : Prism' AuthState (String × Nat) := ctorPrism% AuthState.authenticated
 
 -- ## Test Cases
 
@@ -176,33 +105,21 @@ def case_patternMatching : TestCase := {
     -- JSON value extraction
     let jsonStr := JsonValue.str "hello"
     let jsonNum := JsonValue.num 42
-    let _jsonBool := JsonValue.bool true
-    let _jsonNull := JsonValue.null
 
     -- Successful preview extracts the value
-    let strResult := jsonStr ^? jsonStrPrism
-    if strResult != some "hello" then
-      throw (IO.userError s!"Expected Some hello, got {repr strResult}")
+    (jsonStr ^? jsonStrPrism) ≡? "hello"
 
     -- Failed preview returns None (type mismatch)
-    let numAsStr := jsonNum ^? jsonStrPrism
-    if numAsStr != none then
-      throw (IO.userError s!"Expected None for num→str preview, got {repr numAsStr}")
+    shouldBeNone (jsonNum ^? jsonStrPrism)
 
     IO.println "✓ Pattern matching: preview extracts matching constructors"
 
     -- HTTP status categorization
     let ok200 := HttpStatus.success 200
     let notFound := HttpStatus.clientErr 404
-    let _serverDown := HttpStatus.serverErr 503
 
-    let isSuccess := ok200 ^? httpSuccessPrism
-    if isSuccess != some 200 then
-      throw (IO.userError s!"Expected Some 200 for success, got {repr isSuccess}")
-
-    let successFromClient := notFound ^? httpSuccessPrism
-    if successFromClient != none then
-      throw (IO.userError s!"Expected None for client error, got {repr successFromClient}")
+    (ok200 ^? httpSuccessPrism) ≡? 200
+    shouldBeNone (notFound ^? httpSuccessPrism)
 
     IO.println "✓ Pattern matching: HTTP status categorization"
 
@@ -215,13 +132,11 @@ def case_patternMatching : TestCase := {
 
     -- Find all flags
     let flags := args.filterMap (fun a => a ^? cliFlagPrism)
-    if flags != ["verbose"] then
-      throw (IO.userError s!"Expected [verbose], got {repr flags}")
+    flags ≡ ["verbose"]
 
     -- Find all options
     let options := args.filterMap (fun a => a ^? cliOptionPrism)
-    if options != [("output", "file.txt")] then
-      throw (IO.userError s!"Expected [(output, file.txt)], got {repr options}")
+    options ≡ [("output", "file.txt")]
 
     IO.println "✓ Pattern matching: CLI argument parsing"
 }
@@ -236,46 +151,27 @@ def case_construction : TestCase := {
   name := "Construction with review",
   run := do
     -- Build JSON values
-    let strVal := review' jsonStrPrism "constructed"
-    if strVal != JsonValue.str "constructed" then
-      throw (IO.userError s!"Expected str 'constructed', got {repr strVal}")
-
-    let numVal := review' jsonNumPrism 99
-    if numVal != JsonValue.num 99 then
-      throw (IO.userError s!"Expected num 99, got {repr numVal}")
-
-    let arrVal := review' jsonArrPrism [JsonValue.num 1, JsonValue.num 2]
-    if arrVal != JsonValue.arr [JsonValue.num 1, JsonValue.num 2] then
-      throw (IO.userError s!"Expected array, got {repr arrVal}")
+    review' jsonStrPrism "constructed" ≡ JsonValue.str "constructed"
+    review' jsonNumPrism 99 ≡ JsonValue.num 99
+    review' jsonArrPrism [JsonValue.num 1, JsonValue.num 2] ≡
+      JsonValue.arr [JsonValue.num 1, JsonValue.num 2]
 
     IO.println "✓ Construction: review builds JSON values"
 
     -- Build HTTP responses
-    let success := review' httpSuccessPrism 200
-    if success != HttpStatus.success 200 then
-      throw (IO.userError s!"Expected success 200, got {repr success}")
-
-    let notFound := review' httpClientErrPrism 404
-    if notFound != HttpStatus.clientErr 404 then
-      throw (IO.userError s!"Expected clientErr 404, got {repr notFound}")
+    review' httpSuccessPrism 200 ≡ HttpStatus.success 200
+    review' httpClientErrPrism 404 ≡ HttpStatus.clientErr 404
 
     IO.println "✓ Construction: review builds HTTP status codes"
 
     -- Build CLI arguments
-    let flag := review' cliFlagPrism "debug"
-    if flag != CliArg.flag "debug" then
-      throw (IO.userError s!"Expected flag debug, got {repr flag}")
-
-    let opt := review' cliOptionPrism ("config", "app.yaml")
-    if opt != CliArg.option "config" "app.yaml" then
-      throw (IO.userError s!"Expected option config app.yaml, got {repr opt}")
+    review' cliFlagPrism "debug" ≡ CliArg.flag "debug"
+    review' cliOptionPrism ("config", "app.yaml") ≡ CliArg.option "config" "app.yaml"
 
     IO.println "✓ Construction: review builds CLI arguments"
 
     -- Build auth states
-    let auth := review' authAuthenticatedPrism ("alice", 7)
-    if auth != AuthState.authenticated "alice" 7 then
-      throw (IO.userError s!"Expected authenticated alice, got {repr auth}")
+    review' authAuthenticatedPrism ("alice", 7) ≡ AuthState.authenticated "alice" 7
 
     IO.println "✓ Construction: review builds authentication states"
 }
@@ -294,17 +190,9 @@ def case_validationPrisms : TestCase := {
       prism (fun n => n)  -- review is identity
             (fun n => if n > 0 then Sum.inr n else Sum.inl n)
 
-    let validPos := 42 ^? positivePrism
-    if validPos != some 42 then
-      throw (IO.userError s!"Expected Some 42 for positive, got {repr validPos}")
-
-    let invalidPos := (-5 ^? positivePrism)
-    if invalidPos != none then
-      throw (IO.userError s!"Expected None for negative, got {repr invalidPos}")
-
-    let zeroPos := 0 ^? positivePrism
-    if zeroPos != none then
-      throw (IO.userError s!"Expected None for zero, got {repr zeroPos}")
+    (42 ^? positivePrism) ≡? 42
+    shouldBeNone (-5 ^? positivePrism)
+    shouldBeNone (0 ^? positivePrism)
 
     IO.println "✓ Validation: positive integer prism"
 
@@ -313,13 +201,8 @@ def case_validationPrisms : TestCase := {
       prism (fun s => s)
             (fun s => if s.length > 0 then Sum.inr s else Sum.inl s)
 
-    let validStr := "hello" ^? nonEmptyPrism
-    if validStr != some "hello" then
-      throw (IO.userError s!"Expected Some hello, got {repr validStr}")
-
-    let emptyStr := "" ^? nonEmptyPrism
-    if emptyStr != none then
-      throw (IO.userError s!"Expected None for empty string, got {repr emptyStr}")
+    ("hello" ^? nonEmptyPrism) ≡? "hello"
+    shouldBeNone ("" ^? nonEmptyPrism)
 
     IO.println "✓ Validation: non-empty string prism"
 
@@ -328,17 +211,9 @@ def case_validationPrisms : TestCase := {
       prism (fun n => n)
             (fun n => if n <= 100 then Sum.inr n else Sum.inl n)
 
-    let valid50 := 50 ^? percentPrism
-    if valid50 != some 50 then
-      throw (IO.userError s!"Expected Some 50, got {repr valid50}")
-
-    let valid100 := 100 ^? percentPrism
-    if valid100 != some 100 then
-      throw (IO.userError s!"Expected Some 100, got {repr valid100}")
-
-    let invalid150 := 150 ^? percentPrism
-    if invalid150 != none then
-      throw (IO.userError s!"Expected None for 150%, got {repr invalid150}")
+    (50 ^? percentPrism) ≡? 50
+    (100 ^? percentPrism) ≡? 100
+    shouldBeNone (150 ^? percentPrism)
 
     IO.println "✓ Validation: percentage prism (0-100)"
 }
@@ -361,17 +236,9 @@ def case_prismComposition : TestCase := {
     let innerValuePrism : Prism' (Result (Result Int)) Int :=
       resultOkPrism (Result Int) ∘ resultOkPrism Int
 
-    let innerOk := nestedOk ^? innerValuePrism
-    if innerOk != some 42 then
-      throw (IO.userError s!"Expected Some 42 for nested ok, got {repr innerOk}")
-
-    let innerFromErr := nestedErr ^? innerValuePrism
-    if innerFromErr != none then
-      throw (IO.userError s!"Expected None for inner error, got {repr innerFromErr}")
-
-    let innerFromOuter := outerErr ^? innerValuePrism
-    if innerFromOuter != none then
-      throw (IO.userError s!"Expected None for outer error, got {repr innerFromOuter}")
+    (nestedOk ^? innerValuePrism) ≡? 42
+    shouldBeNone (nestedErr ^? innerValuePrism)
+    shouldBeNone (outerErr ^? innerValuePrism)
 
     IO.println "✓ Composition: nested Result prisms"
 
@@ -380,21 +247,15 @@ def case_prismComposition : TestCase := {
     let jsonNotArray := JsonValue.str "not an array"
 
     -- First extract the array, then we can process its elements
-    let arrResult := jsonArray ^? jsonArrPrism
-    if arrResult != some [JsonValue.num 1, JsonValue.num 2, JsonValue.num 3] then
-      throw (IO.userError s!"Expected array of nums, got {repr arrResult}")
-
-    let notArrResult := jsonNotArray ^? jsonArrPrism
-    if notArrResult != none then
-      throw (IO.userError s!"Expected None for non-array, got {repr notArrResult}")
+    (jsonArray ^? jsonArrPrism) ≡? [JsonValue.num 1, JsonValue.num 2, JsonValue.num 3]
+    shouldBeNone (jsonNotArray ^? jsonArrPrism)
 
     IO.println "✓ Composition: JSON array extraction"
 
     -- Build nested structure using review
     let innerResult := review' (resultOkPrism Int) 100
     let outerResult := review' (resultOkPrism (Result Int)) innerResult
-    if outerResult != Result.ok (Result.ok 100) then
-      throw (IO.userError s!"Expected nested ok 100, got {repr outerResult}")
+    outerResult ≡ Result.ok (Result.ok 100)
 
     IO.println "✓ Composition: build nested structures with review"
 }
@@ -418,15 +279,13 @@ def case_errorHandling : TestCase := {
 
     -- Extract all successful values
     let successes := results.filterMap (fun r => r ^? (resultOkPrism Int))
-    if successes != [10, 20, 30] then
-      throw (IO.userError s!"Expected [10, 20, 30], got {repr successes}")
+    successes ≡ [10, 20, 30]
 
     IO.println "✓ Error handling: extract all successes"
 
     -- Extract all error messages
     let errors := results.filterMap (fun r => r ^? (resultErrPrism Int))
-    if errors != ["parse error", "validation error"] then
-      throw (IO.userError s!"Expected error messages, got {repr errors}")
+    errors ≡ ["parse error", "validation error"]
 
     IO.println "✓ Error handling: extract all errors"
 
@@ -436,16 +295,14 @@ def case_errorHandling : TestCase := {
       | some _ => true
       | none => false
     ) |>.length
-    if numSuccesses != 3 then
-      throw (IO.userError s!"Expected 3 successes, got {numSuccesses}")
+    numSuccesses ≡ 3
 
     let numErrors := results.filter (fun r =>
       match r ^? (resultErrPrism Int) with
       | some _ => true
       | none => false
     ) |>.length
-    if numErrors != 2 then
-      throw (IO.userError s!"Expected 2 errors, got {numErrors}")
+    numErrors ≡ 2
 
     IO.println "✓ Error handling: count successes and failures"
 
@@ -457,8 +314,7 @@ def case_errorHandling : TestCase := {
       | none => r  -- Keep errors unchanged
     )
     let doubledSuccesses := doubled.filterMap (fun r => r ^? (resultOkPrism Int))
-    if doubledSuccesses != [20, 40, 60] then
-      throw (IO.userError s!"Expected [20, 40, 60], got {repr doubledSuccesses}")
+    doubledSuccesses ≡ [20, 40, 60]
 
     IO.println "✓ Error handling: map over success values"
 }
@@ -466,64 +322,30 @@ def case_errorHandling : TestCase := {
 /--
 **Sum and Option Prisms**: Working with standard library types.
 
-Demonstrates prisms for Lean's built-in Sum and Option types.
+Demonstrates prisms for Lean's built-in Sum and Option types using library prisms.
 -/
 def case_sumOptionPrisms : TestCase := {
   name := "Sum and Option type prisms",
   run := do
-    -- Option prisms
-    let somePrism (α : Type) : Prism' (Option α) α :=
-      prism (fun a => some a)
-            (fun o => match o with
-             | some a => Sum.inr a
-             | none => Sum.inl none)
-
+    -- Use the library's somePrism' from Collimator.Instances.Option
     let someVal : Option Int := some 42
     let noneVal : Option Int := none
 
-    let fromSome := someVal ^? (somePrism Int)
-    if fromSome != some 42 then
-      throw (IO.userError s!"Expected Some 42, got {repr fromSome}")
+    (someVal ^? Instances.Option.somePrism' Int) ≡? 42
+    shouldBeNone (noneVal ^? Instances.Option.somePrism' Int)
+    review' (Instances.Option.somePrism' Int) 99 ≡ some 99
 
-    let fromNone := noneVal ^? (somePrism Int)
-    if fromNone != none then
-      throw (IO.userError s!"Expected None, got {repr fromNone}")
+    IO.println "✓ Sum/Option: Option some prism (from library)"
 
-    let builtSome := review' (somePrism Int) 99
-    if builtSome != some 99 then
-      throw (IO.userError s!"Expected Some 99, got {repr builtSome}")
-
-    IO.println "✓ Sum/Option: Option some prism"
-
-    -- Sum prisms
-    let leftPrism (α β : Type) : Prism' (Sum α β) α :=
-      prism (fun a => Sum.inl a)
-            (fun s => match s with
-             | Sum.inl a => Sum.inr a
-             | Sum.inr b => Sum.inl (Sum.inr b))
-
-    let rightPrism (α β : Type) : Prism' (Sum α β) β :=
-      prism (fun b => Sum.inr b)
-            (fun s => match s with
-             | Sum.inr b => Sum.inr b
-             | Sum.inl a => Sum.inl (Sum.inl a))
-
+    -- Use the library's Sum prisms from Collimator.Instances.Sum
     let leftVal : Sum String Int := Sum.inl "error"
     let rightVal : Sum String Int := Sum.inr 42
 
-    let extractLeft := leftVal ^? (leftPrism String Int)
-    if extractLeft != some "error" then
-      throw (IO.userError s!"Expected Some error, got {repr extractLeft}")
+    (leftVal ^? Instances.Sum.left' String Int) ≡? "error"
+    (rightVal ^? Instances.Sum.right' String Int) ≡? 42
+    review' (Instances.Sum.left' String Int) "new error" ≡ Sum.inl "new error"
 
-    let extractRight := rightVal ^? (rightPrism String Int)
-    if extractRight != some 42 then
-      throw (IO.userError s!"Expected Some 42 from right, got {repr extractRight}")
-
-    let buildLeft := review' (leftPrism String Int) "new error"
-    if buildLeft != Sum.inl "new error" then
-      throw (IO.userError s!"Expected inl new error, got {repr buildLeft}")
-
-    IO.println "✓ Sum/Option: Sum left/right prisms"
+    IO.println "✓ Sum/Option: Sum left/right prisms (from library)"
 }
 
 -- ## Test Registration

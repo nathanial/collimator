@@ -16,10 +16,58 @@ def ensure (cond : Bool) (msg : String) : IO Unit := do
   if !cond then
     throw <| IO.userError s!"Assertion failed: {msg}"
 
-/-- Assert that two values are equal. -/
+/-- Assert that two values are equal (legacy signature for backwards compatibility). -/
 def ensureEq [BEq α] [Repr α] (msg : String) (expected : α) (actual : α) : IO Unit := do
   if expected != actual then
     throw <| IO.userError s!"Assertion failed: {msg}\n  expected: {repr expected}\n  actual:   {repr actual}"
+
+-- ============================================================================
+-- Modern assertion helpers with cleaner syntax
+-- ============================================================================
+
+/-- Assert that actual equals expected. -/
+def shouldBe [BEq α] [Repr α] (actual : α) (expected : α) : IO Unit := do
+  if actual != expected then
+    throw <| IO.userError s!"Expected {repr expected}, got {repr actual}"
+
+/-- Assert that an Option contains the expected value. -/
+def shouldBeSome [BEq α] [Repr α] (actual : Option α) (expected : α) : IO Unit := do
+  match actual with
+  | some v =>
+    if v != expected then
+      throw <| IO.userError s!"Expected some {repr expected}, got some {repr v}"
+  | none =>
+    throw <| IO.userError s!"Expected some {repr expected}, got none"
+
+/-- Assert that an Option is none. -/
+def shouldBeNone [Repr α] (actual : Option α) : IO Unit := do
+  match actual with
+  | some v => throw <| IO.userError s!"Expected none, got some {repr v}"
+  | none => pure ()
+
+/-- Assert that a condition is true with a message. -/
+def shouldSatisfy (cond : Bool) (msg : String := "condition") : IO Unit := do
+  if !cond then
+    throw <| IO.userError s!"Expected {msg} to be true"
+
+/-- Assert that a value satisfies a predicate. -/
+def shouldMatch [Repr α] (actual : α) (pred : α → Bool) (desc : String := "predicate") : IO Unit := do
+  if !pred actual then
+    throw <| IO.userError s!"Expected {repr actual} to satisfy {desc}"
+
+/-- Assert that a list has the expected length. -/
+def shouldHaveLength [Repr α] (actual : List α) (expected : Nat) : IO Unit := do
+  if actual.length != expected then
+    throw <| IO.userError s!"Expected list of length {expected}, got length {actual.length}"
+
+/-- Assert that a list contains the expected element. -/
+def shouldContain [BEq α] [Repr α] (actual : List α) (expected : α) : IO Unit := do
+  if !actual.contains expected then
+    throw <| IO.userError s!"Expected list to contain {repr expected}, but it doesn't"
+
+-- Infix notation for even cleaner test syntax
+scoped infix:50 " ≡ " => shouldBe
+scoped infix:50 " ≡? " => shouldBeSome
 
 /-- Run a single test case. -/
 def runTest (tc : TestCase) : IO Bool := do

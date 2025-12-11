@@ -1,12 +1,15 @@
 import Collimator.Optics
 import Collimator.Combinators
 import Collimator.Operators
+import Collimator.Instances
 import CollimatorTests.Framework
 
 namespace CollimatorTests.AdvancedShowcase.MindBending
 
 open Collimator
 open Collimator.Combinators
+open Collimator.Combinators.Plated
+open Collimator.Instances.Option (somePrism')
 open scoped Collimator.Operators
 open CollimatorTests
 
@@ -39,23 +42,40 @@ inductive Rose (α : Type _) where
 instance [Inhabited α] : Inhabited (Rose α) where
   default := Rose.node default []
 
-/-! ## Tree Traversals -/
+/-! ## Plated Instances -/
+
+/-- Plated instance for binary trees - immediate children are the subtrees -/
+instance : Plated (Tree α) where
+  plate := traversal fun {F} [Applicative F] (f : Tree α → F (Tree α)) (t : Tree α) =>
+    match t with
+    | Tree.leaf a => pure (Tree.leaf a)
+    | Tree.node l r => pure Tree.node <*> f l <*> f r
+
+/-- Plated instance for rose trees - immediate children are in the children list -/
+instance : Plated (Rose α) where
+  plate := traversal fun {F} [Applicative F] (f : Rose α → F (Rose α)) (t : Rose α) =>
+    match t with
+    | Rose.node value children =>
+        let rec walkList : List (Rose α) → F (List (Rose α))
+          | [] => pure []
+          | x :: xs => pure List.cons <*> f x <*> walkList xs
+        pure (Rose.node value) <*> walkList children
+
+/-! ## Leaf Traversals -/
 
 /-- Applicative traversal over binary tree leaves -/
-private def Tree.walk {α : Type _} {F : Type _ → Type _} [Applicative F]
+private def Tree.walkLeaves {F : Type _ → Type _} [Applicative F]
     (f : α → F α) : Tree α → F (Tree α)
   | Tree.leaf a => pure Tree.leaf <*> f a
-  | Tree.node l r =>
-      pure Tree.node <*> Tree.walk f l <*> Tree.walk f r
+  | Tree.node l r => pure Tree.node <*> Tree.walkLeaves f l <*> Tree.walkLeaves f r
 
-/-- Depth-aware traversal over binary tree leaves -/
-private def Tree.walkWithDepth {α : Type _} {F : Type _ → Type _} [Applicative F]
-    (f : Nat → α → F α) (depth : Nat) : Tree α → F (Tree α)
-  | Tree.leaf a => pure Tree.leaf <*> f depth a
-  | Tree.node l r =>
-      pure Tree.node <*> Tree.walkWithDepth f (depth + 1) l <*> Tree.walkWithDepth f (depth + 1) r
+/-- Traversal over binary tree leaves (values, not subtrees) -/
+private def Tree.leaves : Traversal' (Tree α) α :=
+  traversal Tree.walkLeaves
 
--- Traversal for rose tree nodes (mutually recursive with walkList)
+-- Rose.walk: Applicative traversal over rose tree node values
+-- Note: Due to a Lean 4 compiler limitation with mutual recursive function specialization,
+-- traversals defined this way cannot be used with StateT in some contexts.
 mutual
   private def Rose.walk {α : Type _} {F : Type _ → Type _} [Applicative F]
       (f : α → F α) : Rose α → F (Rose α)
@@ -68,36 +88,27 @@ mutual
     | x :: xs => pure List.cons <*> Rose.walk f x <*> Rose.walkList f xs
 end
 
--- Depth-aware traversal for rose tree nodes
-mutual
-  private def Rose.walkWithDepth {α : Type _} {F : Type _ → Type _} [Applicative F]
-      (f : Nat → α → F α) (depth : Nat) : Rose α → F (Rose α)
-    | Rose.node value children =>
-        pure Rose.node <*> f depth value <*> Rose.walkListWithDepth f (depth + 1) children
+/-- Traversal over rose tree node values -/
+private def Rose.values : Traversal' (Rose α) α :=
+  traversal Rose.walk
 
-  private def Rose.walkListWithDepth {α : Type _} {F : Type _ → Type _} [Applicative F]
-      (f : Nat → α → F α) (depth : Nat) : List (Rose α) → F (List (Rose α))
-    | [] => pure []
-    | x :: xs => pure List.cons <*> Rose.walkWithDepth f depth x <*> Rose.walkListWithDepth f depth xs
-end
+/-! ## Depth-Aware Traversals -/
 
--- Polymorphic depth-aware traversal (allows type change)
--- Uses well-founded recursion via sizeOf
-mutual
-  private def Rose.walkWithDepthPolyImpl {α β : Type _} {F : Type _ → Type _} [Applicative F] [Inhabited β]
-      (f : Nat → α → F β) (depth : Nat) : Rose α → F (Rose β)
-    | Rose.node value children =>
-        pure Rose.node <*> f depth value <*> Rose.walkWithDepthPolyListImpl f (depth + 1) children
+/-- Depth-aware traversal over binary tree leaves -/
+private def Tree.walkWithDepth {F : Type _ → Type _} [Applicative F]
+    (f : Nat → α → F α) (depth : Nat) : Tree α → F (Tree α)
+  | Tree.leaf a => pure Tree.leaf <*> f depth a
+  | Tree.node l r =>
+      pure Tree.node <*> Tree.walkWithDepth f (depth + 1) l <*> Tree.walkWithDepth f (depth + 1) r
 
-  private def Rose.walkWithDepthPolyListImpl {α β : Type _} {F : Type _ → Type _} [Applicative F] [Inhabited β]
-      (f : Nat → α → F β) (depth : Nat) : List (Rose α) → F (List (Rose β))
-    | [] => pure []
-    | x :: xs => pure List.cons <*> Rose.walkWithDepthPolyImpl f depth x <*> Rose.walkWithDepthPolyListImpl f depth xs
-end
-
-private def Rose.walkWithDepthPoly {α β : Type _} {F : Type _ → Type _} [Applicative F] [Inhabited β]
-    (f : Nat → α → F β) (depth : Nat) (tree : Rose α) : F (Rose β) :=
-  Rose.walkWithDepthPolyImpl f depth tree
+/-- Depth-aware traversal for rose tree nodes -/
+private def Rose.walkWithDepth {F : Type _ → Type _} [Applicative F]
+    (f : Nat → α → F α) (depth : Nat) : Rose α → F (Rose α)
+  | Rose.node value children =>
+      let rec walkList (d : Nat) : List (Rose α) → F (List (Rose α))
+        | [] => pure []
+        | x :: xs => pure List.cons <*> Rose.walkWithDepth f d x <*> walkList d xs
+      pure Rose.node <*> f depth value <*> walkList (depth + 1) children
 
 /-! ## Test Cases -/
 
@@ -105,8 +116,6 @@ private def Rose.walkWithDepthPoly {α β : Type _} {F : Type _ → Type _} [App
 private def case_binaryTreeTraversal : TestCase := {
   name := "Binary tree: recursive traversal modifies all leaves",
   run := do
-    let tr : Traversal' (Tree Int) Int := traversal Tree.walk
-
     -- Build a binary tree:       node
     --                            /    \
     --                         leaf(5) node
@@ -116,21 +125,17 @@ private def case_binaryTreeTraversal : TestCase := {
       (Tree.leaf 5)
       (Tree.node (Tree.leaf 10) (Tree.leaf 15))
 
-    -- Transform all leaves
-    let doubled := tree & tr %~ (· * 2)
+    -- Transform all leaves using Tree.leaves traversal
+    let doubled := tree & Tree.leaves %~ (· * 2)
     let expected := Tree.node
       (Tree.leaf 10)
       (Tree.node (Tree.leaf 20) (Tree.leaf 30))
 
     ensureEq "All leaves doubled" expected doubled
 
-    -- Collect all leaf values using State monad
-    let collectLeaves (x : Int) : StateT (List Int) Id Int := do
-      modify (x :: ·)
-      pure x
-
-    let (_, leaves) := (Traversal.traverse' tr collectLeaves tree).run []
-    ensureEq "All leaves collected" [5, 10, 15] leaves.reverse
+    -- Collect all leaf values using Fold.toListTraversal
+    let leaves := Fold.toListTraversal Tree.leaves tree
+    ensureEq "All leaves collected" [5, 10, 15] leaves
 }
 
 /-- Test: Depth-aware recursive traversal using depth tracking -/
@@ -175,8 +180,6 @@ private def case_depthAwareTraversal : TestCase := {
 private def case_roseTreeTraversal : TestCase := {
   name := "Rose tree: n-ary recursive traversal with multiple children",
   run := do
-    let tr : Traversal' (Rose String) String := traversal Rose.walk
-
     -- Build a rose tree:
     --          "root"
     --         /   |   \
@@ -195,8 +198,8 @@ private def case_roseTreeTraversal : TestCase := {
       ]
     ]
 
-    -- Transform all nodes to uppercase
-    let upper := tree & tr %~ String.toUpper
+    -- Transform all nodes to uppercase using Rose.values traversal
+    let upper := tree & Rose.values %~ String.toUpper
 
     -- Verify root
     match upper with
@@ -211,21 +214,20 @@ private def case_roseTreeTraversal : TestCase := {
         ensureEq "First child has 2 children" 2 children.length
       | none => ensure false "Expected first child"
 
-    -- Count all nodes using State
-    let countNode (_x : String) : StateT Nat Id String := do
-      modify (· + 1)
-      pure _x
+    -- Count all nodes using Plated.cosmosCount (works on tree structure, not values)
+    -- This counts Rose nodes, not String values
+    let nodeCount := cosmosCount tree
+    ensureEq "Total node count (via Plated)" 7 nodeCount
 
-    let (_, count) := (Traversal.traverse' tr countNode tree).run 0
-    ensureEq "Total node count" 7 count
+    -- Also verify via collecting values
+    let values := Fold.toListTraversal Rose.values tree
+    ensureEq "Total value count" 7 values.length
 }
 
 /-- Test: Rose tree with deeply nested structure -/
 private def case_deeplyNestedRoseTree : TestCase := {
   name := "Rose tree: deeply nested multi-way structure",
   run := do
-    let tr : Traversal' (Rose Int) Int := traversal Rose.walk
-
     -- Build a deeply nested rose tree
     let deepTree := Rose.node 1 [
       Rose.node 2 [
@@ -242,24 +244,22 @@ private def case_deeplyNestedRoseTree : TestCase := {
       ]
     ]
 
-    -- Transform all values
-    let multiplied := deepTree & tr %~ (· * 10)
+    -- Transform all values using Rose.values
+    let multiplied := deepTree & Rose.values %~ (· * 10)
 
-    -- Collect all values to verify transformation
-    let collectValues (x : Int) : StateT (List Int) Id Int := do
-      modify (x :: ·)
-      pure x
+    -- Collect all values using Fold.toListTraversal
+    let values := Fold.toListTraversal Rose.values multiplied
+    ensureEq "All values multiplied by 10" [10, 20, 30, 40, 50, 60, 70, 80, 90] values
 
-    let (_, values) := (Traversal.traverse' tr collectValues multiplied).run []
-    ensureEq "All values multiplied by 10" [10, 20, 30, 40, 50, 60, 70, 80, 90] values.reverse
+    -- Verify depth using Plated.depth
+    let treeDepth := depth deepTree
+    ensureEq "Tree depth (via Plated)" 4 treeDepth
 }
 
 /-- Test: Recursive validation with Option applicative -/
 private def case_recursiveValidation : TestCase := {
   name := "Binary tree: recursive validation short-circuits on invalid node",
   run := do
-    let tr : Traversal' (Tree Int) Int := traversal Tree.walk
-
     let tree1 := Tree.node
       (Tree.leaf 5)
       (Tree.node (Tree.leaf 10) (Tree.leaf 15))
@@ -268,7 +268,7 @@ private def case_recursiveValidation : TestCase := {
     let validatePositive (x : Int) : Option Int :=
       if x > 0 then some x else none
 
-    let result1 := Traversal.traverse' tr validatePositive tree1
+    let result1 := Traversal.traverse' Tree.leaves validatePositive tree1
     match result1 with
     | some t => ensureEq "Valid tree passes" tree1 t
     | none => ensure false "Expected validation to succeed"
@@ -278,18 +278,29 @@ private def case_recursiveValidation : TestCase := {
       (Tree.leaf 5)
       (Tree.node (Tree.leaf (-10)) (Tree.leaf 15))
 
-    let result2 := Traversal.traverse' tr validatePositive tree2
+    let result2 := Traversal.traverse' Tree.leaves validatePositive tree2
     match result2 with
     | none => pure ()  -- Expected: validation fails
     | some _ => ensure false "Expected validation to fail"
+
+    -- Also demonstrate Plated.allOf for validation
+    let allPositive := allOf (fun (t : Tree Int) =>
+      match t with
+      | Tree.leaf x => x > 0
+      | Tree.node _ _ => true) tree1
+    ensure allPositive "allOf reports all leaves positive"
+
+    let allPositive2 := allOf (fun (t : Tree Int) =>
+      match t with
+      | Tree.leaf x => x > 0
+      | Tree.node _ _ => true) tree2
+    ensure (!allPositive2) "allOf detects negative leaf"
 }
 
 /-- Test: Recursive transformation with accumulating state -/
 private def case_recursiveStatefulTransform : TestCase := {
   name := "Rose tree: compute running sum while transforming",
   run := do
-    let tr : Traversal' (Rose Int) Int := traversal Rose.walk
-
     let tree := Rose.node 10 [
       Rose.node 20 [],
       Rose.node 30 [
@@ -297,6 +308,9 @@ private def case_recursiveStatefulTransform : TestCase := {
         Rose.node 50 []
       ]
     ]
+
+    -- Use direct Rose.walk for StateT traversal (works around compiler limitation)
+    let tr : Traversal' (Rose Int) Int := traversal Rose.walk
 
     -- Replace each value with the running sum and add current value to sum
     let replaceWithSum (x : Int) : StateT Int Id Int := do
@@ -315,13 +329,9 @@ private def case_recursiveStatefulTransform : TestCase := {
     | Rose.node value _ =>
       ensureEq "Root replaced with initial sum" 0 value
 
-    -- Collect all transformed values to verify the running sum transformation
-    let collectTransformed (x : Int) : StateT (List Int) Id Int := do
-      modify (x :: ·)
-      pure x
-
-    let (_, transformedValues) := (Traversal.traverse' tr collectTransformed transformed).run []
-    ensureEq "All transformed values are running sums" [0, 10, 30, 60, 100] transformedValues.reverse
+    -- Collect all transformed values using Fold.toListTraversal
+    let transformedValues := Fold.toListTraversal tr transformed
+    ensureEq "All transformed values are running sums" [0, 10, 30, 60, 100] transformedValues
 }
 
 /-- Test: Composing recursive traversals -/
@@ -333,18 +343,11 @@ private def case_composedRecursiveTraversal : TestCase := {
       (Tree.leaf (some 5))
       (Tree.node (Tree.leaf none) (Tree.leaf (some 15)))
 
-    -- Compose tree traversal with option traversal
-    let treeTr : Traversal (Tree (Option Int)) (Tree (Option Int)) (Option Int) (Option Int) :=
-      traversal Tree.walk
-
-    let optionTr : Traversal (Option Int) (Option Int) Int Int :=
-      traversal (fun {F} [Applicative F] (f : Int → F Int) (opt : Option Int) =>
-        match opt with
-        | none => pure none
-        | some a => pure some <*> f a)
-
-    -- Compose: first traverse tree, then traverse options
-    let composed : Traversal' (Tree (Option Int)) Int := treeTr ∘ optionTr
+    -- Use Tree.leaves for the tree traversal, compose with somePrism'
+    -- Tree.leaves : Traversal' (Tree (Option Int)) (Option Int)
+    -- somePrism' Int : Prism' (Option Int) Int
+    let composed : Traversal' (Tree (Option Int)) Int :=
+      Tree.leaves ∘ somePrism' Int
 
     -- Transform: double all present values, skip None
     let doubled := treeOfOptions & composed %~ (· * 2)
@@ -354,21 +357,15 @@ private def case_composedRecursiveTraversal : TestCase := {
 
     ensureEq "Composed traversal works" expected doubled
 
-    -- Collect only present values
-    let collectPresent (x : Int) : StateT (List Int) Id Int := do
-      modify (x :: ·)
-      pure x
-
-    let (_, collected) := (Traversal.traverse' composed collectPresent treeOfOptions).run []
-    ensureEq "Collected only present values" [5, 15] collected.reverse
+    -- Collect only present values using Fold.toListTraversal
+    let collected := Fold.toListTraversal composed treeOfOptions
+    ensureEq "Collected only present values" [5, 15] collected
 }
 
 /-- Test: Self-modifying recursive structure (mind-bending!) -/
 private def case_selfModifyingTraversal : TestCase := {
   name := "Mind-bending: tree modifies itself - later nodes affected by earlier ones",
   run := do
-    let tr : Traversal' (Rose Int) Int := traversal Rose.walk
-
     -- Create tree where traversal order matters
     -- Traversal visits: 5, 10, 15 (triggers!), 8, 3, 20, 2
     let tree := Rose.node 5 [
@@ -381,6 +378,9 @@ private def case_selfModifyingTraversal : TestCase := {
         Rose.node 2 []         -- This should be negated!
       ]
     ]
+
+    -- Use direct Rose.walk for StateT traversal (works around compiler limitation)
+    let tr : Traversal' (Rose Int) Int := traversal Rose.walk
 
     -- Strategy: Once we see a large value (>12), negate all subsequent small values
     -- Large values themselves stay positive but keep the negation flag active
@@ -488,74 +488,107 @@ private def case_deepRecursiveTree : TestCase := {
     ensureEq "Values transformed by depth multiplier" [3, 6, 12, 16, 15] transformedValues.reverse
 }
 
-/-! ## The Census Transform - The "Impossible" Transformation -/
+/-! ## Plated Capabilities -/
 
-/-- Census data encoding global, local, and contextual information about each node -/
-structure CensusData where
-  rank : Nat           -- Sequential position in traversal order (0-indexed)
-  depth : Nat          -- Distance from root (root = 0)
-  totalSize : Nat      -- Total number of nodes in entire tree
-  peersAtDepth : Nat   -- How many total nodes exist at this same depth level
-  deriving BEq, Repr, Inhabited
+/-- Test: Plated.transform for bottom-up tree rewriting -/
+private def case_platedTransform : TestCase := {
+  name := "Plated.transform: bottom-up tree simplification",
+  run := do
+    -- Build a tree with opportunities for simplification
+    -- We'll simplify: node(leaf x, leaf x) -> leaf (x * 2)
+    let tree : Tree Int := Tree.node
+      (Tree.node (Tree.leaf 5) (Tree.leaf 5))    -- Can simplify to leaf 10
+      (Tree.node
+        (Tree.leaf 3)
+        (Tree.node (Tree.leaf 7) (Tree.leaf 7))) -- Inner can simplify to leaf 14
 
--- Collect depth histogram: how many nodes at each depth level
-mutual
-  private def Rose.collectDepthHistogram {α : Type _}
-      (depth : Nat) (tree : Rose α) : StateT (Array Nat) Id Unit := do
-    match tree with
-    | Rose.node _ children =>
-      -- Increment count at this depth
-      let counts ← get
-      -- Extend array if needed
-      let counts := if depth >= counts.size
-                    then counts.append (Array.mkArray (depth + 1 - counts.size) 0)
-                    else counts
-      -- Increment count at this depth
-      let counts := counts.set! depth (counts[depth]! + 1)
-      set counts
+    -- Bottom-up transform: combine identical sibling leaves
+    let simplify (t : Tree Int) : Tree Int :=
+      match t with
+      | Tree.node (Tree.leaf x) (Tree.leaf y) =>
+          if x == y then Tree.leaf (x * 2) else t
+      | _ => t
 
-      -- Recurse into children using explicit list recursion
-      Rose.collectDepthHistogramList (depth + 1) children
+    let simplified := transform simplify tree
 
-  private def Rose.collectDepthHistogramList {α : Type _}
-      (depth : Nat) (trees : List (Rose α)) : StateT (Array Nat) Id Unit := do
-    match trees with
-    | [] => pure ()
-    | t :: ts =>
-      Rose.collectDepthHistogram depth t
-      Rose.collectDepthHistogramList depth ts
-end
+    -- Expected: node(leaf 10, node(leaf 3, leaf 14))
+    let expected := Tree.node
+      (Tree.leaf 10)
+      (Tree.node (Tree.leaf 3) (Tree.leaf 14))
 
--- Helper: count total nodes in a tree
-mutual
-  private def Rose.countNodes {α : Type _} (tree : Rose α) : Nat :=
-    match tree with
-    | Rose.node _ children => 1 + Rose.countNodesList children
-
-  private def Rose.countNodesList {α : Type _} (trees : List (Rose α)) : Nat :=
-    match trees with
-    | [] => 0
-    | t :: ts => Rose.countNodes t + Rose.countNodesList ts
-end
-
-/-
-The Census Transform test has been commented out due to a Lean 4 compiler limitation.
-The test demonstrates encoding "impossible" global+local information, but Lean 4 v4.15.0
-fails to compile specializations of polymorphic mutual recursive functions when used
-inside closures (the `censusTransform` lambda).
-
-This is NOT a bug in the test logic - the transformation concept is sound. The issue
-is purely a compiler limitation with specialization of:
-  Rose.walkWithDepthPoly (censusTransform) 0 tree
-where walkWithDepthPoly is defined via mutual recursion.
-
-TODO: Re-enable when Lean 4 improves handling of polymorphic mutual recursion specialization.
-
-private def case_censusTransform : TestCase := {
-  name := "Census Transform: Each node knows global size, local depth, traversal rank, and peer count",
-  run := do ... (see MindBending.lean.wip for full implementation)
+    ensureEq "Bottom-up simplification" expected simplified
 }
--/
+
+/-- Test: Plated.rewrite for iterative rewriting -/
+private def case_platedRewrite : TestCase := {
+  name := "Plated.rewrite: iterative expression simplification",
+  run := do
+    -- Build a deeply nested structure that can be flattened
+    -- We'll use rose tree to represent a list-like structure
+    -- node(1, [node(2, [node(3, [])])]) -> flattened form
+
+    let nested : Rose Int := Rose.node 1 [
+      Rose.node 2 [
+        Rose.node 3 [
+          Rose.node 4 []
+        ]
+      ]
+    ]
+
+    -- Rewrite rule: if a node has exactly one child, merge them
+    -- node(x, [node(y, cs)]) -> node(x+y, cs)
+    let flattenSingle (t : Rose Int) : Option (Rose Int) :=
+      match t with
+      | Rose.node x [Rose.node y cs] => some (Rose.node (x + y) cs)
+      | _ => none
+
+    let flattened := rewrite flattenSingle nested
+
+    -- Expected: node(10, []) since 1+2+3+4 = 10
+    let expected := Rose.node 10 []
+
+    ensureEq "Iterative flattening" expected flattened
+}
+
+/-- Test: Using Plated utilities together -/
+private def case_platedUtilities : TestCase := {
+  name := "Plated utilities: universeList, findOf, anyOf",
+  run := do
+    let tree : Rose String := Rose.node "root" [
+      Rose.node "child1" [
+        Rose.node "grandchild1" [],
+        Rose.node "target" []
+      ],
+      Rose.node "child2" []
+    ]
+
+    -- universeList collects all nodes
+    let allNodes := universeList tree
+    ensureEq "universeList count" 5 allNodes.length
+
+    -- findOf finds first matching node
+    let found := findOf (fun (t : Rose String) =>
+      match t with
+      | Rose.node "target" _ => true
+      | _ => false) tree
+
+    match found with
+    | some (Rose.node v _) => ensureEq "findOf found target" "target" v
+    | none => ensure false "Expected to find target"
+
+    -- anyOf checks if any node matches
+    let hasTarget := anyOf (fun (t : Rose String) =>
+      match t with
+      | Rose.node "target" _ => true
+      | _ => false) tree
+    ensure hasTarget "anyOf finds target"
+
+    let hasMissing := anyOf (fun (t : Rose String) =>
+      match t with
+      | Rose.node "missing" _ => true
+      | _ => false) tree
+    ensure (!hasMissing) "anyOf correctly reports missing"
+}
 
 def cases : List TestCase := [
   case_binaryTreeTraversal,
@@ -566,8 +599,10 @@ def cases : List TestCase := [
   case_recursiveStatefulTransform,
   case_composedRecursiveTraversal,
   case_selfModifyingTraversal,
-  case_deepRecursiveTree
-  -- case_censusTransform: See comment above for why this is disabled
+  case_deepRecursiveTree,
+  case_platedTransform,
+  case_platedRewrite,
+  case_platedUtilities
 ]
 
 end CollimatorTests.AdvancedShowcase.MindBending
