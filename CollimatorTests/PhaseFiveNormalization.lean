@@ -111,9 +111,9 @@ def allTests : List TestCase := [
 
 def runTests : IO UInt32 := do
   IO.println "\nRunning Phase 5 Normalization Tests..."
-  for test in allTests do
-    IO.println s!"  {test.name}"
-    test.run
+  for tc in allTests do
+    IO.println s!"  {tc.name}"
+    tc.run
   IO.println "All normalization tests passed!\n"
   return 0
 
