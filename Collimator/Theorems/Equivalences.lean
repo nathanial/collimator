@@ -1,9 +1,6 @@
+import Collimator.Core
 import Batteries
 import Collimator.Optics
-import Collimator.Core.Profunctor
-import Collimator.Core.Strong
-import Collimator.Core.Choice
-import Collimator.Core.Wandering
 import Collimator.Concrete.Forget
 import Collimator.Concrete.FunArrow
 import Collimator.Concrete.Tagged

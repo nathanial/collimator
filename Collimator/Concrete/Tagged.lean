@@ -1,6 +1,5 @@
-import Collimator.Core.Profunctor
-import Collimator.Core.Choice
 
+import Collimator.Core
 namespace Collimator.Concrete
 
 open Collimator.Core

@@ -1,5 +1,5 @@
+import Collimator.Core
 import Collimator.Optics
-import Collimator.Core.Profunctor
 
 /-!
 # Normalization Theorems for Optic Composition

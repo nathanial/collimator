@@ -1,6 +1,5 @@
+import Collimator.Core
 import Collimator.Optics
-import Collimator.Core.Profunctor
-import Collimator.Core.Wandering
 import Collimator.Concrete.Star
 import Collimator.Combinators
 

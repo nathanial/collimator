@@ -1,9 +1,6 @@
+import Collimator.Core
 import Mathlib.Control.Functor
 import Mathlib.Control.Applicative
-import Collimator.Core.Profunctor
-import Collimator.Core.Strong
-import Collimator.Core.Choice
-import Collimator.Core.Wandering
 
 namespace Collimator.Concrete
 

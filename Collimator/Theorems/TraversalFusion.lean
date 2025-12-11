@@ -1,6 +1,6 @@
+import Collimator.Core
 import Collimator.Optics
 import Collimator.Theorems.TraversalLaws
-import Collimator.Core.Wandering
 import Collimator.Concrete.Star
 
 /-!

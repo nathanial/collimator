@@ -1,6 +1,5 @@
+import Collimator.Core
 import Batteries
-import Collimator.Core.Profunctor
-import Collimator.Core.Closed
 
 namespace Collimator.Concrete
 

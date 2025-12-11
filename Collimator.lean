@@ -25,7 +25,6 @@ def xLens : Lens' Point Int := lens' (·.x) (fun p x => { p with x := x })
 - `Collimator.Core`: Profunctor abstractions (Profunctor, Strong, Choice, Wandering, Closed)
 - `Collimator.Concrete`: Concrete profunctor implementations (Forget, Star, Costar, FunArrow, Tagged)
 - `Collimator.Optics`: Optic type definitions (Iso, Lens, Prism, Affine, Traversal, Fold, Setter)
-- `Collimator.Poly`: Polymorphic API with type classes
 - `Collimator.Combinators`: Composition and operators
 - `Collimator.Instances`: Standard library type instances
 - `Collimator.Theorems`: Formal proofs of optic laws
@@ -36,14 +35,7 @@ def xLens : Lens' Point Int := lens' (·.x) (fun p x => { p with x := x })
 import Collimator.Exports
 
 -- Core profunctor abstractions
-import Collimator.Core.Profunctor
-import Collimator.Core.Strong
-import Collimator.Core.StrongLaws
-import Collimator.Core.Choice
-import Collimator.Core.ChoiceLaws
-import Collimator.Core.Closed
-import Collimator.Core.Wandering
-import Collimator.Core.Laws
+import Collimator.Core
 
 -- Concrete profunctor implementations
 import Collimator.Concrete.Forget

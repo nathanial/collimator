@@ -1,6 +1,5 @@
+import Collimator.Core
 import Collimator.Optics
-import Collimator.Core.Strong
-import Collimator.Core.Choice
 
 /-!
 # Collimator Combinators
