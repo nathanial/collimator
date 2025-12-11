@@ -182,7 +182,7 @@ private def case_lensTraversal : TestCase := {
     -- salaryLens focuses on each employee's salary
     let raiseComposed : Traversal' Project Nat :=
       employeesLens ∘ employeeTraversal ∘ salaryLens
-    let afterRaise : Project := Traversal.over' raiseComposed (fun s => s * 110 / 100) project
+    let afterRaise : Project := project & raiseComposed %~ (fun s => s * 110 / 100)
 
     -- Verify all salaries increased
     if afterRaise.employees[0]!.salary != 88000 then
@@ -202,7 +202,7 @@ private def case_lensTraversal : TestCase := {
 
     -- Another example: Clear all contact info
     let contactComposed : Traversal' Project Contact := employeesLens ∘ employeeTraversal ∘ contactLens
-    let noContact : Project := Traversal.over' contactComposed (fun _ => Contact.none) project
+    let noContact : Project := project & contactComposed %~ (fun _ => Contact.none)
 
     if !noContact.employees.all (fun e => e.contact == Contact.none) then
       throw (IO.userError "Expected all contacts to be none")
@@ -231,8 +231,8 @@ private def case_traversalPrism : TestCase := {
     -- emailPrism only matches email contacts
     -- Note: Traversal ∘ Lens ∘ Prism all supported
     let emailComposed : Traversal' (List Employee) String := employeeTraversal ∘ contactLens ∘ emailPrism
-    let updated : List Employee := Traversal.over' emailComposed
-      (fun (email : String) => email.replace "@example.com" "@newdomain.com") employees
+    let updated : List Employee := employees & emailComposed %~
+      (fun (email : String) => email.replace "@example.com" "@newdomain.com")
 
     -- Only Alice's email should be updated
     match updated[0]!.contact with
@@ -256,7 +256,7 @@ private def case_traversalPrism : TestCase := {
 
     -- Another example: uppercase all phone numbers
     let phoneComposed : Traversal' (List Employee) String := employeeTraversal ∘ contactLens ∘ phonePrism
-    let phones : List Employee := Traversal.over' phoneComposed (fun p => "PHONE:" ++ p) employees
+    let phones : List Employee := employees & phoneComposed %~ (fun p => "PHONE:" ++ p)
 
     match phones[1]!.contact with
     | Contact.phone p =>
@@ -295,8 +295,8 @@ private def case_lensPrismLens : TestCase := {
 
     -- Update all domestic addresses to add "USA"
     -- This only affects Alice and Dave, not Bob (international) or Carol (none)
-    let withCountry : Team := Traversal.over' domesticAddressComposed
-      (fun (pair : String × String) => (pair.1, pair.2 ++ ", USA")) team
+    let withCountry : Team := team & domesticAddressComposed %~
+      (fun (pair : String × String) => (pair.1, pair.2 ++ ", USA"))
 
     -- Verify Alice's address updated
     match withCountry.members[0]!.address with
@@ -379,7 +379,7 @@ private def case_deepChains : TestCase := {
       salaryLens
 
     -- Give everyone a 15% raise
-    let afterRaise : Company := Traversal.over' allSalariesComposed (fun s => s * 115 / 100) company
+    let afterRaise : Company := company & allSalariesComposed %~ (fun s => s * 115 / 100)
 
     -- Verify specific employees got raises
     let alice := afterRaise.departments[0]!.projects[0]!.employees[0]!
@@ -403,8 +403,8 @@ private def case_deepChains : TestCase := {
       employeesLens ∘ employeeTraversal ∘
       contactLens ∘ emailPrism
 
-    let updated : Company := Traversal.over' highBudgetEmailsComposed
-      (fun (email : String) => email.replace "@tech.com" "@techcorp.com") company
+    let updated : Company := company & highBudgetEmailsComposed %~
+      (fun (email : String) => email.replace "@tech.com" "@techcorp.com")
 
     -- Verify Alice's email updated
     match updated.departments[0]!.projects[0]!.employees[0]!.contact with
@@ -446,7 +446,7 @@ private def case_typeInference : TestCase := {
     -- Minimal type annotations help type inference
     -- Lean infers this is a Traversal
     let composed1 : Traversal' Project Nat := employeesLens ∘ employeeTraversal ∘ salaryLens
-    let result1 : Project := Traversal.over' composed1 (· + 5000) project
+    let result1 : Project := project & composed1 %~ (· + 5000)
     if result1.employees[0]!.salary != 85000 then
       throw (IO.userError s!"Expected salary 85000, got {result1.employees[0]!.salary}")
 
@@ -454,7 +454,7 @@ private def case_typeInference : TestCase := {
 
     -- This composition includes a Prism, so it's still a Traversal
     let composed2 : Traversal' Project String := employeesLens ∘ employeeTraversal ∘ contactLens ∘ emailPrism
-    let result2 : Project := Traversal.over' composed2 (fun (s : String) => s ++ " (work)") project
+    let result2 : Project := project & composed2 %~ (fun (s : String) => s ++ " (work)")
 
     match result2.employees[0]!.contact with
     | Contact.email e =>
@@ -502,7 +502,7 @@ private def case_realWorldScenario : TestCase := {
       projectsLens ∘ projectTraversal ∘
       employeesLens ∘ employeeTraversal ∘
       salaryLens
-    let afterRaises : Company := Traversal.over' allSalaries (fun s => s * 120 / 100) company
+    let afterRaises : Company := company & allSalaries %~ (fun s => s * 120 / 100)
 
     -- Step 2: Update email domain for all email contacts
     let allEmails : Traversal' Company String :=
@@ -510,15 +510,15 @@ private def case_realWorldScenario : TestCase := {
       projectsLens ∘ projectTraversal ∘
       employeesLens ∘ employeeTraversal ∘
       contactLens ∘ emailPrism
-    let newDomain : Company := Traversal.over' allEmails
-                     (fun (e : String) => e.replace "@startup.com" "@bigcorp.com") afterRaises
+    let newDomain : Company := afterRaises & allEmails %~
+                     (fun (e : String) => e.replace "@startup.com" "@bigcorp.com")
 
     -- Step 3: Double budget for all projects
     let allBudgets : Traversal' Company Nat :=
       departmentsLens ∘ departmentTraversal ∘
       projectsLens ∘ projectTraversal ∘
       budgetLens
-    let final : Company := Traversal.over' allBudgets (· * 2) newDomain
+    let final : Company := newDomain & allBudgets %~ (· * 2)
 
     -- Verify all changes applied correctly
     let alice := final.departments[0]!.projects[0]!.employees[0]!

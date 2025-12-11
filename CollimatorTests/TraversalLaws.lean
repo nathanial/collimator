@@ -1,5 +1,6 @@
 import Batteries
 import Collimator.Optics
+import Collimator.Operators
 import Collimator.Theorems.TraversalLaws
 import Collimator.Combinators
 import CollimatorTests.Framework
@@ -10,6 +11,7 @@ open Collimator
 open Collimator.Theorems
 open Collimator.Combinators
 open CollimatorTests
+open scoped Collimator.Operators
 
 /-! ## Test Structures -/
 
@@ -101,7 +103,7 @@ private def case_traversalIdentityLaw : TestCase := {
   run := do
     let tr : Traversal' (List Int) Int := traversal List.walkMon
     let xs := [1, 2, 3]
-    let result := Traversal.over' tr (fun a => a) xs
+    let result := xs & tr %~ (fun a => a)
     ensureEq "Identity law" xs result
 }
 
@@ -113,7 +115,7 @@ private def case_treeIdentityLaw : TestCase := {
   run := do
     let tr : Traversal' (Tree Int) Int := traversal Tree.walkMon
     let tree := Tree.node (Tree.leaf 1) (Tree.leaf 2)
-    let result := Traversal.over' tr (fun a => a) tree
+    let result := tree & tr %~ (fun a => a)
     ensureEq "Tree identity" tree result
 }
 
@@ -125,7 +127,7 @@ private def case_traversalOver : TestCase := {
   run := do
     let tr : Traversal' (List Int) Int := traversal List.walkMon
     let xs := [1, 2, 3]
-    let result := Traversal.over' tr (· + 10) xs
+    let result := xs & tr %~ (· + 10)
     ensureEq "Over all elements" [11, 12, 13] result
 }
 
@@ -156,7 +158,7 @@ private def case_compositionIdentityLaw : TestCase := {
     let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
 
     let xs := [some 1, none, some 3]
-    let result := Traversal.over' composed (fun a => a) xs
+    let result := xs & composed %~ (fun a => a)
     ensureEq "Composed identity" xs result
 }
 
@@ -171,7 +173,7 @@ private def case_composedTraversalOver : TestCase := {
     let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
 
     let xs := [some 1, none, some 3]
-    let result := Traversal.over' composed (· * 2) xs
+    let result := xs & composed %~ (· * 2)
     ensureEq "Composed over" [some 2, none, some 6] result
 }
 
@@ -183,7 +185,7 @@ private def case_treeTraversal : TestCase := {
   run := do
     let tr : Traversal' (Tree Int) Int := traversal Tree.walkMon
     let tree := Tree.node (Tree.leaf 5) (Tree.node (Tree.leaf 10) (Tree.leaf 15))
-    let result := Traversal.over' tr (· + 1) tree
+    let result := tree & tr %~ (· + 1)
     let expected := Tree.node (Tree.leaf 6) (Tree.node (Tree.leaf 11) (Tree.leaf 16))
     ensureEq "Tree traversal" expected result
 }
@@ -198,7 +200,7 @@ private def case_traversalLawTheorems : TestCase := {
     let tr : Traversal' (List Int) Int := traversal List.walkMon
 
     -- Identity law: over tr id = id
-    let test1 := Traversal.over' tr (fun a => a) [1, 2, 3]
+    let test1 := [1, 2, 3] & tr %~ (fun a => a)
     ensureEq "Law theorem identity" [1, 2, 3] test1
 
     -- Traverse with Id functor
@@ -219,11 +221,11 @@ private def case_compositionLawfulInstance : TestCase := {
 
     -- Test identity
     let xs : List (Option Int) := [some 1, none, some 2]
-    let result := Traversal.over' composed (fun a => a) xs
+    let result := xs & composed %~ (fun a => a)
     ensureEq "Composed lawful identity" xs result
 
     -- Test modification
-    let result2 := Traversal.over' composed (· + 10) xs
+    let result2 := xs & composed %~ (· + 10)
     ensureEq "Composed lawful over" [some 11, none, some 12] result2
 }
 
@@ -236,11 +238,11 @@ private def case_optionTraversal : TestCase := {
     let tr : Traversal' (Option Int) Int := traversal Option.walkMon
 
     -- Test with some
-    let result1 := Traversal.over' tr (· * 3) (some 4)
+    let result1 := (some 4) & tr %~ (· * 3)
     ensureEq "Option some" (some 12) result1
 
     -- Test with none
-    let result2 := Traversal.over' tr (· * 3) (none : Option Int)
+    let result2 := (none : Option Int) & tr %~ (· * 3)
     ensureEq "Option none" none result2
 
     -- Test traverse with Option applicative

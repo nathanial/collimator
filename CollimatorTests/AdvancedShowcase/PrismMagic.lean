@@ -180,12 +180,12 @@ def case_patternMatching : TestCase := {
     let _jsonNull := JsonValue.null
 
     -- Successful preview extracts the value
-    let strResult := preview' jsonStrPrism jsonStr
+    let strResult := jsonStr ^? jsonStrPrism
     if strResult != some "hello" then
       throw (IO.userError s!"Expected Some hello, got {repr strResult}")
 
     -- Failed preview returns None (type mismatch)
-    let numAsStr := preview' jsonStrPrism jsonNum
+    let numAsStr := jsonNum ^? jsonStrPrism
     if numAsStr != none then
       throw (IO.userError s!"Expected None for num→str preview, got {repr numAsStr}")
 
@@ -196,11 +196,11 @@ def case_patternMatching : TestCase := {
     let notFound := HttpStatus.clientErr 404
     let _serverDown := HttpStatus.serverErr 503
 
-    let isSuccess := preview' httpSuccessPrism ok200
+    let isSuccess := ok200 ^? httpSuccessPrism
     if isSuccess != some 200 then
       throw (IO.userError s!"Expected Some 200 for success, got {repr isSuccess}")
 
-    let successFromClient := preview' httpSuccessPrism notFound
+    let successFromClient := notFound ^? httpSuccessPrism
     if successFromClient != none then
       throw (IO.userError s!"Expected None for client error, got {repr successFromClient}")
 
@@ -214,12 +214,12 @@ def case_patternMatching : TestCase := {
     ]
 
     -- Find all flags
-    let flags := args.filterMap (fun a => preview' cliFlagPrism a)
+    let flags := args.filterMap (fun a => a ^? cliFlagPrism)
     if flags != ["verbose"] then
       throw (IO.userError s!"Expected [verbose], got {repr flags}")
 
     -- Find all options
-    let options := args.filterMap (fun a => preview' cliOptionPrism a)
+    let options := args.filterMap (fun a => a ^? cliOptionPrism)
     if options != [("output", "file.txt")] then
       throw (IO.userError s!"Expected [(output, file.txt)], got {repr options}")
 
@@ -294,15 +294,15 @@ def case_validationPrisms : TestCase := {
       prism (fun n => n)  -- review is identity
             (fun n => if n > 0 then Sum.inr n else Sum.inl n)
 
-    let validPos := preview' positivePrism 42
+    let validPos := 42 ^? positivePrism
     if validPos != some 42 then
       throw (IO.userError s!"Expected Some 42 for positive, got {repr validPos}")
 
-    let invalidPos := preview' positivePrism (-5)
+    let invalidPos := (-5 ^? positivePrism)
     if invalidPos != none then
       throw (IO.userError s!"Expected None for negative, got {repr invalidPos}")
 
-    let zeroPos := preview' positivePrism 0
+    let zeroPos := 0 ^? positivePrism
     if zeroPos != none then
       throw (IO.userError s!"Expected None for zero, got {repr zeroPos}")
 
@@ -313,11 +313,11 @@ def case_validationPrisms : TestCase := {
       prism (fun s => s)
             (fun s => if s.length > 0 then Sum.inr s else Sum.inl s)
 
-    let validStr := preview' nonEmptyPrism "hello"
+    let validStr := "hello" ^? nonEmptyPrism
     if validStr != some "hello" then
       throw (IO.userError s!"Expected Some hello, got {repr validStr}")
 
-    let emptyStr := preview' nonEmptyPrism ""
+    let emptyStr := "" ^? nonEmptyPrism
     if emptyStr != none then
       throw (IO.userError s!"Expected None for empty string, got {repr emptyStr}")
 
@@ -328,15 +328,15 @@ def case_validationPrisms : TestCase := {
       prism (fun n => n)
             (fun n => if n <= 100 then Sum.inr n else Sum.inl n)
 
-    let valid50 := preview' percentPrism 50
+    let valid50 := 50 ^? percentPrism
     if valid50 != some 50 then
       throw (IO.userError s!"Expected Some 50, got {repr valid50}")
 
-    let valid100 := preview' percentPrism 100
+    let valid100 := 100 ^? percentPrism
     if valid100 != some 100 then
       throw (IO.userError s!"Expected Some 100, got {repr valid100}")
 
-    let invalid150 := preview' percentPrism 150
+    let invalid150 := 150 ^? percentPrism
     if invalid150 != none then
       throw (IO.userError s!"Expected None for 150%, got {repr invalid150}")
 
@@ -361,15 +361,15 @@ def case_prismComposition : TestCase := {
     let innerValuePrism : Prism' (Result (Result Int)) Int :=
       resultOkPrism (Result Int) ∘ resultOkPrism Int
 
-    let innerOk := preview' innerValuePrism nestedOk
+    let innerOk := nestedOk ^? innerValuePrism
     if innerOk != some 42 then
       throw (IO.userError s!"Expected Some 42 for nested ok, got {repr innerOk}")
 
-    let innerFromErr := preview' innerValuePrism nestedErr
+    let innerFromErr := nestedErr ^? innerValuePrism
     if innerFromErr != none then
       throw (IO.userError s!"Expected None for inner error, got {repr innerFromErr}")
 
-    let innerFromOuter := preview' innerValuePrism outerErr
+    let innerFromOuter := outerErr ^? innerValuePrism
     if innerFromOuter != none then
       throw (IO.userError s!"Expected None for outer error, got {repr innerFromOuter}")
 
@@ -380,11 +380,11 @@ def case_prismComposition : TestCase := {
     let jsonNotArray := JsonValue.str "not an array"
 
     -- First extract the array, then we can process its elements
-    let arrResult := preview' jsonArrPrism jsonArray
+    let arrResult := jsonArray ^? jsonArrPrism
     if arrResult != some [JsonValue.num 1, JsonValue.num 2, JsonValue.num 3] then
       throw (IO.userError s!"Expected array of nums, got {repr arrResult}")
 
-    let notArrResult := preview' jsonArrPrism jsonNotArray
+    let notArrResult := jsonNotArray ^? jsonArrPrism
     if notArrResult != none then
       throw (IO.userError s!"Expected None for non-array, got {repr notArrResult}")
 
@@ -417,14 +417,14 @@ def case_errorHandling : TestCase := {
     ]
 
     -- Extract all successful values
-    let successes := results.filterMap (fun r => preview' (resultOkPrism Int) r)
+    let successes := results.filterMap (fun r => r ^? (resultOkPrism Int))
     if successes != [10, 20, 30] then
       throw (IO.userError s!"Expected [10, 20, 30], got {repr successes}")
 
     IO.println "✓ Error handling: extract all successes"
 
     -- Extract all error messages
-    let errors := results.filterMap (fun r => preview' (resultErrPrism Int) r)
+    let errors := results.filterMap (fun r => r ^? (resultErrPrism Int))
     if errors != ["parse error", "validation error"] then
       throw (IO.userError s!"Expected error messages, got {repr errors}")
 
@@ -432,7 +432,7 @@ def case_errorHandling : TestCase := {
 
     -- Count successes and failures
     let numSuccesses := results.filter (fun r =>
-      match preview' (resultOkPrism Int) r with
+      match r ^? (resultOkPrism Int) with
       | some _ => true
       | none => false
     ) |>.length
@@ -440,7 +440,7 @@ def case_errorHandling : TestCase := {
       throw (IO.userError s!"Expected 3 successes, got {numSuccesses}")
 
     let numErrors := results.filter (fun r =>
-      match preview' (resultErrPrism Int) r with
+      match r ^? (resultErrPrism Int) with
       | some _ => true
       | none => false
     ) |>.length
@@ -452,11 +452,11 @@ def case_errorHandling : TestCase := {
     -- Transform only successful values (keeping errors unchanged)
     -- This simulates map over the success case
     let doubled := results.map (fun r =>
-      match preview' (resultOkPrism Int) r with
+      match r ^? (resultOkPrism Int) with
       | some n => review' (resultOkPrism Int) (n * 2)
       | none => r  -- Keep errors unchanged
     )
-    let doubledSuccesses := doubled.filterMap (fun r => preview' (resultOkPrism Int) r)
+    let doubledSuccesses := doubled.filterMap (fun r => r ^? (resultOkPrism Int))
     if doubledSuccesses != [20, 40, 60] then
       throw (IO.userError s!"Expected [20, 40, 60], got {repr doubledSuccesses}")
 
@@ -481,11 +481,11 @@ def case_sumOptionPrisms : TestCase := {
     let someVal : Option Int := some 42
     let noneVal : Option Int := none
 
-    let fromSome := preview' (somePrism Int) someVal
+    let fromSome := someVal ^? (somePrism Int)
     if fromSome != some 42 then
       throw (IO.userError s!"Expected Some 42, got {repr fromSome}")
 
-    let fromNone := preview' (somePrism Int) noneVal
+    let fromNone := noneVal ^? (somePrism Int)
     if fromNone != none then
       throw (IO.userError s!"Expected None, got {repr fromNone}")
 
@@ -511,11 +511,11 @@ def case_sumOptionPrisms : TestCase := {
     let leftVal : Sum String Int := Sum.inl "error"
     let rightVal : Sum String Int := Sum.inr 42
 
-    let extractLeft := preview' (leftPrism String Int) leftVal
+    let extractLeft := leftVal ^? (leftPrism String Int)
     if extractLeft != some "error" then
       throw (IO.userError s!"Expected Some error, got {repr extractLeft}")
 
-    let extractRight := preview' (rightPrism String Int) rightVal
+    let extractRight := rightVal ^? (rightPrism String Int)
     if extractRight != some 42 then
       throw (IO.userError s!"Expected Some 42 from right, got {repr extractRight}")
 

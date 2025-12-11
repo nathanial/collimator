@@ -79,8 +79,8 @@ private def optionPrism : Prism (Sum Unit Nat) (Sum Unit Nat) Nat Nat :=
 private def case_prismPreviewReview : TestCase := {
   name := "prism preview/review works for sums",
   run := do
-    ensureEq "preview extracts right" (some 7) (preview' optionPrism (Sum.inr 7))
-    ensureEq "preview rejects left" (none : Option Nat) (preview' optionPrism (Sum.inl ()))
+    ensureEq "preview extracts right" (some 7) ((Sum.inr 7) ^? optionPrism)
+    ensureEq "preview rejects left" (none : Option Nat) ((Sum.inl ()) ^? optionPrism)
     ensureEq "review injects" (Sum.inr 9) (review' optionPrism 9)
 }
 
