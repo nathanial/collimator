@@ -118,6 +118,12 @@ syntax "makeLenses" ident ("(" makeLensesOpt,* ")")? : command
 
 /-! ## Helper Functions -/
 
+/-- Helper to modify the first character of a string -/
+private def modifyFirstChar (f : Char → Char) (s : String) : String :=
+  match s.toList with
+  | [] => s
+  | c :: cs => String.mk (f c :: cs)
+
 /-- Helper to convert struct name to camelCase (lowercase all leading uppercase letters) -/
 def toLowerFirst (s : String) : String :=
   if s.isEmpty then s
@@ -130,7 +136,7 @@ def toLowerFirst (s : String) : String :=
       s.toLower
     else if leadingUpperCount == 1 then
       -- Single uppercase letter - just lowercase it (e.g., "Window" -> "window")
-      s.modify 0 Char.toLower
+      modifyFirstChar Char.toLower s
     else
       -- Multiple leading uppercase (e.g., "UIState") - lowercase all but keep the last one
       -- if it's followed by lowercase (e.g., "UI" + "State" ->  "ui" + "State")
@@ -141,7 +147,7 @@ def toLowerFirst (s : String) : String :=
 /-- Helper to capitalize first letter -/
 def toUpperFirst (s : String) : String :=
   if s.isEmpty then s
-  else s.modify 0 Char.toUpper
+  else modifyFirstChar Char.toUpper s
 
 /-- Configuration for makeLenses -/
 structure MakeLensesConfig where

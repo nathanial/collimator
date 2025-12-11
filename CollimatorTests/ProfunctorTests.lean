@@ -165,43 +165,43 @@ test "Forget Wandering: uses monoid to aggregate" := do
 /-! ## Star Tests -/
 
 test "Star: dimap id id = id" := do
-  let star : Star Option Int Int := Star.mk (fun x => some (x + 1))
+  let star : Star Option Int Int := ⟨fun x => some (x + 1)⟩
   let result := Profunctor.dimap (id : Int → Int) (id : Int → Int) star
   result.run 5 ≡ star.run 5
 
 test "Star Strong: first preserves tuple structure" := do
-  let star : Star Option Int Int := Star.mk (fun x => some (x * 2))
+  let star : Star Option Int Int := ⟨fun x => some (x * 2)⟩
   let lifted := Strong.first (P := Star Option) (γ := String) star
   let result := lifted.run (10, "test")
   result ≡ some (20, "test")
 
 test "Star Strong: second preserves tuple structure" := do
-  let star : Star Option Int Int := Star.mk (fun x => some (x + 5))
+  let star : Star Option Int Int := ⟨fun x => some (x + 5)⟩
   let lifted := Strong.second (P := Star Option) (γ := Bool) star
   let result := lifted.run (true, 7)
   result ≡ some (true, 12)
 
 test "Star Choice: left maps Sum.inl values" := do
-  let star : Star Option Int Int := Star.mk (fun x => some (x * 3))
+  let star : Star Option Int Int := ⟨fun x => some (x * 3)⟩
   let lifted := Choice.left (P := Star Option) (γ := String) star
   let result := lifted.run (Sum.inl 4)
   result ≡ some (Sum.inl 12)
 
 test "Star Choice: left passes through Sum.inr" := do
-  let star : Star Option Int Int := Star.mk (fun x => some (x * 3))
+  let star : Star Option Int Int := ⟨fun x => some (x * 3)⟩
   let lifted := Choice.left (P := Star Option) (γ := String) star
   let result := lifted.run (Sum.inr "hello")
   result ≡ some (Sum.inr "hello")
 
 test "Star Option: short-circuits on none" := do
-  let star : Star Option Int Int := Star.mk (fun x => if x > 0 then some (x + 1) else none)
+  let star : Star Option Int Int := ⟨fun x => if x > 0 then some (x + 1) else none⟩
   let positiveResult := star.run 5
   let negativeResult := star.run (-3)
   positiveResult ≡ some 6
   negativeResult ≡ (none : Option Int)
 
 test "Star Wandering: traverses with applicative effect" := do
-  let star : Star Option Int Int := Star.mk (fun x => if x >= 0 then some (x * 2) else none)
+  let star : Star Option Int Int := ⟨fun x => if x >= 0 then some (x * 2) else none⟩
 
   let walk : {F : Type → Type} → [Applicative F] → (Int → F Int) → List Int → F (List Int) :=
     fun {F} [Applicative F] f xs => List.mapA f xs

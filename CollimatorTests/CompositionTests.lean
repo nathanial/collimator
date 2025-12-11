@@ -187,19 +187,19 @@ test "Edge: Traverse empty list with failing effect succeeds" := do
 test "Edge: List index access at valid indices" := do
   let xs := [10, 20, 30, 40, 50]
 
-  let first := xs.get? 0
-  let middle := xs.get? 2
-  let last := xs.get? 4
+  let first := xs[0]?
+  let middle := xs[2]?
+  let last := xs[4]?
 
   first ≡? 10
   middle ≡? 30
   last ≡? 50
 
 test "Edge: List index access at invalid indices" := do
-  let xs := [10, 20, 30]
+  let xs : List Int := [10, 20, 30]
 
-  let tooLarge := xs.get? 10
-  let exactlyTooLarge := xs.get? 3
+  let tooLarge := xs[10]?
+  let exactlyTooLarge := xs[3]?
 
   tooLarge ≡ (none : Option Int)
   exactlyTooLarge ≡ (none : Option Int)

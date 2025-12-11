@@ -541,7 +541,7 @@ def traverse' {s t a b : Type}
     (tr : Collimator.Traversal s t a b)
     {F : Type → Type} [Applicative F]
     (f : a → F b) (s₀ : s) : F t :=
-  let star := Star.mk (F := F) (α := a) (β := b) f
+  let star : Star F a b := ⟨f⟩
   let transformed := tr (P := fun α β => Star F α β) star
   transformed s₀
 

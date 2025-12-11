@@ -250,14 +250,14 @@ namespace String
 
 private def setCharAt (s : _root_.String) (idx : Nat) (replacement : _root_.Option Char) : _root_.String :=
   let chars := s.toList
-  let newChars := match chars.get? idx, replacement with
+  let newChars := match chars[idx]?, replacement with
     | some _, some c => chars.set idx c
     | _, _ => chars  -- No change if index invalid or no replacement
   _root_.String.mk newChars
 
 /-- Lens exposing a possibly missing character at a given index. -/
 instance instHasAtString : HasAt Nat _root_.String Char where
-  focus i := lens' (fun s => s.toList.get? i) (fun s r? => setCharAt s i r?)
+  focus i := lens' (fun s => s.toList[i]?) (fun s r? => setCharAt s i r?)
 
 /-- Traversal focusing the character at a specific index when present. -/
 instance instHasIxString : HasIx Nat _root_.String Char where

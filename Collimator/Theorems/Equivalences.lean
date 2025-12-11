@@ -168,7 +168,7 @@ def lensToVL {s t a b : Type} (profLens : Lens s t a b) :
   fun {F} [_instF : Applicative F] (f : a → F b) (s : s) =>
     -- The Star profunctor bridges applicatives and profunctors
     -- Star has Strong instance when F is Applicative
-    let star : Star F a b := Star.mk f
+    let star : Star F a b := ⟨f⟩
     let result := profLens (P := Star F) star
     result.run s
 
@@ -192,7 +192,7 @@ exactly what we're comparing against. The definitions unfold to the same express
 theorem lens_prof_vl_prof {s t a b : Type} (profLens : Lens s t a b)
     (F : Type → Type) [Applicative F] (f : a → F b) (s₀ : s) :
       @lensToVL s t a b profLens F _ f s₀ =
-      (profLens (P := Star F) (Star.mk f)).run s₀ := by
+      (profLens (P := Star F) ⟨f⟩).run s₀ := by
   unfold lensToVL
   rfl
 
@@ -210,7 +210,7 @@ Convert a profunctor traversal to a van Laarhoven traversal.
 -/
 def traversalToVL {s t a b : Type} (profTrav : Traversal s t a b) : VLTraversal s t a b :=
   fun {F} [_instF : Applicative F] (f : a → F b) (s : s) =>
-    let star := Star.mk (F := F) f
+    let star : Star F a b := ⟨f⟩
     (profTrav (P := Star F) star).run s
 
 /--
@@ -238,7 +238,7 @@ exactly what we're comparing against. The definitions unfold to the same express
 theorem traversal_prof_vl_prof {s t a b : Type} (profTrav : Traversal s t a b)
     (F : Type → Type) [Applicative F] (f : a → F b) (s₀ : s) :
       @traversalToVL s t a b profTrav F _ f s₀ =
-      (profTrav (P := Star F) (Star.mk f)).run s₀ := by
+      (profTrav (P := Star F) ⟨f⟩).run s₀ := by
   unfold traversalToVL
   rfl
 
@@ -259,7 +259,7 @@ Convert a profunctor prism to a van Laarhoven prism.
 -/
 def prismToVL {s t a b : Type} (profPrism : Prism s t a b) : VLPrism s t a b :=
   fun {F} [_instF : Applicative F] (f : a → F b) (s : s) =>
-    let star := Star.mk (F := F) f
+    let star : Star F a b := ⟨f⟩
     (profPrism (P := Star F) star).run s
 
 /--
@@ -280,7 +280,7 @@ exactly what we're comparing against. The definitions unfold to the same express
 theorem prism_prof_vl_prof {s t a b : Type} (profPrism : Prism s t a b)
     (F : Type → Type) [Applicative F] (f : a → F b) (s₀ : s) :
       @prismToVL s t a b profPrism F _ f s₀ =
-      (profPrism (P := Star F) (Star.mk f)).run s₀ := by
+      (profPrism (P := Star F) ⟨f⟩).run s₀ := by
   unfold prismToVL
   rfl
 
