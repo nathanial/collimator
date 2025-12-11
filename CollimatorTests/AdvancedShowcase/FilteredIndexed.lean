@@ -22,6 +22,8 @@ open scoped Collimator.Operators
 
 namespace CollimatorTests.AdvancedShowcase.FilteredIndexed
 
+testSuite "Filtered & Indexed"
+
 -- Helper structures for lens composition tests
 private structure Product where
   name : String
@@ -37,10 +39,8 @@ private def quantityLens : Lens' Product Nat :=
 
 /-! ## Filtered Operations -/
 
-/-- Test: Basic predicate filtering -/
-private def case_filteredBasics : TestCase := {
-  name := "Filtered: basic predicate filtering",
-  run := do
+
+test "Filtered: basic predicate filtering" := do
     -- Filter evens, multiply by 10
     let input1 : List Nat := [1, 2, 3, 4, 5, 6]
     let result1 := input1 & filteredList (fun x => x % 2 == 0) %~ (· * 10)
@@ -56,12 +56,9 @@ private def case_filteredBasics : TestCase := {
     ensureEq "odd filter" [101, 2, 103, 4, 105, 6] result3
 
     IO.println "✓ Filtered basics tests passed"
-}
 
-/-- Test: Edge cases for filtered traversals -/
-private def case_filteredEdgeCases : TestCase := {
-  name := "Filtered: edge cases",
-  run := do
+
+test "Filtered: edge cases" := do
     let evenFilter : Traversal' (List Nat) Nat := filteredList (fun x => x % 2 == 0)
 
     -- Empty list
@@ -80,12 +77,9 @@ private def case_filteredEdgeCases : TestCase := {
     ensureEq "single no match" [43] ([43] & evenFilter %~ (· + 10))
 
     IO.println "✓ Filtered edge cases tests passed"
-}
 
-/-- Test: Effectful filtered traversals with Option -/
-private def case_filteredEffectful : TestCase := {
-  name := "Filtered: effectful traversals with Option",
-  run := do
+
+test "Filtered: effectful traversals with Option" := do
     let evenFilter : Traversal' (List Nat) Nat := filteredList (fun x => x % 2 == 0)
 
     -- Validation that fails
@@ -105,12 +99,9 @@ private def case_filteredEffectful : TestCase := {
     | some result => ensureEq "successful validation" [1, 4, 3, 8, 5] result
 
     IO.println "✓ Filtered effectful tests passed"
-}
 
-/-- Test: Filter + lens composition -/
-private def case_filteredWithLens : TestCase := {
-  name := "Filtered: composition with lenses",
-  run := do
+
+test "Filtered: composition with lenses" := do
     let inventory : List Product := [
       { name := "Widget", price := 50, quantity := 10 },
       { name := "Gadget", price := 150, quantity := 5 },
@@ -134,14 +125,11 @@ private def case_filteredWithLens : TestCase := {
     ensure (discounted[0]!.price == 50) "widget unchanged"
 
     IO.println "✓ Filtered with lens composition tests passed"
-}
 
 /-! ## Indexed Operations -/
 
-/-- Test: Access index and value with ifilteredList -/
-private def case_indexedBasics : TestCase := {
-  name := "Indexed: access index and value",
-  run := do
+
+test "Indexed: access index and value" := do
     -- Modify even indices only
     let result1 := [1, 2, 3, 4, 5, 6] & ifilteredList (fun i _ => i % 2 == 0) %~ (· * 10)
     ensureEq "even indices" [10, 2, 30, 4, 50, 6] result1
@@ -155,12 +143,9 @@ private def case_indexedBasics : TestCase := {
     ensureEq "first 3" [10, 20, 30, 4, 5, 6] result3
 
     IO.println "✓ Indexed basics tests passed"
-}
 
-/-- Test: Focus single element with ix -/
-private def case_indexedIx : TestCase := {
-  name := "Indexed: focus single element with ix",
-  run := do
+
+test "Indexed: focus single element with ix" := do
     let input : List Nat := [10, 20, 30, 40, 50]
 
     -- Modify element at index 3
@@ -183,12 +168,9 @@ private def case_indexedIx : TestCase := {
     ensureEq "multiple ix" [20, 20, 50, 40, 80] result4
 
     IO.println "✓ Indexed ix tests passed"
-}
 
-/-- Test: Optional element access with atLens -/
-private def case_indexedAtLens : TestCase := {
-  name := "Indexed: optional access with atLens",
-  run := do
+
+test "Indexed: optional access with atLens" := do
     let input : List Nat := [10, 20, 30, 40, 50]
     let at2 : Lens' (List Nat) (Option Nat) := atLens 2
     let at10 : Lens' (List Nat) (Option Nat) := atLens 10
@@ -211,14 +193,11 @@ private def case_indexedAtLens : TestCase := {
     ensureEq "over" [10, 200, 30, 40, 50] result
 
     IO.println "✓ Indexed atLens tests passed"
-}
 
 /-! ## Combined Filtered + Indexed -/
 
-/-- Test: Complex predicates using both index and value -/
-private def case_filteredIndexedComplex : TestCase := {
-  name := "Combined: complex index+value predicates",
-  run := do
+
+test "Combined: complex index+value predicates" := do
     let input : List Nat := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
     -- Even values at odd indices
@@ -236,14 +215,11 @@ private def case_filteredIndexedComplex : TestCase := {
     ensureEq "perfect squares" [1000, 1001, 1004, 1009, 1016, 1025, 1036] result3
 
     IO.println "✓ Filtered indexed complex tests passed"
-}
 
 /-! ## Stateful Operations -/
 
-/-- Test: Stateful traversals with counting and accumulation -/
-private def case_stateful : TestCase := {
-  name := "Stateful: counting and accumulation",
-  run := do
+
+test "Stateful: counting and accumulation" := do
     let input : List Nat := [1, 2, 3, 4, 5, 6]
     let evens : Traversal' (List Nat) Nat := filteredList (fun x => x % 2 == 0)
 
@@ -284,14 +260,11 @@ private def case_stateful : TestCase := {
     ensureEq "assign IDs" [1, 100, 3, 101, 5, 102, 7, 103] result3
 
     IO.println "✓ Stateful tests passed"
-}
 
 /-! ## Real-World Use Cases -/
 
-/-- Test: Selective array updates -/
-private def case_realworldArrayUpdates : TestCase := {
-  name := "Real-world: selective array updates",
-  run := do
+
+test "Real-world: selective array updates" := do
     -- Increment at even positions
     let result1 := [1, 2, 3, 4, 5, 6, 7, 8] & ifilteredList (fun i _ => i % 2 == 0) %~ (· + 10)
     ensureEq "even positions" [11, 2, 13, 4, 15, 6, 17, 8] result1
@@ -307,12 +280,9 @@ private def case_realworldArrayUpdates : TestCase := {
     ensureEq "clamp large" [10, 100, 30, 100, 50, 100] result3
 
     IO.println "✓ Real-world array updates tests passed"
-}
 
-/-- Test: Conditional batch operations -/
-private def case_realworldConditionalBatch : TestCase := {
-  name := "Real-world: conditional batch operations",
-  run := do
+
+test "Real-world: conditional batch operations" := do
     let inventory : List Product := [
       { name := "Widget", price := 50, quantity := 10 },
       { name := "Gadget", price := 150, quantity := 5 },
@@ -336,12 +306,9 @@ private def case_realworldConditionalBatch : TestCase := {
     ensure (taxed[2]!.price == 220) "tax premium"
 
     IO.println "✓ Real-world conditional batch tests passed"
-}
 
-/-- Test: Sparse array operations -/
-private def case_realworldSparseArrays : TestCase := {
-  name := "Real-world: sparse array operations",
-  run := do
+
+test "Real-world: sparse array operations" := do
     let input : List Nat := [0, 5, 0, 0, 3, 0, 7, 0]
     let nonZero : Traversal' (List Nat) Nat := filteredList (fun x => x != 0)
 
@@ -357,14 +324,10 @@ private def case_realworldSparseArrays : TestCase := {
     ensureEq "non-zero even idx" [0, 5, 1010, 0, 1020, 0, 1030, 0] result
 
     IO.println "✓ Real-world sparse arrays tests passed"
-}
 
 /-! ## Performance Patterns -/
 
-/-- Test: Short-circuiting with Option -/
-private def case_performance : TestCase := {
-  name := "Performance: short-circuiting with Option",
-  run := do
+test "Performance: short-circuiting with Option" := do
     let tr : Traversal' (List Nat) Nat := Instances.List.traversed
 
     -- Short-circuit on invalid
@@ -388,14 +351,10 @@ private def case_performance : TestCase := {
     ensureEq "fused filters" [1, 2, 3, 4, 5, 60, 7, 80, 9, 100] result
 
     IO.println "✓ Performance tests passed"
-}
 
 /-! ## Composition Patterns -/
 
-/-- Test: Reusable filters and higher-order combinators -/
-private def case_composition : TestCase := {
-  name := "Composition: reusable and higher-order filters",
-  run := do
+test "Composition: reusable and higher-order filters" := do
     let input : List Nat := [1, 2, 3, 4, 5, 6]
 
     -- Reusable evens filter with different transforms
@@ -416,36 +375,7 @@ private def case_composition : TestCase := {
     ensureEq "intersection" [1, 2, 3, 104, 5, 106] (input & intersection %~ (· + 100))
 
     IO.println "✓ Composition tests passed"
-}
 
-def cases : List TestCase := [
-  -- Filtered Operations
-  case_filteredBasics,
-  case_filteredEdgeCases,
-  case_filteredEffectful,
-  case_filteredWithLens,
-
-  -- Indexed Operations
-  case_indexedBasics,
-  case_indexedIx,
-  case_indexedAtLens,
-
-  -- Combined Filtered + Indexed
-  case_filteredIndexedComplex,
-
-  -- Stateful
-  case_stateful,
-
-  -- Real-World Use Cases
-  case_realworldArrayUpdates,
-  case_realworldConditionalBatch,
-  case_realworldSparseArrays,
-
-  -- Performance
-  case_performance,
-
-  -- Composition
-  case_composition
-]
+#generate_tests
 
 end CollimatorTests.AdvancedShowcase.FilteredIndexed

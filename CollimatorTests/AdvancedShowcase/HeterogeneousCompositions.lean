@@ -14,6 +14,8 @@ open CollimatorTests
 
 open scoped Collimator.Operators
 
+testSuite "Heterogeneous Compositions"
+
 /-!
 # Heterogeneous Compositions
 
@@ -107,15 +109,13 @@ private def internationalPrism : Prism' Address (String × String × String) := 
 
 /-! ## Test Cases -/
 
-/--
+/-
 **Lens ∘ Traversal**: Navigate to a field, then traverse its elements.
 
 This composition allows us to focus on a collection within a structure,
 then modify all elements of that collection.
 -/
-private def case_lensTraversal : TestCase := {
-  name := "Lens ∘ Traversal compositions",
-  run := do
+test "Lens ∘ Traversal compositions" := do
     let project := Project.mk "App Rewrite" 100000 [
       Employee.mk "Alice" 80000 (Contact.email "alice@example.com"),
       Employee.mk "Bob" 75000 (Contact.phone "555-1234"),
@@ -149,17 +149,14 @@ private def case_lensTraversal : TestCase := {
     shouldSatisfy (noContact.employees.all (fun e => e.contact == Contact.none))
       "all contacts to be none"
     IO.println "✓ Lens ∘ Traversal: cleared all contact information"
-}
 
-/--
+/-
 **Traversal ∘ Prism**: Traverse a collection, then focus on specific variants.
 
 This composition allows us to traverse a collection and only modify elements
 that match a specific pattern (via the prism).
 -/
-private def case_traversalPrism : TestCase := {
-  name := "Traversal ∘ Prism compositions",
-  run := do
+test "Traversal ∘ Prism compositions" := do
     let employees := [
       Employee.mk "Alice" 80000 (Contact.email "alice@example.com"),
       Employee.mk "Bob" 75000 (Contact.phone "555-1234"),
@@ -200,17 +197,14 @@ private def case_traversalPrism : TestCase := {
     | _ => throw (IO.userError "Expected phone contact")
 
     IO.println "✓ Traversal ∘ Prism: modified only phone contacts"
-}
 
-/--
+/-
 **Lens ∘ Prism ∘ Lens**: Navigate to a field, focus on a variant, then a subfield.
 
 This shows a three-way composition where we navigate through structure,
 optionally focus on a variant, then access a field within that variant.
 -/
-private def case_lensPrismLens : TestCase := {
-  name := "Lens ∘ Prism ∘ Lens chains",
-  run := do
+test "Lens ∘ Prism ∘ Lens chains" := do
     let team := Team.mk "Engineering" [
       Person.mk "Alice" 30 (some (Address.domestic "123 Main St" "Boston")),
       Person.mk "Bob" 35 (some (Address.international "456 High St" "London" "UK")),
@@ -270,17 +264,14 @@ private def case_lensPrismLens : TestCase := {
     --       })
     --     _ => newMembers.push(person)
     -- team.members = newMembers
-}
 
-/--
+/-
 **Deep Heterogeneous Chains**: Very deep compositions mixing all optic types.
 
 Demonstrates that complex real-world data structures can be navigated
 and updated through deeply composed optics without manual traversal code.
 -/
-private def case_deepChains : TestCase := {
-  name := "Deep heterogeneous chains",
-  run := do
+test "Deep heterogeneous chains" := do
     let company := Company.mk "TechCorp" [
       Department.mk "Engineering" [
         Project.mk "Backend" 500000 [
@@ -364,17 +355,14 @@ private def case_deepChains : TestCase := {
     --       match employee.contact:
     --         Contact.email(e) => employee.contact = Contact.email(e.replace(...))
     --         _ => ()
-}
 
-/--
+/-
 **Type Inference**: Verify that complex compositions work without manual annotations.
 
 Demonstrates that Lean's type inference correctly determines the optic type
 resulting from heterogeneous compositions.
 -/
-private def case_typeInference : TestCase := {
-  name := "Type inference across compositions",
-  run := do
+test "Type inference across compositions" := do
     let project := Project.mk "Test" 100000 [
       Employee.mk "Alice" 80000 (Contact.email "alice@test.com"),
       Employee.mk "Bob" 75000 (Contact.phone "555-1234")
@@ -403,17 +391,14 @@ private def case_typeInference : TestCase := {
     -- Lens ∘ Traversal = Traversal
     -- Traversal ∘ Prism = Traversal
     -- This follows the subtyping hierarchy: Iso > Lens > Prism > Traversal
-}
 
-/--
+/-
 **Real-World Scenario**: Complete example with multiple operations.
 
 Shows how heterogeneous compositions enable clean, declarative updates
 to complex nested data structures in a single pipeline.
 -/
-private def case_realWorldScenario : TestCase := {
-  name := "Real-world scenario: company reorganization",
-  run := do
+test "Real-world scenario: company reorganization" := do
     let company := Company.mk "StartupInc" [
       Department.mk "Product" [
         Project.mk "MVP" 200000 [
@@ -477,17 +462,9 @@ private def case_realWorldScenario : TestCase := {
     -- 1. Multiple nested loops for each operation
     -- 2. Careful bookkeeping to avoid mutating while iterating
     -- 3. Much more code and higher bug potential
-}
 
 /-! ## Test Registration -/
 
-def cases : List TestCase := [
-  case_lensTraversal,
-  case_traversalPrism,
-  case_lensPrismLens,
-  case_deepChains,
-  case_typeInference,
-  case_realWorldScenario
-]
+#generate_tests
 
 end CollimatorTests.AdvancedShowcase.HeterogeneousCompositions

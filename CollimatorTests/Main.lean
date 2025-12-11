@@ -51,7 +51,7 @@ def main : IO UInt32 := do
   exitCode := exitCode + (← runTests "Affine Laws" CollimatorTests.AffineLaws.cases)
   exitCode := exitCode + (← runTests "Combinators" CollimatorTests.Combinators.cases)
   exitCode := exitCode + (← runTests "Traversals" CollimatorTests.Traversals.cases)
-  exitCode := exitCode + (← runTests "Phase Five Normalization" CollimatorTests.PhaseFiveNormalization.allTests)
+  exitCode := exitCode + (← runTests "Phase Five Normalization" CollimatorTests.PhaseFiveNormalization.cases)
   exitCode := exitCode + (← runTests "Phase Five Subtyping" CollimatorTests.PhaseFiveSubtyping.cases)
   exitCode := exitCode + (← runTests "Getter and Review" CollimatorTests.GetterReview.cases)
 

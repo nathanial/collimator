@@ -12,6 +12,8 @@ open CollimatorTests
 
 open scoped Collimator.Operators
 
+testSuite "Affine Wizardry"
+
 /-!
 # Affine Traversal Wizardry
 
@@ -85,16 +87,14 @@ def boolConfigPrism : Prism' ConfigValue Bool := ctorPrism% ConfigValue.bool
 
 -- ## Test Cases
 
-/--
+/-
 **Safe Partial Access**: Demonstrates accessing optional values safely.
 
 AffineTraversals provide a middle ground between Lens (always present) and
 Traversal (zero or more). With AffineTraversal, we know there's at most
 one focus, which enables certain optimizations and clearer semantics.
 -/
-def case_safePartialAccess : TestCase := {
-  name := "Safe partial access with AffineTraversal",
-  run := do
+test "Safe partial access with AffineTraversal" := do
     -- Create users with varying levels of completeness
     let completeUser := UserRecord.mk 1 "alice"
       (some "alice@example.com")
@@ -128,18 +128,15 @@ def case_safePartialAccess : TestCase := {
     shouldBeNone updatedCarol.email
 
     IO.println "✓ Safe partial access: set only modifies when focus exists"
-}
 
-/--
+/-
 **Lens + Prism Composition**: Shows how composing Lens with Prism yields AffineTraversal.
 
 This is the canonical way to create AffineTraversals - the composition of a
 Lens (which always has a focus) with a Prism (which may or may not match)
 creates an optic that focuses on at most one value.
 -/
-def case_lensPrismComposition : TestCase := {
-  name := "Lens + Prism composition yields AffineTraversal",
-  run := do
+test "Lens + Prism composition yields AffineTraversal" := do
     let entries := [
       ConfigEntry.mk "host" (some (ConfigValue.str "localhost")),
       ConfigEntry.mk "port" (some (ConfigValue.int 8080)),
@@ -180,17 +177,14 @@ def case_lensPrismComposition : TestCase := {
     notUpdatedPort.value ≡ some (ConfigValue.int 8080)
 
     IO.println "✓ Lens + Prism: modifications only apply when prism matches"
-}
 
-/--
+/-
 **Short-Circuit Behavior**: Demonstrates that AffineTraversals stop early when focus is missing.
 
 Unlike Traversals that always visit all possible focuses, AffineTraversals
 know there's at most one focus, enabling efficient short-circuit evaluation.
 -/
-def case_shortCircuit : TestCase := {
-  name := "Short-circuiting behavior on missing focuses",
-  run := do
+test "Short-circuiting behavior on missing focuses" := do
     -- Deep nested optional structure
     let deepPresent : Container (Container (Container Nat)) :=
       ⟨some ⟨some ⟨some 42⟩⟩⟩
@@ -237,17 +231,14 @@ def case_shortCircuit : TestCase := {
     modifiedMissing.value ≡ some ⟨none⟩
 
     IO.println "✓ Short-circuit: over operation also short-circuits on missing focus"
-}
 
-/--
+/-
 **Database Lookup Patterns**: Real-world pattern of accessing optional nested fields.
 
 Shows how AffineTraversals elegantly handle the common database pattern of
 records with optional fields and nested optional relationships.
 -/
-def case_databaseLookup : TestCase := {
-  name := "Database lookup patterns with optional fields",
-  run := do
+test "Database lookup patterns with optional fields" := do
     -- Simulated database records
     let users := [
       UserRecord.mk 1 "alice"
@@ -297,17 +288,14 @@ def case_databaseLookup : TestCase := {
     shouldBeNone (updatedDave ^? ageAffine)
 
     IO.println "✓ Database lookup: safe updates only affect present fields"
-}
 
-/--
+/-
 **Optic Conversions**: Demonstrates that both Lens and Prism lift to AffineTraversal.
 
 This is the essence of AffineTraversal - it's the meet of Lens and Prism
 in the optic hierarchy.
 -/
-def case_opticConversions : TestCase := {
-  name := "Optic conversions: Lens and Prism to AffineTraversal",
-  run := do
+test "Optic conversions: Lens and Prism to AffineTraversal" := do
     let entry := ConfigEntry.mk "test" (some (ConfigValue.int 100))
 
     -- A Lens is an AffineTraversal that always succeeds
@@ -336,16 +324,9 @@ def case_opticConversions : TestCase := {
     shouldBeNone (entryWithString ^? composed)
 
     IO.println "✓ Conversion: composed AffineTraversals combine optionality correctly"
-}
 
 -- ## Test Registration
 
-def cases : List TestCase := [
-  case_safePartialAccess,
-  case_lensPrismComposition,
-  case_shortCircuit,
-  case_databaseLookup,
-  case_opticConversions
-]
+#generate_tests
 
 end CollimatorTests.AdvancedShowcase.AffineWizardry

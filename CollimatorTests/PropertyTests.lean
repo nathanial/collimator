@@ -20,6 +20,8 @@ open Collimator.Combinators
 open CollimatorTests
 open scoped Collimator.Operators
 
+testSuite "Property Tests"
+
 /-! ## Test Structures -/
 
 structure Point where
@@ -178,136 +180,76 @@ private def composed_putPut_prop (seed : Nat) : Bool :=
 
 /-! ## Test Cases -/
 
-private def case_lens_getPut : TestCase := {
-  name := "Property: Lens GetPut law (100 samples)",
-  run := do
-    for i in [:100] do
-      ensure (lens_getPut_prop i) s!"GetPut failed for seed {i}"
-}
+test "Property: Lens GetPut law (100 samples)" := do
+  for i in [:100] do
+    ensure (lens_getPut_prop i) s!"GetPut failed for seed {i}"
 
-private def case_lens_putGet : TestCase := {
-  name := "Property: Lens PutGet law (100 samples)",
-  run := do
-    for i in [:100] do
-      ensure (lens_putGet_prop i) s!"PutGet failed for seed {i}"
-}
+test "Property: Lens PutGet law (100 samples)" := do
+  for i in [:100] do
+    ensure (lens_putGet_prop i) s!"PutGet failed for seed {i}"
 
-private def case_lens_putPut : TestCase := {
-  name := "Property: Lens PutPut law (100 samples)",
-  run := do
-    for i in [:100] do
-      ensure (lens_putPut_prop i) s!"PutPut failed for seed {i}"
-}
+test "Property: Lens PutPut law (100 samples)" := do
+  for i in [:100] do
+    ensure (lens_putPut_prop i) s!"PutPut failed for seed {i}"
 
-private def case_iso_backForward : TestCase := {
-  name := "Property: Iso Back-Forward law (100 samples)",
-  run := do
-    for i in [:100] do
-      ensure (iso_backForward_prop i) s!"Back-Forward failed for seed {i}"
-}
+test "Property: Iso Back-Forward law (100 samples)" := do
+  for i in [:100] do
+    ensure (iso_backForward_prop i) s!"Back-Forward failed for seed {i}"
 
-private def case_iso_forwardBack : TestCase := {
-  name := "Property: Iso Forward-Back law (100 samples)",
-  run := do
-    for i in [:100] do
-      ensure (iso_forwardBack_prop i) s!"Forward-Back failed for seed {i}"
-}
+test "Property: Iso Forward-Back law (100 samples)" := do
+  for i in [:100] do
+    ensure (iso_forwardBack_prop i) s!"Forward-Back failed for seed {i}"
 
-private def case_iso_boolNeg : TestCase := {
-  name := "Property: Bool negation self-inverse (100 samples)",
-  run := do
-    for i in [:100] do
-      ensure (iso_boolNeg_prop i) s!"Bool neg failed for seed {i}"
-}
+test "Property: Bool negation self-inverse (100 samples)" := do
+  for i in [:100] do
+    ensure (iso_boolNeg_prop i) s!"Bool neg failed for seed {i}"
 
-private def case_iso_tupleSwap : TestCase := {
-  name := "Property: Tuple swap twice is identity (100 samples)",
-  run := do
-    for i in [:100] do
-      ensure (iso_tupleSwap_prop i) s!"Tuple swap failed for seed {i}"
-}
+test "Property: Tuple swap twice is identity (100 samples)" := do
+  for i in [:100] do
+    ensure (iso_tupleSwap_prop i) s!"Tuple swap failed for seed {i}"
 
-private def case_traversal_identity : TestCase := {
-  name := "Property: Traversal identity law (100 samples)",
-  run := do
-    for i in [:100] do
-      ensure (traversal_identity_prop i) s!"Identity failed for seed {i}"
-}
+test "Property: Traversal identity law (100 samples)" := do
+  for i in [:100] do
+    ensure (traversal_identity_prop i) s!"Identity failed for seed {i}"
 
-private def case_traversal_length : TestCase := {
-  name := "Property: Traversal preserves length (100 samples)",
-  run := do
-    for i in [:100] do
-      ensure (traversal_length_prop i) s!"Length failed for seed {i}"
-}
+test "Property: Traversal preserves length (100 samples)" := do
+  for i in [:100] do
+    ensure (traversal_length_prop i) s!"Length failed for seed {i}"
 
-private def case_composed_getPut : TestCase := {
-  name := "Property: Composed lens GetPut (100 samples)",
-  run := do
-    for i in [:100] do
-      ensure (composed_getPut_prop i) s!"Composed GetPut failed for seed {i}"
-}
+test "Property: Composed lens GetPut (100 samples)" := do
+  for i in [:100] do
+    ensure (composed_getPut_prop i) s!"Composed GetPut failed for seed {i}"
 
-private def case_composed_putGet : TestCase := {
-  name := "Property: Composed lens PutGet (100 samples)",
-  run := do
-    for i in [:100] do
-      ensure (composed_putGet_prop i) s!"Composed PutGet failed for seed {i}"
-}
+test "Property: Composed lens PutGet (100 samples)" := do
+  for i in [:100] do
+    ensure (composed_putGet_prop i) s!"Composed PutGet failed for seed {i}"
 
-private def case_composed_putPut : TestCase := {
-  name := "Property: Composed lens PutPut (100 samples)",
-  run := do
-    for i in [:100] do
-      ensure (composed_putPut_prop i) s!"Composed PutPut failed for seed {i}"
-}
+test "Property: Composed lens PutPut (100 samples)" := do
+  for i in [:100] do
+    ensure (composed_putPut_prop i) s!"Composed PutPut failed for seed {i}"
 
 /-! ## Stress Tests -/
 
-private def case_stress_large_list : TestCase := {
-  name := "Stress: Large list (1000 elements) traversal",
-  run := do
-    let largeList : List Int := (List.range 1000).map (Int.ofNat ·)
-    let tr : Traversal' (List Int) Int := Traversal.eachList
-    let result := largeList & tr %~ (· + 1)
-    result.length ≡ 1000
-    result.head? ≡? 1
-}
+test "Stress: Large list (1000 elements) traversal" := do
+  let largeList : List Int := (List.range 1000).map (Int.ofNat ·)
+  let tr : Traversal' (List Int) Int := Traversal.eachList
+  let result := largeList & tr %~ (· + 1)
+  result.length ≡ 1000
+  result.head? ≡? 1
 
-private def case_stress_deep_composition : TestCase := {
-  name := "Stress: Deep lens composition (5 levels)",
-  run := do
-    let nested : ((((Int × Int) × Int) × Int) × Int) := ((((1, 2), 3), 4), 5)
+test "Stress: Deep lens composition (5 levels)" := do
+  let nested : ((((Int × Int) × Int) × Int) × Int) := ((((1, 2), 3), 4), 5)
 
-    let l1 : Lens' ((((Int × Int) × Int) × Int) × Int) (((Int × Int) × Int) × Int) := _1
-    let l2 : Lens' (((Int × Int) × Int) × Int) ((Int × Int) × Int) := _1
-    let l3 : Lens' ((Int × Int) × Int) (Int × Int) := _1
-    let l4 : Lens' (Int × Int) Int := _1
+  let l1 : Lens' ((((Int × Int) × Int) × Int) × Int) (((Int × Int) × Int) × Int) := _1
+  let l2 : Lens' (((Int × Int) × Int) × Int) ((Int × Int) × Int) := _1
+  let l3 : Lens' ((Int × Int) × Int) (Int × Int) := _1
+  let l4 : Lens' (Int × Int) Int := _1
 
-    let composed : Lens' (((((Int × Int) × Int) × Int) × Int)) Int := l1 ∘ l2 ∘ l3 ∘ l4
+  let composed : Lens' (((((Int × Int) × Int) × Int) × Int)) Int := l1 ∘ l2 ∘ l3 ∘ l4
 
-    nested ^. composed ≡ 1
-    (nested & composed .~ 99) ^. composed ≡ 99
-}
+  nested ^. composed ≡ 1
+  (nested & composed .~ 99) ^. composed ≡ 99
 
-/--
-All property-based test cases.
--/
-def cases : List TestCase :=
-  [ case_lens_getPut
-  , case_lens_putGet
-  , case_lens_putPut
-  , case_iso_backForward
-  , case_iso_forwardBack
-  , case_iso_boolNeg
-  , case_iso_tupleSwap
-  , case_traversal_identity
-  , case_traversal_length
-  , case_composed_getPut
-  , case_composed_putGet
-  , case_composed_putPut
-  , case_stress_large_list
-  , case_stress_deep_composition
-  ]
+#generate_tests
 
 end CollimatorTests.PropertyTests

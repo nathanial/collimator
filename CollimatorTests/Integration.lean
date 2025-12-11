@@ -16,6 +16,8 @@ open CollimatorTests
 
 namespace CollimatorTests.Integration
 
+testSuite "Integration Patterns"
+
 /-! ## Test Data -/
 
 private structure Person where
@@ -31,227 +33,167 @@ private def ageLens : Lens' Person Int :=
 
 /-! ## Except Integration Tests -/
 
-def exceptTests : List TestCase := [
-  {
-    name := "validateThrough: valid input passes"
-    run := do
-      let person := Person.mk "Alice" 25
-      let validateName : String → Except String String
-        | s => if s.length > 0 then .ok s else .error "empty name"
-      let result := validateThrough nameLens validateName person
-      match result with
-      | .ok _ => pure ()
-      | .error e => throw <| IO.userError s!"Unexpected error: {e}"
-  },
-  {
-    name := "validateThrough: invalid input fails"
-    run := do
-      let person := Person.mk "" 25
-      let validateName : String → Except String String
-        | s => if s.length > 0 then .ok s else .error "empty name"
-      let result := validateThrough nameLens validateName person
-      match result with
-      | .ok _ => throw <| IO.userError "Expected error but got success"
-      | .error _ => pure ()
-  },
-  {
-    name := "validateThrough: updates on success"
-    run := do
-      let person := Person.mk "alice" 25
-      let capitalize : String → Except String String
-        | s => .ok s.capitalize
-      let result := validateThrough nameLens capitalize person
-      match result with
-      | .ok p => ensureEq "capitalized" "Alice" p.name
-      | .error e => throw <| IO.userError s!"Unexpected error: {e}"
-  },
-  {
-    name := "previewOrError: returns value when present"
-    run := do
-      let opt : Option Int := some 42
-      let result := previewOrError (somePrism' Int) "missing" opt
-      match result with
-      | .ok n => ensureEq "extracted" 42 n
-      | .error _ => throw <| IO.userError "Expected success"
-  },
-  {
-    name := "previewOrError: returns error when absent"
-    run := do
-      let opt : Option Int := none
-      let result := previewOrError (somePrism' Int) "missing" opt
-      match result with
-      | .ok _ => throw <| IO.userError "Expected error"
-      | .error e => ensureEq "error message" "missing" e
-  },
-  {
-    name := "validateAll: succeeds when all valid"
-    run := do
-      let nums := [1, 2, 3, 4, 5]
-      let validatePositive : Int → Except String Int
-        | n => if n > 0 then .ok n else .error "non-positive"
-      let result := validateAll traversed validatePositive nums
-      match result with
-      | .ok ns => ensureEq "unchanged" [1, 2, 3, 4, 5] ns
-      | .error _ => throw <| IO.userError "Expected success"
-  },
-  {
-    name := "validateAll: fails on first invalid"
-    run := do
-      let nums := [1, -2, 3, -4, 5]
-      let validatePositive : Int → Except String Int
-        | n => if n > 0 then .ok n else .error "non-positive"
-      let result := validateAll traversed validatePositive nums
-      match result with
-      | .ok _ => throw <| IO.userError "Expected error"
-      | .error e => ensureEq "error message" "non-positive" e
-  }
-]
+test "validateThrough: valid input passes" := do
+  let person := Person.mk "Alice" 25
+  let validateName : String → Except String String
+    | s => if s.length > 0 then .ok s else .error "empty name"
+  let result := validateThrough nameLens validateName person
+  match result with
+  | .ok _ => pure ()
+  | .error e => throw <| IO.userError s!"Unexpected error: {e}"
+
+test "validateThrough: invalid input fails" := do
+  let person := Person.mk "" 25
+  let validateName : String → Except String String
+    | s => if s.length > 0 then .ok s else .error "empty name"
+  let result := validateThrough nameLens validateName person
+  match result with
+  | .ok _ => throw <| IO.userError "Expected error but got success"
+  | .error _ => pure ()
+
+test "validateThrough: updates on success" := do
+  let person := Person.mk "alice" 25
+  let capitalize : String → Except String String
+    | s => .ok s.capitalize
+  let result := validateThrough nameLens capitalize person
+  match result with
+  | .ok p => ensureEq "capitalized" "Alice" p.name
+  | .error e => throw <| IO.userError s!"Unexpected error: {e}"
+
+test "previewOrError: returns value when present" := do
+  let opt : Option Int := some 42
+  let result := previewOrError (somePrism' Int) "missing" opt
+  match result with
+  | .ok n => ensureEq "extracted" 42 n
+  | .error _ => throw <| IO.userError "Expected success"
+
+test "previewOrError: returns error when absent" := do
+  let opt : Option Int := none
+  let result := previewOrError (somePrism' Int) "missing" opt
+  match result with
+  | .ok _ => throw <| IO.userError "Expected error"
+  | .error e => ensureEq "error message" "missing" e
+
+test "validateAll: succeeds when all valid" := do
+  let nums := [1, 2, 3, 4, 5]
+  let validatePositive : Int → Except String Int
+    | n => if n > 0 then .ok n else .error "non-positive"
+  let result := validateAll traversed validatePositive nums
+  match result with
+  | .ok ns => ensureEq "unchanged" [1, 2, 3, 4, 5] ns
+  | .error _ => throw <| IO.userError "Expected success"
+
+test "validateAll: fails on first invalid" := do
+  let nums := [1, -2, 3, -4, 5]
+  let validatePositive : Int → Except String Int
+    | n => if n > 0 then .ok n else .error "non-positive"
+  let result := validateAll traversed validatePositive nums
+  match result with
+  | .ok _ => throw <| IO.userError "Expected error"
+  | .error e => ensureEq "error message" "non-positive" e
 
 /-! ## StateM Integration Tests -/
 
-def stateTests : List TestCase := [
-  {
-    name := "getThrough: reads focused value"
-    run := do
-      let person := Person.mk "Bob" 30
-      let (age, _) := (getThrough ageLens).run person
-      ensureEq "age" 30 age
-  },
-  {
-    name := "setThrough: writes focused value"
-    run := do
-      let person := Person.mk "Bob" 30
-      let ((), person') := (setThrough ageLens 35).run person
-      ensureEq "new age" 35 person'.age
-  },
-  {
-    name := "overThrough: modifies focused value"
-    run := do
-      let person := Person.mk "Bob" 30
-      let ((), person') := (overThrough ageLens (· + 1)).run person
-      ensureEq "incremented age" 31 person'.age
-  },
-  {
-    name := "zoom: runs action on focused state"
-    run := do
-      let person := Person.mk "Bob" 30
-      let action : StateM Int Int := do
-        let n ← get
-        set (n * 2)
-        pure n
-      let (oldAge, person') := (zoom ageLens action).run person
-      ensureEq "old age returned" 30 oldAge
-      ensureEq "age doubled" 60 person'.age
-  },
-  {
-    name := "modifyThrough: stateful operation on focus"
-    run := do
-      let person := Person.mk "Bob" 30
-      let bumpAndReturn : StateM Int Int := do
-        let n ← get
-        set (n + 5)
-        pure n
-      let (old, person') := (modifyThrough ageLens bumpAndReturn).run person
-      ensureEq "returned old value" 30 old
-      ensureEq "bumped by 5" 35 person'.age
-  }
-]
+test "getThrough: reads focused value" := do
+  let person := Person.mk "Bob" 30
+  let (age, _) := (getThrough ageLens).run person
+  ensureEq "age" 30 age
+
+test "setThrough: writes focused value" := do
+  let person := Person.mk "Bob" 30
+  let ((), person') := (setThrough ageLens 35).run person
+  ensureEq "new age" 35 person'.age
+
+test "overThrough: modifies focused value" := do
+  let person := Person.mk "Bob" 30
+  let ((), person') := (overThrough ageLens (· + 1)).run person
+  ensureEq "incremented age" 31 person'.age
+
+test "zoom: runs action on focused state" := do
+  let person := Person.mk "Bob" 30
+  let action : StateM Int Int := do
+    let n ← get
+    set (n * 2)
+    pure n
+  let (oldAge, person') := (zoom ageLens action).run person
+  ensureEq "old age returned" 30 oldAge
+  ensureEq "age doubled" 60 person'.age
+
+test "modifyThrough: stateful operation on focus" := do
+  let person := Person.mk "Bob" 30
+  let bumpAndReturn : StateM Int Int := do
+    let n ← get
+    set (n + 5)
+    pure n
+  let (old, person') := (modifyThrough ageLens bumpAndReturn).run person
+  ensureEq "returned old value" 30 old
+  ensureEq "bumped by 5" 35 person'.age
 
 /-! ## ReaderM Integration Tests -/
 
-def readerTests : List TestCase := [
-  {
-    name := "askThrough: reads focused value from environment"
-    run := do
-      let person := Person.mk "Carol" 28
-      let name := (askThrough nameLens).run person
-      ensureEq "name" "Carol" name
-  },
-  {
-    name := "localThrough: modifies environment for block"
-    run := do
-      let person := Person.mk "carol" 28
-      let action : ReaderM Person String := askThrough nameLens
-      let capitalizedAction := localThrough nameLens String.capitalize action
-      let result := capitalizedAction.run person
-      ensureEq "capitalized in block" "Carol" result
-  }
-]
+test "askThrough: reads focused value from environment" := do
+  let person := Person.mk "Carol" 28
+  let name := (askThrough nameLens).run person
+  ensureEq "name" "Carol" name
+
+test "localThrough: modifies environment for block" := do
+  let person := Person.mk "carol" 28
+  let action : ReaderM Person String := askThrough nameLens
+  let capitalizedAction := localThrough nameLens String.capitalize action
+  let result := capitalizedAction.run person
+  ensureEq "capitalized in block" "Carol" result
 
 /-! ## Option/Prism Integration Tests -/
 
-def optionTests : List TestCase := [
-  {
-    name := "updateWhenMatches: updates when pattern matches"
-    run := do
-      let opt : Option Int := some 10
-      let result := updateWhenMatches (somePrism' Int) (· * 2) opt
-      ensureEq "doubled" (some 20) result
-  },
-  {
-    name := "updateWhenMatches: no-op when pattern doesn't match"
-    run := do
-      let opt : Option Int := none
-      let result := updateWhenMatches (somePrism' Int) (· * 2) opt
-      ensureEq "unchanged" none result
-  },
-  {
-    name := "prismToSum: converts Some to inr"
-    run := do
-      let opt : Option Int := some 42
-      let result := prismToSum (somePrism' Int) opt
-      match result with
-      | .inr n => ensureEq "right value" 42 n
-      | .inl _ => throw <| IO.userError "Expected inr"
-  },
-  {
-    name := "prismToSum: converts None to inl"
-    run := do
-      let opt : Option Int := none
-      let result := prismToSum (somePrism' Int) opt
-      match result with
-      | .inl orig => ensureEq "left is original" none orig
-      | .inr _ => throw <| IO.userError "Expected inl"
-  }
-]
+test "updateWhenMatches: updates when pattern matches" := do
+  let opt : Option Int := some 10
+  let result := updateWhenMatches (somePrism' Int) (· * 2) opt
+  ensureEq "doubled" (some 20) result
+
+test "updateWhenMatches: no-op when pattern doesn't match" := do
+  let opt : Option Int := none
+  let result := updateWhenMatches (somePrism' Int) (· * 2) opt
+  ensureEq "unchanged" none result
+
+test "prismToSum: converts Some to inr" := do
+  let opt : Option Int := some 42
+  let result := prismToSum (somePrism' Int) opt
+  match result with
+  | .inr n => ensureEq "right value" 42 n
+  | .inl _ => throw <| IO.userError "Expected inr"
+
+test "prismToSum: converts None to inl" := do
+  let opt : Option Int := none
+  let result := prismToSum (somePrism' Int) opt
+  match result with
+  | .inl orig => ensureEq "left is original" none orig
+  | .inr _ => throw <| IO.userError "Expected inl"
 
 /-! ## Traversal Integration Tests -/
 
-def traversalTests : List TestCase := [
-  {
-    name := "mapMaybe: transforms elements selectively"
-    run := do
-      let nums := [1, 2, 3, 4, 5]
-      -- Double only even numbers
-      let result := mapMaybe traversed
-        (fun n => if n % 2 == 0 then some (n * 2) else none)
-        nums
-      -- Odd numbers unchanged, even numbers doubled
-      ensureEq "selective transform" [1, 4, 3, 8, 5] result
-  },
-  {
-    name := "traverseOption: effectful traversal with Option"
-    run := do
-      let nums := [2, 4, 6]
-      let result := traverseOption traversed
-        (fun n => if n % 2 == 0 then some (n / 2) else none)
-        nums
-      ensureEq "halved evens" (some [1, 2, 3]) result
-  },
-  {
-    name := "traverseOption: short-circuits on failure"
-    run := do
-      let nums := [2, 3, 6]  -- 3 is odd
-      let result := traverseOption traversed
-        (fun n => if n % 2 == 0 then some (n / 2) else none)
-        nums
-      ensureEq "failed on odd" (none : Option (List Int)) result
-  }
-]
+test "mapMaybe: transforms elements selectively" := do
+  let nums := [1, 2, 3, 4, 5]
+  -- Double only even numbers
+  let result := mapMaybe traversed
+    (fun n => if n % 2 == 0 then some (n * 2) else none)
+    nums
+  -- Odd numbers unchanged, even numbers doubled
+  ensureEq "selective transform" [1, 4, 3, 8, 5] result
 
-/-! ## All Tests -/
+test "traverseOption: effectful traversal with Option" := do
+  let nums := [2, 4, 6]
+  let result := traverseOption traversed
+    (fun n => if n % 2 == 0 then some (n / 2) else none)
+    nums
+  ensureEq "halved evens" (some [1, 2, 3]) result
 
-def cases : List TestCase :=
-  exceptTests ++ stateTests ++ readerTests ++ optionTests ++ traversalTests
+test "traverseOption: short-circuits on failure" := do
+  let nums := [2, 3, 6]  -- 3 is odd
+  let result := traverseOption traversed
+    (fun n => if n % 2 == 0 then some (n / 2) else none)
+    nums
+  ensureEq "failed on odd" (none : Option (List Int)) result
+
+#generate_tests
 
 end CollimatorTests.Integration

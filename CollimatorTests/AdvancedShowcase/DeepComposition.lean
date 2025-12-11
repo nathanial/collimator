@@ -24,6 +24,8 @@ open scoped Collimator.Operators  -- For optic operators
 open scoped Collimator.Fold  -- For ∘f, ∘ₗf
 open CollimatorTests
 
+testSuite "Deep Composition"
+
 /-!
 Showcase composition as the killer feature of profunctor optics.
 All optics compose via standard function composition (`∘`).
@@ -101,10 +103,8 @@ private def stringToListIso : Iso String String (List Char) (List Char) :=
     (forward := String.toList)
     (back := List.asString)
 
-/-- Test: Composing lenses through tuple fields. -/
-private def case_nestedTuples : TestCase := {
-  name := "Nested tuples: _1 . _2 composition",
-  run := do
+
+test "Nested tuples: _1 . _2 composition" := do
     -- Build nested tuple structure
     let data : ((Int × String) × Float) := ((42, "hello"), 3.14)
 
@@ -127,7 +127,6 @@ private def case_nestedTuples : TestCase := {
     let updated := data & composed .~ "world"
     let expected2 := ((42, "world"), 3.14)
     ensureEq "Set through composition" expected2 updated
-}
 
 /-- Inhabited instance for Department (for headLens) -/
 private instance : Inhabited Department where
@@ -145,10 +144,8 @@ private def headLens {α : Type} [Inhabited α] : Lens' (List α) α :=
       | [] => [new]
       | _ :: tail => new :: tail)
 
-/-- Test: Deep composition through Company → Department → Employee → Address → zipCode -/
-private def case_companyZipCode : TestCase := {
-  name := "Company → Dept → Employee → Address → Zip: 5-level deep lens chain",
-  run := do
+
+test "Company → Dept → Employee → Address → Zip: 5-level deep lens chain" := do
     -- Build sample data
     let address : Address := {
       street := "123 Main St",
@@ -197,12 +194,9 @@ private def case_companyZipCode : TestCase := {
     let updated := company & companyToZip .~ "54321"
     let finalZip := updated ^. companyToZip
     ensureEq "Set new zip code" "54321" finalZip
-}
 
-/-- Test: Iso ∘ Traversal composition using String → List Char transformation -/
-private def case_isoTraversalComposition : TestCase := {
-  name := "Iso ∘ Traversal: String → List Char with char-level modifications",
-  run := do
+
+test "Iso ∘ Traversal: String → List Char with char-level modifications" := do
     -- Starting string
     let s : String := "hello"
 
@@ -231,12 +225,9 @@ private def case_isoTraversalComposition : TestCase := {
     -- Key insight: Iso enables type transformation (String ↔ List Char)
     --              Traversal enables multi-focus (each Char)
     --              Together: work on String as if it were List Char!
-}
 
-/-- Test: Traversal ∘ Prism composition with Option to skip None values -/
-private def case_traversalPrismComposition : TestCase := {
-  name := "Traversal ∘ Prism ∘ Lens: Skip None employees, modify only Some",
-  run := do
+
+test "Traversal ∘ Prism ∘ Lens: Skip None employees, modify only Some" := do
     -- Create employees
     let emp1 : Employee := {
       name := "Alice",
@@ -301,12 +292,9 @@ private def case_traversalPrismComposition : TestCase := {
     -- Key insight: Prisms provide "optional focus" via pattern matching
     --              When composed with Traversal, only matching elements are modified
     --              None values are completely skipped (not even seen by the lens!)
-}
 
-/-- Test: Traversal ∘ Prism with Sum type to handle errors -/
-private def case_traversalPrismSum : TestCase := {
-  name := "Traversal ∘ Prism with Sum: Skip Left (errors), process Right (values)",
-  run := do
+
+test "Traversal ∘ Prism with Sum: Skip Left (errors), process Right (values)" := do
     -- Create mix of errors and valid employees
     let emp1 : Employee := {
       name := "Alice",
@@ -350,12 +338,9 @@ private def case_traversalPrismSum : TestCase := {
     -- Key insight: Prisms work with any sum type (Option, Sum, custom enums)
     --              Left values are invisible to the composed traversal
     --              This is perfect for error handling pipelines!
-}
 
-/-- Test: AffineTraversal for "at most one" focus semantics -/
-private def case_affineTraversal : TestCase := {
-  name := "AffineTraversal: Safe head access with 'at most one' focus",
-  run := do
+
+test "AffineTraversal: Safe head access with 'at most one' focus" := do
     -- Create employees
     let emp1 : Employee := {
       name := "Alice",
@@ -412,12 +397,8 @@ private def case_affineTraversal : TestCase := {
     --   - Prism = "at most one focus" (pattern match)
     --   - Traversal = "zero or more focuses"
     --   - Affine = "zero or one focus" (safe partial access)
-}
 
-/-- Test: AffineTraversal via List.at for index-based access -/
-private def case_affineViaAt : TestCase := {
-  name := "AffineTraversal: List.at composition for safe indexed access",
-  run := do
+test "AffineTraversal: List.at composition for safe indexed access" := do
     -- Use the HasAt instance from List to create AffineTraversal
     let emp1 : Employee := {
       name := "Alice",
@@ -474,12 +455,8 @@ private def case_affineViaAt : TestCase := {
 
     -- Key insight: Lens to Option + somePrism = AffineTraversal
     --   Perfect for safe array/list access, map lookup, etc.
-}
 
-/-- Test: Fold for read-only operations - demonstrates Fold type and read-only Traversals -/
-private def case_foldAggregations : TestCase := {
-  name := "Fold: Read-only optics for single values and multi-element aggregation",
-  run := do
+test "Fold: Read-only optics for single values and multi-element aggregation" := do
     -- Build sample company with multiple departments
     let eng1 : Employee := {
       name := "Alice",
@@ -617,12 +594,9 @@ private def case_foldAggregations : TestCase := {
     --    - Use toListTraversal to collect all focused elements
     --    - Perfect for analytics: sums, counts, averages, filters
     --    - Can post-process with standard List operations (foldl, filter, map)
-}
 
-/-- Test: Ultimate composition mixing all optic types together -/
-private def case_ultimateComposition : TestCase := {
-  name := "Ultimate: Lens ∘ Traversal ∘ Lens ∘ Iso ∘ Traversal ∘ Prism (6 optic types!)",
-  run := do
+
+test "Ultimate: Lens ∘ Traversal ∘ Lens ∘ Iso ∘ Traversal ∘ Prism (6 optic types!)" := do
     -- Create employees with names that we'll manipulate at character level
     let emp1 : Employee := {
       name := "alice",
@@ -700,12 +674,8 @@ private def case_ultimateComposition : TestCase := {
     --   6. Iso (String ↔ List Char)
     --   7. Traversal (List Char → each Char)
     -- All in a type-safe, composable way!
-}
 
-/-- Test: Nested Options with short-circuiting via Prism composition -/
-private def case_nestedOptions : TestCase := {
-  name := "Nested Options: Lens ∘ Prism ∘ Lens showing short-circuit on None",
-  run := do
+test "Nested Options: Lens ∘ Prism ∘ Lens showing short-circuit on None" := do
     -- Create test data with and without CEO
     let ceoEmployee : Employee := {
       name := "Alice",
@@ -785,12 +755,9 @@ private def case_nestedOptions : TestCase := {
     -- 3. Set and over' are no-ops when encountering None
     -- 4. Multiple Prisms can be chained for deep optional navigation
     -- 5. AffineTraversal combines "exactly one" (Lens) + "at most one" (Prism)
-}
 
-/-- Test: Mix lenses and traversals to modify all employee salaries -/
-private def case_allSalaries : TestCase := {
-  name := "Company → all Depts → all Employees → salary: Lens + Traversal mix",
-  run := do
+
+test "Company → all Depts → all Employees → salary: Lens + Traversal mix" := do
     -- Build sample data with multiple departments and employees
     let eng1 : Employee := { name := "Alice", address := { street := "1 Main", city := "NYC", zipCode := "10001" }, salary := 100000 }
     let eng2 : Employee := { name := "Bob", address := { street := "2 Main", city := "NYC", zipCode := "10002" }, salary := 110000 }
@@ -834,7 +801,6 @@ private def case_allSalaries : TestCase := {
     let normalized : Company := company & companyToAllSalaries .~ 100000
     let finalSalaries : List Int := normalized ^.. companyToAllSalaries
     ensureEq "All salaries normalized" [100000, 100000, 100000, 100000] finalSalaries
-}
 
 /-
 Coverage Summary for DeepComposition:
@@ -852,18 +818,6 @@ Ultimate composition (ultimateComposition) demonstrates:
 - Character-level string manipulation across deeply nested structures
 -/
 
-def cases : List TestCase := [
-  case_nestedTuples,
-  case_companyZipCode,
-  case_isoTraversalComposition,
-  case_traversalPrismComposition,
-  case_traversalPrismSum,
-  case_affineTraversal,
-  case_affineViaAt,
-  case_foldAggregations,
-  case_ultimateComposition,
-  case_nestedOptions,
-  case_allSalaries
-]
+#generate_tests
 
 end CollimatorTests.AdvancedShowcase.DeepComposition

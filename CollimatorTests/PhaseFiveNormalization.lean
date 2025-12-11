@@ -28,6 +28,8 @@ open Collimator.Combinators
 open Collimator.Theorems
 open CollimatorTests
 
+testSuite "Phase Five Normalization"
+
 /-! ## Test Isomorphisms -/
 
 def negateIso : Iso' Int Int :=
@@ -41,77 +43,39 @@ def scale2Iso : Iso' Int Int :=
 
 /-! ## Normalization Tests -/
 
-/--
-Test that the iso_comp_assoc axiom is well-typed and can be instantiated.
--/
-def testIsoAssocAxiom : TestCase := {
-  name := "Iso composition associativity axiom"
-  run := IO.println "✓ iso_comp_assoc axiom exists"
-}
+-- Test that the iso_comp_assoc axiom is well-typed and can be instantiated.
+test "Iso composition associativity axiom" := do
+  IO.println "✓ iso_comp_assoc axiom exists"
 
-/--
-Test that the lens_comp_assoc axiom is well-typed and can be instantiated.
--/
-def testLensAssocAxiom : TestCase := {
-  name := "Lens composition associativity axiom"
-  run := IO.println "✓ lens_comp_assoc axiom exists"
-}
+-- Test that the lens_comp_assoc axiom is well-typed and can be instantiated.
+test "Lens composition associativity axiom" := do
+  IO.println "✓ lens_comp_assoc axiom exists"
 
-/--
-Test that the prism_comp_assoc axiom is well-typed and can be instantiated.
--/
-def testPrismAssocAxiom : TestCase := {
-  name := "Prism composition associativity axiom"
-  run := IO.println "✓ prism_comp_assoc axiom exists"
-}
+-- Test that the prism_comp_assoc axiom is well-typed and can be instantiated.
+test "Prism composition associativity axiom" := do
+  IO.println "✓ prism_comp_assoc axiom exists"
 
-/--
-Test that the traversal_comp_assoc axiom is well-typed and can be instantiated.
--/
-def testTraversalAssocAxiom : TestCase := {
-  name := "Traversal composition associativity axiom"
-  run := IO.println "✓ traversal_comp_assoc axiom exists"
-}
+-- Test that the traversal_comp_assoc axiom is well-typed and can be instantiated.
+test "Traversal composition associativity axiom" := do
+  IO.println "✓ traversal_comp_assoc axiom exists"
 
-/--
-Test that the iso_comp_id axiom is well-typed and can be instantiated.
--/
-def testIsoIdentityAxiom : TestCase := {
-  name := "Iso identity axiom"
-  run := IO.println "✓ iso_comp_id axiom exists"
-}
+-- Test that the iso_comp_id axiom is well-typed and can be instantiated.
+test "Iso identity axiom" := do
+  IO.println "✓ iso_comp_id axiom exists"
 
-/--
-Test that iso composition chains can be formed.
--/
-def testIsoCompositionChain : TestCase := {
-  name := "Iso composition chain"
-  run := IO.println "✓ Iso composition chains can be constructed"
-}
+-- Test that iso composition chains can be formed.
+test "Iso composition chain" := do
+  IO.println "✓ Iso composition chains can be constructed"
 
-/--
-Test that identity composition is defined.
--/
-def testIdentityComposition : TestCase := {
-  name := "Identity composition"
-  run := IO.println "✓ Identity composition is defined"
-}
+-- Test that identity composition is defined.
+test "Identity composition" := do
+  IO.println "✓ Identity composition is defined"
 
-/-! ## Test Suite -/
-
-def allTests : List TestCase := [
-  testIsoAssocAxiom,
-  testLensAssocAxiom,
-  testPrismAssocAxiom,
-  testTraversalAssocAxiom,
-  testIsoIdentityAxiom,
-  testIsoCompositionChain,
-  testIdentityComposition
-]
+#generate_tests
 
 def runTests : IO UInt32 := do
   IO.println "\nRunning Phase 5 Normalization Tests..."
-  for tc in allTests do
+  for tc in cases do
     IO.println s!"  {tc.name}"
     tc.run
   IO.println "All normalization tests passed!\n"

@@ -12,6 +12,8 @@ open CollimatorTests
 
 open scoped Collimator.Operators
 
+testSuite "Prism Magic"
+
 /-!
 # Prism Building/Review Magic
 
@@ -93,15 +95,13 @@ def authAuthenticatedPrism : Prism' AuthState (String × Nat) := ctorPrism% Auth
 
 -- ## Test Cases
 
-/--
+/-
 **Pattern Matching (Preview)**: Safely extract values from sum types.
 
 Prisms enable type-safe pattern matching that returns Option, eliminating
 runtime pattern match failures.
 -/
-def case_patternMatching : TestCase := {
-  name := "Pattern matching with preview",
-  run := do
+test "Pattern matching with preview" := do
     -- JSON value extraction
     let jsonStr := JsonValue.str "hello"
     let jsonNum := JsonValue.num 42
@@ -139,17 +139,14 @@ def case_patternMatching : TestCase := {
     options ≡ [("output", "file.txt")]
 
     IO.println "✓ Pattern matching: CLI argument parsing"
-}
 
-/--
+/-
 **Construction (Review)**: Build values from parts using prisms.
 
 The review operation is the inverse of preview - it constructs a value
 of the sum type from the focused type.
 -/
-def case_construction : TestCase := {
-  name := "Construction with review",
-  run := do
+test "Construction with review" := do
     -- Build JSON values
     review' jsonStrPrism "constructed" ≡ JsonValue.str "constructed"
     review' jsonNumPrism 99 ≡ JsonValue.num 99
@@ -174,17 +171,14 @@ def case_construction : TestCase := {
     review' authAuthenticatedPrism ("alice", 7) ≡ AuthState.authenticated "alice" 7
 
     IO.println "✓ Construction: review builds authentication states"
-}
 
-/--
+/-
 **Validation Prisms**: Custom prisms that validate during construction.
 
 These prisms encode domain constraints - preview only succeeds for valid
 values, and review constructs valid values.
 -/
-def case_validationPrisms : TestCase := {
-  name := "Validation prisms for smart constructors",
-  run := do
+test "Validation prisms for smart constructors" := do
     -- A prism that only matches positive integers
     let positivePrism : Prism' Int Int :=
       prism (fun n => n)  -- review is identity
@@ -216,17 +210,14 @@ def case_validationPrisms : TestCase := {
     shouldBeNone (150 ^? percentPrism)
 
     IO.println "✓ Validation: percentage prism (0-100)"
-}
 
-/--
+/-
 **Prism Composition**: Compose prisms for nested sum types.
 
 When you have nested sum types (e.g., Result containing Result, or
 JSON arrays containing JSON values), compose prisms to reach deep.
 -/
-def case_prismComposition : TestCase := {
-  name := "Prism composition for nested sum types",
-  run := do
+test "Prism composition for nested sum types" := do
     -- Nested Result types
     let nestedOk : Result (Result Int) := Result.ok (Result.ok 42)
     let nestedErr : Result (Result Int) := Result.ok (Result.err "inner error")
@@ -258,17 +249,14 @@ def case_prismComposition : TestCase := {
     outerResult ≡ Result.ok (Result.ok 100)
 
     IO.println "✓ Composition: build nested structures with review"
-}
 
-/--
+/-
 **Error Handling Patterns**: Use prisms for Either/Result error handling.
 
 Prisms provide a clean API for working with error types, enabling
 safe extraction and transformation of success/error values.
 -/
-def case_errorHandling : TestCase := {
-  name := "Error handling patterns with Result prisms",
-  run := do
+test "Error handling patterns with Result prisms" := do
     let results : List (Result Int) := [
       Result.ok 10,
       Result.err "parse error",
@@ -317,16 +305,13 @@ def case_errorHandling : TestCase := {
     doubledSuccesses ≡ [20, 40, 60]
 
     IO.println "✓ Error handling: map over success values"
-}
 
-/--
+/-
 **Sum and Option Prisms**: Working with standard library types.
 
 Demonstrates prisms for Lean's built-in Sum and Option types using library prisms.
 -/
-def case_sumOptionPrisms : TestCase := {
-  name := "Sum and Option type prisms",
-  run := do
+test "Sum and Option type prisms" := do
     -- Use the library's somePrism' from Collimator.Instances.Option
     let someVal : Option Int := some 42
     let noneVal : Option Int := none
@@ -346,17 +331,9 @@ def case_sumOptionPrisms : TestCase := {
     review' (Instances.Sum.left' String Int) "new error" ≡ Sum.inl "new error"
 
     IO.println "✓ Sum/Option: Sum left/right prisms (from library)"
-}
 
 -- ## Test Registration
 
-def cases : List TestCase := [
-  case_patternMatching,
-  case_construction,
-  case_validationPrisms,
-  case_prismComposition,
-  case_errorHandling,
-  case_sumOptionPrisms
-]
+#generate_tests
 
 end CollimatorTests.AdvancedShowcase.PrismMagic

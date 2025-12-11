@@ -13,6 +13,8 @@ open Collimator.Combinators
 open CollimatorTests
 open scoped Collimator.Operators
 
+testSuite "Traversal Laws"
+
 /-! ## Test Structures -/
 
 inductive Tree (α : Type _) where
@@ -95,197 +97,115 @@ instance {α : Type _} : LawfulTraversal (@Option.walkMon α) where
 
 /-! ## Test Cases -/
 
-/--
-Test that the identity law holds: traversing with id returns the structure unchanged.
--/
-private def case_traversalIdentityLaw : TestCase := {
-  name := "Traversal Identity law: traverse id = id",
-  run := do
-    let tr : Traversal' (List Int) Int := traversal List.walkMon
-    let xs := [1, 2, 3]
-    let result := xs & tr %~ (fun a => a)
-    ensureEq "Identity law" xs result
-}
+test "Traversal Identity law: traverse id = id" := do
+  let tr : Traversal' (List Int) Int := traversal List.walkMon
+  let xs := [1, 2, 3]
+  let result := xs & tr %~ (fun a => a)
+  ensureEq "Identity law" xs result
 
-/--
-Test identity law for tree traversal.
--/
-private def case_treeIdentityLaw : TestCase := {
-  name := "Tree traversal satisfies identity law",
-  run := do
-    let tr : Traversal' (Tree Int) Int := traversal Tree.walkMon
-    let tree := Tree.node (Tree.leaf 1) (Tree.leaf 2)
-    let result := tree & tr %~ (fun a => a)
-    ensureEq "Tree identity" tree result
-}
+test "Tree traversal satisfies identity law" := do
+  let tr : Traversal' (Tree Int) Int := traversal Tree.walkMon
+  let tree := Tree.node (Tree.leaf 1) (Tree.leaf 2)
+  let result := tree & tr %~ (fun a => a)
+  ensureEq "Tree identity" tree result
 
-/--
-Test that traversal over actually modifies all elements.
--/
-private def case_traversalOver : TestCase := {
-  name := "Traversal over modifies all focuses",
-  run := do
-    let tr : Traversal' (List Int) Int := traversal List.walkMon
-    let xs := [1, 2, 3]
-    let result := xs & tr %~ (· + 10)
-    ensureEq "Over all elements" [11, 12, 13] result
-}
+test "Traversal over modifies all focuses" := do
+  let tr : Traversal' (List Int) Int := traversal List.walkMon
+  let xs := [1, 2, 3]
+  let result := xs & tr %~ (· + 10)
+  ensureEq "Over all elements" [11, 12, 13] result
 
-/--
-Test traverse with Option applicative for short-circuiting.
--/
-private def case_traverseOption : TestCase := {
-  name := "Traverse with Option applicative short-circuits on none",
-  run := do
-    let tr : Traversal' (List Int) Int := traversal List.walkMon
-    let f : Int → Option Int := fun n => if n >= 0 then some (n + 1) else none
+test "Traverse with Option applicative short-circuits on none" := do
+  let tr : Traversal' (List Int) Int := traversal List.walkMon
+  let f : Int → Option Int := fun n => if n >= 0 then some (n + 1) else none
 
-    let success := Traversal.traverse' tr f [0, 1, 2]
-    ensureEq "Success case" (some [1, 2, 3]) success
+  let success := Traversal.traverse' tr f [0, 1, 2]
+  ensureEq "Success case" (some [1, 2, 3]) success
 
-    let failure := Traversal.traverse' tr f [0, -1, 2]
-    ensureEq "Failure case" (none : Option (List Int)) failure
-}
+  let failure := Traversal.traverse' tr f [0, -1, 2]
+  ensureEq "Failure case" (none : Option (List Int)) failure
 
-/--
-Test that composition preserves identity law.
--/
-private def case_compositionIdentityLaw : TestCase := {
-  name := "Composed traversals satisfy identity law",
-  run := do
-    let outer : Traversal' (List (Option Int)) (Option Int) := traversal List.walkMon
-    let inner : Traversal' (Option Int) Int := traversal Option.walkMon
-    let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
+test "Composed traversals satisfy identity law" := do
+  let outer : Traversal' (List (Option Int)) (Option Int) := traversal List.walkMon
+  let inner : Traversal' (Option Int) Int := traversal Option.walkMon
+  let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
 
-    let xs := [some 1, none, some 3]
-    let result := xs & composed %~ (fun a => a)
-    ensureEq "Composed identity" xs result
-}
+  let xs := [some 1, none, some 3]
+  let result := xs & composed %~ (fun a => a)
+  ensureEq "Composed identity" xs result
 
-/--
-Test that composed traversals modify all nested elements.
--/
-private def case_composedTraversalOver : TestCase := {
-  name := "Composed traversals modify all nested focuses",
-  run := do
-    let outer : Traversal' (List (Option Int)) (Option Int) := traversal List.walkMon
-    let inner : Traversal' (Option Int) Int := traversal Option.walkMon
-    let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
+test "Composed traversals modify all nested focuses" := do
+  let outer : Traversal' (List (Option Int)) (Option Int) := traversal List.walkMon
+  let inner : Traversal' (Option Int) Int := traversal Option.walkMon
+  let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
 
-    let xs := [some 1, none, some 3]
-    let result := xs & composed %~ (· * 2)
-    ensureEq "Composed over" [some 2, none, some 6] result
-}
+  let xs := [some 1, none, some 3]
+  let result := xs & composed %~ (· * 2)
+  ensureEq "Composed over" [some 2, none, some 6] result
 
-/--
-Test tree traversal modifies all leaves.
--/
-private def case_treeTraversal : TestCase := {
-  name := "Tree traversal modifies all leaves",
-  run := do
-    let tr : Traversal' (Tree Int) Int := traversal Tree.walkMon
-    let tree := Tree.node (Tree.leaf 5) (Tree.node (Tree.leaf 10) (Tree.leaf 15))
-    let result := tree & tr %~ (· + 1)
-    let expected := Tree.node (Tree.leaf 6) (Tree.node (Tree.leaf 11) (Tree.leaf 16))
-    ensureEq "Tree traversal" expected result
-}
+test "Tree traversal modifies all leaves" := do
+  let tr : Traversal' (Tree Int) Int := traversal Tree.walkMon
+  let tree := Tree.node (Tree.leaf 5) (Tree.node (Tree.leaf 10) (Tree.leaf 15))
+  let result := tree & tr %~ (· + 1)
+  let expected := Tree.node (Tree.leaf 6) (Tree.node (Tree.leaf 11) (Tree.leaf 16))
+  ensureEq "Tree traversal" expected result
 
-/--
-Test that lawful traversal theorems can be invoked.
-This test verifies that we can use the proven theorems.
--/
-private def case_traversalLawTheorems : TestCase := {
-  name := "Traversal law theorems can be invoked",
-  run := do
-    let tr : Traversal' (List Int) Int := traversal List.walkMon
+test "Traversal law theorems can be invoked" := do
+  let tr : Traversal' (List Int) Int := traversal List.walkMon
 
-    -- Identity law: over tr id = id
-    let test1 := [1, 2, 3] & tr %~ (fun a => a)
-    ensureEq "Law theorem identity" [1, 2, 3] test1
+  -- Identity law: over tr id = id
+  let test1 := [1, 2, 3] & tr %~ (fun a => a)
+  ensureEq "Law theorem identity" [1, 2, 3] test1
 
-    -- Traverse with Id functor
-    let test2 := Traversal.traverse' tr (F := Theorems.Id) (fun a => a + 5) [10, 20]
-    ensureEq "Traverse with Id" [15, 25] test2
-}
+  -- Traverse with Id functor
+  let test2 := Traversal.traverse' tr (F := Theorems.Id) (fun a => a + 5) [10, 20]
+  ensureEq "Traverse with Id" [15, 25] test2
 
-/--
-Test that the composition lawfulness instance works.
--/
-private def case_compositionLawfulInstance : TestCase := {
-  name := "Composition lawfulness instance is usable",
-  run := do
-    -- Test via explicit composition instead of private composed_walk
-    let outer : Traversal' (List (Option Int)) (Option Int) := traversal List.walkMon
-    let inner : Traversal' (Option Int) Int := traversal Option.walkMon
-    let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
+test "Composition lawfulness instance is usable" := do
+  -- Test via explicit composition instead of private composed_walk
+  let outer : Traversal' (List (Option Int)) (Option Int) := traversal List.walkMon
+  let inner : Traversal' (Option Int) Int := traversal Option.walkMon
+  let composed : Traversal' (List (Option Int)) Int := outer ∘ inner
 
-    -- Test identity
-    let xs : List (Option Int) := [some 1, none, some 2]
-    let result := xs & composed %~ (fun a => a)
-    ensureEq "Composed lawful identity" xs result
+  -- Test identity
+  let xs : List (Option Int) := [some 1, none, some 2]
+  let result := xs & composed %~ (fun a => a)
+  ensureEq "Composed lawful identity" xs result
 
-    -- Test modification
-    let result2 := xs & composed %~ (· + 10)
-    ensureEq "Composed lawful over" [some 11, none, some 12] result2
-}
+  -- Test modification
+  let result2 := xs & composed %~ (· + 10)
+  ensureEq "Composed lawful over" [some 11, none, some 12] result2
 
-/--
-Test Option traversal with effectful operations.
--/
-private def case_optionTraversal : TestCase := {
-  name := "Option traversal handles some and none correctly",
-  run := do
-    let tr : Traversal' (Option Int) Int := traversal Option.walkMon
+test "Option traversal handles some and none correctly" := do
+  let tr : Traversal' (Option Int) Int := traversal Option.walkMon
 
-    -- Test with some
-    let result1 := (some 4) & tr %~ (· * 3)
-    ensureEq "Option some" (some 12) result1
+  -- Test with some
+  let result1 := (some 4) & tr %~ (· * 3)
+  ensureEq "Option some" (some 12) result1
 
-    -- Test with none
-    let result2 := (none : Option Int) & tr %~ (· * 3)
-    ensureEq "Option none" none result2
+  -- Test with none
+  let result2 := (none : Option Int) & tr %~ (· * 3)
+  ensureEq "Option none" none result2
 
-    -- Test traverse with Option applicative
-    let f : Int → Option Int := fun n => if n < 10 then some (n + 1) else none
-    let success := Traversal.traverse' tr f (some 5)
-    let failure := Traversal.traverse' tr f (some 15)
-    ensureEq "Option traverse success" (some (some 6)) success
-    ensureEq "Option traverse failure" (none : Option (Option Int)) failure
-}
+  -- Test traverse with Option applicative
+  let f : Int → Option Int := fun n => if n < 10 then some (n + 1) else none
+  let success := Traversal.traverse' tr f (some 5)
+  let failure := Traversal.traverse' tr f (some 15)
+  ensureEq "Option traverse success" (some (some 6)) success
+  ensureEq "Option traverse failure" (none : Option (Option Int)) failure
 
-/--
-Test nested tree traversal with Option applicative.
--/
-private def case_treeTraverseOption : TestCase := {
-  name := "Tree traversal with Option applicative validates all leaves",
-  run := do
-    let tr : Traversal' (Tree Int) Int := traversal Tree.walkMon
-    let tree := Tree.node (Tree.leaf 5) (Tree.leaf 3)
+test "Tree traversal with Option applicative validates all leaves" := do
+  let tr : Traversal' (Tree Int) Int := traversal Tree.walkMon
+  let tree := Tree.node (Tree.leaf 5) (Tree.leaf 3)
 
-    let validate : Int → Option Int := fun n => if n > 0 then some n else none
-    let result := Traversal.traverse' tr validate tree
-    ensureEq "Tree validate success" (some tree) result
+  let validate : Int → Option Int := fun n => if n > 0 then some n else none
+  let result := Traversal.traverse' tr validate tree
+  ensureEq "Tree validate success" (some tree) result
 
-    let badTree := Tree.node (Tree.leaf 5) (Tree.leaf (-1))
-    let badResult := Traversal.traverse' tr validate badTree
-    ensureEq "Tree validate failure" (none : Option (Tree Int)) badResult
-}
+  let badTree := Tree.node (Tree.leaf 5) (Tree.leaf (-1))
+  let badResult := Traversal.traverse' tr validate badTree
+  ensureEq "Tree validate failure" (none : Option (Tree Int)) badResult
 
-/--
-All traversal law test cases.
--/
-def cases : List TestCase :=
-  [ case_traversalIdentityLaw
-  , case_treeIdentityLaw
-  , case_traversalOver
-  , case_traverseOption
-  , case_compositionIdentityLaw
-  , case_composedTraversalOver
-  , case_treeTraversal
-  , case_traversalLawTheorems
-  , case_compositionLawfulInstance
-  , case_optionTraversal
-  , case_treeTraverseOption
-  ]
+#generate_tests
 
 end CollimatorTests.TraversalLaws

@@ -14,6 +14,8 @@ open CollimatorTests
 Tests for the read-only Getter optic and the write-only Review optic.
 -/
 
+testSuite "Getter and Review"
+
 -- ## Test Data Types
 
 structure Person where
@@ -59,256 +61,200 @@ def rectPrism : Prism' Shape (Float × Float) :=
 
 -- ## Getter Tests
 
-/-- Basic Getter construction and use -/
-def case_getterBasics : TestCase := {
-  name := "Getter: basic construction and view",
-  run := do
-    -- Create a simple getter
-    let nameGetter := getter (fun p : Person => p.name)
-    let alice := Person.mk "Alice" 30
+test "Getter: basic construction and view" := do
+  -- Create a simple getter
+  let nameGetter := getter (fun p : Person => p.name)
+  let alice := Person.mk "Alice" 30
 
-    -- Use view
-    let name := nameGetter.view alice
-    name ≡ "Alice"
+  -- Use view
+  let name := nameGetter.view alice
+  name ≡ "Alice"
 
-    -- Use coercion (getter as function)
-    let name2 := nameGetter alice
-    name2 ≡ "Alice"
+  -- Use coercion (getter as function)
+  let name2 := nameGetter alice
+  name2 ≡ "Alice"
 
-    IO.println "✓ Getter: basic construction and view"
-}
+  IO.println "✓ Getter: basic construction and view"
 
-/-- Getter from Lens conversion -/
-def case_getterFromLens : TestCase := {
-  name := "Getter: conversion from Lens (ofLens)",
-  run := do
-    let bob := Person.mk "Bob" 25
+test "Getter: conversion from Lens (ofLens)" := do
+  let bob := Person.mk "Bob" 25
 
-    -- Convert lens to getter
-    let ageGetter := Getter.ofLens personAgeLens
+  -- Convert lens to getter
+  let ageGetter := Getter.ofLens personAgeLens
 
-    let age := ageGetter.view bob
-    age ≡ 25
+  let age := ageGetter.view bob
+  age ≡ 25
 
-    -- Getters are read-only - can only view, not set
-    -- (This is enforced by the type system)
+  -- Getters are read-only - can only view, not set
+  -- (This is enforced by the type system)
 
-    IO.println "✓ Getter: conversion from Lens works correctly"
-}
+  IO.println "✓ Getter: conversion from Lens works correctly"
 
-/-- Getter composition -/
-def case_getterComposition : TestCase := {
-  name := "Getter: composition of getters",
-  run := do
-    let company := Company.mk "TechCorp" (Person.mk "Carol" 45)
+test "Getter: composition of getters" := do
+  let company := Company.mk "TechCorp" (Person.mk "Carol" 45)
 
-    -- Create getters
-    let ceoGetter := Getter.ofLens companyCeoLens
-    let ageGetter := Getter.ofLens personAgeLens
+  -- Create getters
+  let ceoGetter := Getter.ofLens companyCeoLens
+  let ageGetter := Getter.ofLens personAgeLens
 
-    -- Compose getters
-    let ceoAgeGetter := ceoGetter.compose ageGetter
+  -- Compose getters
+  let ceoAgeGetter := ceoGetter.compose ageGetter
 
-    let ceoAge := ceoAgeGetter.view company
-    ceoAge ≡ 45
+  let ceoAge := ceoAgeGetter.view company
+  ceoAge ≡ 45
 
-    -- Compose with name
-    let nameGetter := Getter.ofLens personNameLens
-    let ceoNameGetter := ceoGetter.compose nameGetter
+  -- Compose with name
+  let nameGetter := Getter.ofLens personNameLens
+  let ceoNameGetter := ceoGetter.compose nameGetter
 
-    let ceoName := ceoNameGetter.view company
-    ceoName ≡ "Carol"
+  let ceoName := ceoNameGetter.view company
+  ceoName ≡ "Carol"
 
-    IO.println "✓ Getter: composition works correctly"
-}
+  IO.println "✓ Getter: composition works correctly"
 
-/-- Getter use cases -/
-def case_getterUseCases : TestCase := {
-  name := "Getter: practical use cases",
-  run := do
-    let people := [
-      Person.mk "Alice" 30,
-      Person.mk "Bob" 25,
-      Person.mk "Carol" 35
-    ]
+test "Getter: practical use cases" := do
+  let people := [
+    Person.mk "Alice" 30,
+    Person.mk "Bob" 25,
+    Person.mk "Carol" 35
+  ]
 
-    let nameGetter := getter (fun p : Person => p.name)
-    let ageGetter := getter (fun p : Person => p.age)
+  let nameGetter := getter (fun p : Person => p.name)
+  let ageGetter := getter (fun p : Person => p.age)
 
-    -- Extract all names
-    let names := people.map nameGetter.view
-    names ≡ ["Alice", "Bob", "Carol"]
+  -- Extract all names
+  let names := people.map nameGetter.view
+  names ≡ ["Alice", "Bob", "Carol"]
 
-    -- Find average age using getter
-    let ages := people.map ageGetter.view
-    let totalAge := ages.foldl (· + ·) 0
-    totalAge ≡ 90
+  -- Find average age using getter
+  let ages := people.map ageGetter.view
+  let totalAge := ages.foldl (· + ·) 0
+  totalAge ≡ 90
 
-    -- Computed getter (derived value)
-    let isAdultGetter := getter (fun p : Person => decide (p.age >= 18))
-    let allAdults := people.map isAdultGetter.view
-    shouldSatisfy (allAdults.all (fun b => b)) "all adults"
+  -- Computed getter (derived value)
+  let isAdultGetter := getter (fun p : Person => decide (p.age >= 18))
+  let allAdults := people.map isAdultGetter.view
+  shouldSatisfy (allAdults.all (fun b => b)) "all adults"
 
-    IO.println "✓ Getter: practical use cases work correctly"
-}
+  IO.println "✓ Getter: practical use cases work correctly"
 
 -- ## Review Tests
 
-/-- Basic Review construction and use -/
-def case_reviewBasics : TestCase := {
-  name := "Review: basic construction and review",
-  run := do
-    -- Create a simple review (constructor)
-    let personReview := mkReview (fun pair : String × Nat => Person.mk pair.1 pair.2)
+test "Review: basic construction and review" := do
+  -- Create a simple review (constructor)
+  let personReview := mkReview (fun pair : String × Nat => Person.mk pair.1 pair.2)
 
-    -- Use review to construct
-    let alice := personReview.review ("Alice", 30)
-    alice ≡ Person.mk "Alice" 30
+  -- Use review to construct
+  let alice := personReview.review ("Alice", 30)
+  alice ≡ Person.mk "Alice" 30
 
-    -- Use coercion (review as function)
-    let bob := personReview ("Bob", 25)
-    bob ≡ Person.mk "Bob" 25
+  -- Use coercion (review as function)
+  let bob := personReview ("Bob", 25)
+  bob ≡ Person.mk "Bob" 25
 
-    IO.println "✓ Review: basic construction and review"
-}
+  IO.println "✓ Review: basic construction and review"
 
-/-- Review from Prism conversion -/
-def case_reviewFromPrism : TestCase := {
-  name := "Review: conversion from Prism (ofPrism)",
-  run := do
-    -- Convert prism to review
-    let circleReview := Review.ofPrism circlePrism
+test "Review: conversion from Prism (ofPrism)" := do
+  -- Convert prism to review
+  let circleReview := Review.ofPrism circlePrism
 
-    -- Use review to construct
-    let circle := circleReview.review 5.0
-    circle ≡ Shape.circle 5.0
+  -- Use review to construct
+  let circle := circleReview.review 5.0
+  circle ≡ Shape.circle 5.0
 
-    -- Rect prism
-    let rectReview := Review.ofPrism rectPrism
-    let rect := rectReview.review (10.0, 20.0)
-    rect ≡ Shape.rect 10.0 20.0
+  -- Rect prism
+  let rectReview := Review.ofPrism rectPrism
+  let rect := rectReview.review (10.0, 20.0)
+  rect ≡ Shape.rect 10.0 20.0
 
-    IO.println "✓ Review: conversion from Prism works correctly"
-}
+  IO.println "✓ Review: conversion from Prism works correctly"
 
-/-- Review from Iso conversion -/
-def case_reviewFromIso : TestCase := {
-  name := "Review: conversion from Iso (ofIso)",
-  run := do
-    -- For iso with focus type a and source type s, review gives us a → s (backwards)
-    -- So for an Iso' s a, Review.ofIso gives us a Review s a where
-    -- review r a gives us s.
+test "Review: conversion from Iso (ofIso)" := do
+  -- For iso with focus type a and source type s, review gives us a → s (backwards)
+  -- So for an Iso' s a, Review.ofIso gives us a Review s a where
+  -- review r a gives us s.
 
-    -- Create an iso that swaps tuple components using library function
-    let swapIso : Iso' (Int × String) (String × Int) :=
-      iso (fun (a, b) => (b, a)) (fun (b, a) => (a, b))
+  -- Create an iso that swaps tuple components using library function
+  let swapIso : Iso' (Int × String) (String × Int) :=
+    iso (fun (a, b) => (b, a)) (fun (b, a) => (a, b))
 
-    -- Convert iso to review
-    let swapReview := Review.ofIso swapIso
+  -- Convert iso to review
+  let swapReview := Review.ofIso swapIso
 
-    -- Use review to construct (Int × String) from (String × Int)
-    let pair := swapReview.review ("hello", 42)
-    pair ≡ (42, "hello")
+  -- Use review to construct (Int × String) from (String × Int)
+  let pair := swapReview.review ("hello", 42)
+  pair ≡ (42, "hello")
 
-    let pair2 := swapReview.review ("world", 100)
-    pair2 ≡ (100, "world")
+  let pair2 := swapReview.review ("world", 100)
+  pair2 ≡ (100, "world")
 
-    IO.println "✓ Review: conversion from Iso works correctly"
-}
+  IO.println "✓ Review: conversion from Iso works correctly"
 
-/-- Review composition -/
-def case_reviewComposition : TestCase := {
-  name := "Review: composition of reviews",
-  run := do
-    -- Create reviews
-    let circleReview := Review.ofPrism circlePrism
+test "Review: composition of reviews" := do
+  -- Create reviews
+  let circleReview := Review.ofPrism circlePrism
 
-    -- Create a review that builds Option Shape from Float
-    let optionReview := mkReview (fun s : Shape => some s)
+  -- Create a review that builds Option Shape from Float
+  let optionReview := mkReview (fun s : Shape => some s)
 
-    -- Compose: Float → Shape → Option Shape
-    let optCircleReview := optionReview.compose circleReview
+  -- Compose: Float → Shape → Option Shape
+  let optCircleReview := optionReview.compose circleReview
 
-    let optCircle := optCircleReview.review 7.5
-    optCircle ≡ some (Shape.circle 7.5)
+  let optCircle := optCircleReview.review 7.5
+  optCircle ≡ some (Shape.circle 7.5)
 
-    IO.println "✓ Review: composition works correctly"
-}
+  IO.println "✓ Review: composition works correctly"
 
-/-- Review use cases -/
-def case_reviewUseCases : TestCase := {
-  name := "Review: practical use cases",
-  run := do
-    -- Factory pattern using Review
-    let circleFactory := Review.ofPrism circlePrism
-    let rectFactory := Review.ofPrism rectPrism
+test "Review: practical use cases" := do
+  -- Factory pattern using Review
+  let circleFactory := Review.ofPrism circlePrism
+  let rectFactory := Review.ofPrism rectPrism
 
-    -- Build shapes from data
-    let radii := [1.0, 2.0, 3.0]
-    let circles := radii.map circleFactory.review
-    circles.length ≡ 3
+  -- Build shapes from data
+  let radii := [1.0, 2.0, 3.0]
+  let circles := radii.map circleFactory.review
+  circles.length ≡ 3
 
-    -- Build from tuples
-    let dims := [(1.0, 2.0), (3.0, 4.0)]
-    let rects := dims.map rectFactory.review
-    rects.length ≡ 2
+  -- Build from tuples
+  let dims := [(1.0, 2.0), (3.0, 4.0)]
+  let rects := dims.map rectFactory.review
+  rects.length ≡ 2
 
-    -- Smart constructor pattern
-    let validPersonReview := mkReview (fun pair : String × Nat =>
-      if pair.1.length > 0 && pair.2 > 0 then Person.mk pair.1 pair.2 else Person.mk "Invalid" 0
-    )
+  -- Smart constructor pattern
+  let validPersonReview := mkReview (fun pair : String × Nat =>
+    if pair.1.length > 0 && pair.2 > 0 then Person.mk pair.1 pair.2 else Person.mk "Invalid" 0
+  )
 
-    let validPerson := validPersonReview.review ("Dave", 40)
-    validPerson.name ≡ "Dave"
+  let validPerson := validPersonReview.review ("Dave", 40)
+  validPerson.name ≡ "Dave"
 
-    let invalidPerson := validPersonReview.review ("", 0)
-    invalidPerson.name ≡ "Invalid"
+  let invalidPerson := validPersonReview.review ("", 0)
+  invalidPerson.name ≡ "Invalid"
 
-    IO.println "✓ Review: practical use cases work correctly"
-}
+  IO.println "✓ Review: practical use cases work correctly"
 
-/-- Getter and Review duality -/
-def case_getterReviewDuality : TestCase := {
-  name := "Getter/Review: demonstrating duality",
-  run := do
-    -- Getter: read-only, extracts from structure
-    let ageGetter := Getter.ofLens personAgeLens
+test "Getter/Review: demonstrating duality" := do
+  -- Getter: read-only, extracts from structure
+  let ageGetter := Getter.ofLens personAgeLens
 
-    -- Review: write-only, builds structure
-    let circleReview := Review.ofPrism circlePrism
+  -- Review: write-only, builds structure
+  let circleReview := Review.ofPrism circlePrism
 
-    -- Getter extracts
-    let person := Person.mk "Eve" 28
-    let extractedAge := ageGetter.view person
-    extractedAge ≡ 28
+  -- Getter extracts
+  let person := Person.mk "Eve" 28
+  let extractedAge := ageGetter.view person
+  extractedAge ≡ 28
 
-    -- Review constructs
-    let constructedShape := circleReview.review 10.0
-    constructedShape ≡ Shape.circle 10.0
+  -- Review constructs
+  let constructedShape := circleReview.review 10.0
+  constructedShape ≡ Shape.circle 10.0
 
-    -- They are dual operations:
-    -- Getter: S → A (extract focus from whole)
-    -- Review: B → T (construct whole from focus)
+  -- They are dual operations:
+  -- Getter: S → A (extract focus from whole)
+  -- Review: B → T (construct whole from focus)
 
-    IO.println "✓ Getter/Review: duality demonstrated"
-}
+  IO.println "✓ Getter/Review: duality demonstrated"
 
--- ## Test Registration
-
-def cases : List TestCase := [
-  -- Getter tests
-  case_getterBasics,
-  case_getterFromLens,
-  case_getterComposition,
-  case_getterUseCases,
-  -- Review tests
-  case_reviewBasics,
-  case_reviewFromPrism,
-  case_reviewFromIso,
-  case_reviewComposition,
-  case_reviewUseCases,
-  -- Duality
-  case_getterReviewDuality
-]
+#generate_tests
 
 end CollimatorTests.GetterReview

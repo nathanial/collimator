@@ -10,6 +10,8 @@ open Collimator
 open Collimator.Instances.List (traversed)
 open CollimatorTests
 
+testSuite "Effectful Traversals"
+
 /-!
 # Effectful Traversals
 
@@ -23,10 +25,7 @@ Demonstrate traversals working with different applicative functors:
 Show how the same traversal can be reused with different effect types.
 -/
 
-/-- Test: Option applicative validates all numbers are positive, short-circuits on first failure -/
-private def case_optionValidatePositive : TestCase := {
-  name := "Option applicative: validate all positive (short-circuit)",
-  run := do
+test "Option applicative: validate all positive (short-circuit)" := do
     -- Validation function: accept only positive numbers
     let validatePositive : Int → Option Int :=
       fun n => if n > 0 then some n else none
@@ -55,12 +54,8 @@ private def case_optionValidatePositive : TestCase := {
     let hasZero : List Int := [1, 0, 3]
     let result5 := Traversal.traverse' traversed validatePositive hasZero
     ensureEq "Zero is not positive" (none : Option (List Int)) result5
-}
 
-/-- Test: Option applicative for safe division, short-circuits on divide-by-zero -/
-private def case_optionSafeDivision : TestCase := {
-  name := "Option applicative: safe division (short-circuit on zero)",
-  run := do
+test "Option applicative: safe division (short-circuit on zero)" := do
     -- Safe division function: returns None if divisor is zero
     let safeDivide (divisor : Int) (dividend : Int) : Option Int :=
       if divisor = 0 then none else some (dividend / divisor)
@@ -95,12 +90,9 @@ private def case_optionSafeDivision : TestCase := {
     let negatives : List Int := [-2, -5, 10]
     let result6 := Traversal.traverse' traversed (safeDivide · dividend) negatives
     ensureEq "Negative divisors are valid" (some [-50, -20, 10]) result6
-}
 
-/-- Test: State applicative threads counter through traversal to number elements -/
-private def case_stateNumberElements : TestCase := {
-  name := "State applicative: number elements sequentially",
-  run := do
+
+test "State applicative: number elements sequentially" := do
     -- Stateful function: pair each element with current counter, then increment
     let numberElement (x : String) : StateT Nat Id (Nat × String) := do
       let n ← get
@@ -140,7 +132,6 @@ private def case_stateNumberElements : TestCase := {
     let numbers := [10, 20, 30]
     let (indexed, _) := (Traversal.traverse' traversed addIndex numbers).run 1
     ensureEq "Create indexed strings" ["[1]=10", "[2]=20", "[3]=30"] indexed
-}
 
 -- Statistics accumulator for state test
 private structure Stats where
@@ -229,10 +220,8 @@ private structure MeanState where
   count : Nat
 deriving Repr, BEq
 
-/-- Test: State applicative accumulates statistics during transformations -/
-private def case_stateAccumulateStats : TestCase := {
-  name := "State applicative: accumulate statistics with transformations",
-  run := do
+
+test "State applicative: accumulate statistics with transformations" := do
     -- Stateful function: double each number and accumulate statistics
     let doubleAndAccumulate (x : Int) : StateT Stats Id Int := do
       let stats ← get
@@ -280,12 +269,9 @@ private def case_stateAccumulateStats : TestCase := {
     ensureEq "Single sum" 42 singleStats.sum
     ensureEq "Single count" 1 singleStats.count
     ensureEq "Single max" 42 singleStats.max
-}
 
-/-- Test: Writer applicative logs each transformation step -/
-private def case_writerLogTransformations : TestCase := {
-  name := "Writer applicative: log each transformation step",
-  run := do
+
+test "Writer applicative: log each transformation step" := do
     -- Transformation function that logs before/after for each element
     let transformAndLog (x : Int) : WriterT (Array String) Id Int := do
       let result := x * 2 + 1
@@ -342,12 +328,9 @@ private def case_writerLogTransformations : TestCase := {
     ensureEq "Computation steps logged"
       #["2² = 4, then *2 = 8", "3² = 9, then *2 = 18"]
       computeLog
-}
 
-/-- Test: Writer applicative collects diagnostics with severity levels -/
-private def case_writerCollectDiagnostics : TestCase := {
-  name := "Writer applicative: collect diagnostics during traversal",
-  run := do
+
+test "Writer applicative: collect diagnostics during traversal" := do
     -- Transformation with diagnostic collection
     let processWithDiagnostics (x : Int) : WriterT (Array Diagnostic) Id Int := do
       if x < 0 then
@@ -412,12 +395,9 @@ private def case_writerCollectDiagnostics : TestCase := {
     let (emptyResults, emptyDiags) := (Traversal.traverse' traversed processWithDiagnostics empty).run
     ensureEq "Empty results" [] emptyResults
     ensureEq "No diagnostics" 0 emptyDiags.size
-}
 
-/-- Test: Validation applicative accumulates all errors, unlike Option -/
-private def case_validationAccumulateErrors : TestCase := {
-  name := "Validation applicative: accumulate all errors (vs Option short-circuit)",
-  run := do
+
+test "Validation applicative: accumulate all errors (vs Option short-circuit)" := do
     -- Validation function that returns error for invalid values
     let validatePositive (x : Int) : Validation String Int :=
       if x > 0 then
@@ -507,12 +487,9 @@ private def case_validationAccumulateErrors : TestCase := {
       ensureEq "Empty list succeeds" [] vals
     | Validation.failure _ =>
       IO.throwServerError "Empty list should succeed"
-}
 
-/-- Test: State applicative replaces elements with running sum -/
-private def case_stateRunningSum : TestCase := {
-  name := "State applicative: replace elements with running sum",
-  run := do
+
+test "State applicative: replace elements with running sum" := do
     -- Stateful function: replace each element with current sum, then add element to sum
     let replaceWithSum (x : Int) : StateT Int Id Int := do
       let currentSum ← get
@@ -552,12 +529,9 @@ private def case_stateRunningSum : TestCase := {
     let (products, finalProduct) := (Traversal.traverse' traversed replaceWithProduct factors).run 1
     ensureEq "Running products" [1, 2, 6] products
     ensureEq "Final product" 24 finalProduct
-}
 
-/-- Test: State applicative normalizes values based on running statistics -/
-private def case_stateNormalizeByStats : TestCase := {
-  name := "State applicative: normalize values by running mean",
-  run := do
+
+test "State applicative: normalize values by running mean" := do
     -- Normalize by running mean: transform each value, then update statistics
     let normalizeByMean (x : Int) : StateT NormState Id Int := do
       let state ← get
@@ -588,12 +562,9 @@ private def case_stateNormalizeByStats : TestCase := {
     let (scaled, _) := (Traversal.traverse' traversed scaleByMax sequence).run 0
     ensureEq "Scaled by running max" [100, 200, 75, 200] scaled
     -- [100% (first), 100*100/50=200%, 75*100/100=75%, 200*100/100=200%]
-}
 
-/-- Test: State applicative deduplicates consecutive elements -/
-private def case_stateDeduplicateConsecutive : TestCase := {
-  name := "State applicative: mark duplicates of previous element",
-  run := do
+
+test "State applicative: mark duplicates of previous element" := do
     -- State tracks the previous element
     -- Replace duplicates with a marker value
     let dedup (marker : Int) (x : Int) : StateT (Option Int) Id Int := do
@@ -642,12 +613,9 @@ private def case_stateDeduplicateConsecutive : TestCase := {
     let (_, finalState) := (Traversal.traverse' traversed countDuplicates testSeq).run
       { prev := none, dupCount := 0 }
     ensureEq "Counted 3 duplicate occurrences" 3 finalState.dupCount
-}
 
-/-- Test: State applicative implements stateful replacements via lookup table -/
-private def case_stateReplacementMap : TestCase := {
-  name := "State applicative: build replacement map during traversal",
-  run := do
+
+test "State applicative: build replacement map during traversal" := do
     -- Build a replacement map as we traverse: first occurrence gets ID, repeats use that ID
     let assignId (s : String) : StateT MapState Id Nat := do
       let state ← get
@@ -704,12 +672,9 @@ private def case_stateReplacementMap : TestCase := {
     -- 5 appears: 1st, 2nd, 3rd, 4th time
     -- 3 appears: 1st, 2nd time
     -- 7 appears: 1st time
-}
 
-/-- Test: State applicative implements sliding window transformations -/
-private def case_stateSlidingWindow : TestCase := {
-  name := "State applicative: sliding window transformations",
-  run := do
+
+test "State applicative: sliding window transformations" := do
     -- Replace each element with average of current window
     let windowAverage (x : Int) : StateT WindowState Id Int := do
       let state ← get
@@ -761,12 +726,8 @@ private def case_stateSlidingWindow : TestCase := {
       { sum := 0, count := 0 }
     ensureEq "Differences from running mean" [0, 100, 0, 100] diffs
     -- [100-100, 200-100, 150-150, 250-150]
-}
 
-/-- Test: Polymorphism - same traversal works with any Applicative -/
-private def case_polymorphicTraversal : TestCase := {
-  name := "Polymorphism: same traversal, multiple effect types",
-  run := do
+test "Polymorphism: same traversal, multiple effect types" := do
     -- Define a single list to traverse
     let numbers : List Int := [5, 10, 15, 20]
 
@@ -888,22 +849,7 @@ private def case_polymorphicTraversal : TestCase := {
       ensureEq "Bob is minor" "Bob is 17 years old (under 18)" errs[0]!
     | Validation.success _ =>
       IO.throwServerError "Should report minor"
-}
 
-def cases : List TestCase := [
-  case_optionValidatePositive,
-  case_optionSafeDivision,
-  case_stateNumberElements,
-  case_stateAccumulateStats,
-  case_stateRunningSum,
-  case_stateNormalizeByStats,
-  case_stateDeduplicateConsecutive,
-  case_stateReplacementMap,
-  case_stateSlidingWindow,
-  case_writerLogTransformations,
-  case_writerCollectDiagnostics,
-  case_validationAccumulateErrors,
-  case_polymorphicTraversal
-]
+#generate_tests
 
 end CollimatorTests.AdvancedShowcase.EffectfulTraversals
