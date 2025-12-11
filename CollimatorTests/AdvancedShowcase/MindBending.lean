@@ -117,7 +117,7 @@ private def case_binaryTreeTraversal : TestCase := {
       (Tree.node (Tree.leaf 10) (Tree.leaf 15))
 
     -- Transform all leaves
-    let doubled := Traversal.over' tr (· * 2) tree
+    let doubled := tree & tr %~ (· * 2)
     let expected := Tree.node
       (Tree.leaf 10)
       (Tree.node (Tree.leaf 20) (Tree.leaf 30))
@@ -196,7 +196,7 @@ private def case_roseTreeTraversal : TestCase := {
     ]
 
     -- Transform all nodes to uppercase
-    let upper := Traversal.over' tr String.toUpper tree
+    let upper := tree & tr %~ String.toUpper
 
     -- Verify root
     match upper with
@@ -243,7 +243,7 @@ private def case_deeplyNestedRoseTree : TestCase := {
     ]
 
     -- Transform all values
-    let multiplied := Traversal.over' tr (· * 10) deepTree
+    let multiplied := deepTree & tr %~ (· * 10)
 
     -- Collect all values to verify transformation
     let collectValues (x : Int) : StateT (List Int) Id Int := do
@@ -347,7 +347,7 @@ private def case_composedRecursiveTraversal : TestCase := {
     let composed : Traversal' (Tree (Option Int)) Int := treeTr ∘ optionTr
 
     -- Transform: double all present values, skip None
-    let doubled := Traversal.over' composed (· * 2) treeOfOptions
+    let doubled := treeOfOptions & composed %~ (· * 2)
     let expected := Tree.node
       (Tree.leaf (some 10))
       (Tree.node (Tree.leaf none) (Tree.leaf (some 30)))

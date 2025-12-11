@@ -18,6 +18,7 @@ open Collimator.Debug
 open Collimator.Debug.LawCheck
 open Collimator.Instances.Option
 open CollimatorTests
+open scoped Collimator.Operators
 
 namespace CollimatorTests.Debug
 
@@ -40,7 +41,7 @@ def cases : List TestCase := [
     run := do
       let traced : Lens' TestPoint Int := tracedLens "xLens" testXLens
       let p := TestPoint.mk 10 20
-      let result := view' traced p
+      let result := p ^. traced
       ensureEq "traced view" 10 result
   },
   {
@@ -48,7 +49,7 @@ def cases : List TestCase := [
     run := do
       let traced : Lens' TestPoint Int := tracedLens "xLens" testXLens
       let p := TestPoint.mk 10 20
-      let result := set' traced 99 p
+      let result := p & traced .~ 99
       ensureEq "traced set x" 99 result.x
       ensureEq "traced set y unchanged" 20 result.y
   },
@@ -57,7 +58,7 @@ def cases : List TestCase := [
     run := do
       let traced : Lens' TestPoint Int := tracedLens "xLens" testXLens
       let p := TestPoint.mk 10 20
-      let result := over' traced (· + 5) p
+      let result := p & traced %~ (· + 5)
       ensureEq "traced over" 15 result.x
   },
 
@@ -66,14 +67,14 @@ def cases : List TestCase := [
     name := "tracedPrism: preview some returns value"
     run := do
       let traced : Prism' (Option Int) Int := tracedPrism "somePrism" (somePrism' Int)
-      let result := preview' traced (some 42)
+      let result := (some 42) ^? traced
       ensureEq "traced preview some" (some 42) result
   },
   {
     name := "tracedPrism: preview none returns none"
     run := do
       let traced : Prism' (Option Int) Int := tracedPrism "somePrism" (somePrism' Int)
-      let result := preview' traced (none : Option Int)
+      let result := (none : Option Int) ^? traced
       ensureEq "traced preview none" none result
   },
   {
@@ -176,60 +177,60 @@ def cases : List TestCase := [
   },
 
   -- Guidance Helpers Tests
-  -- Note: These use preview' directly since optics are now type aliases
+  -- Note: These use ^? operator since optics are now type aliases
   {
     name := "viewSafe: returns some for matching optic"
     run := do
       let prism : Prism' (Option Int) Int := somePrism' Int
-      let result := preview' prism (some 42)
+      let result := (some 42) ^? prism
       ensureEq "viewSafe some" (some 42) result
   },
   {
     name := "viewSafe: returns none for non-matching"
     run := do
       let prism : Prism' (Option Int) Int := somePrism' Int
-      let result := preview' prism (none : Option Int)
+      let result := (none : Option Int) ^? prism
       ensureEq "viewSafe none" none result
   },
   {
     name := "viewOrElse: returns value when present"
     run := do
       let prism : Prism' (Option Int) Int := somePrism' Int
-      let result := (preview' prism (some 42)).getD 0
+      let result := ((some 42) ^? prism).getD 0
       ensureEq "viewOrElse some" 42 result
   },
   {
     name := "viewOrElse: returns default when missing"
     run := do
       let prism : Prism' (Option Int) Int := somePrism' Int
-      let result := (preview' prism (none : Option Int)).getD 999
+      let result := ((none : Option Int) ^? prism).getD 999
       ensureEq "viewOrElse none" 999 result
   },
   {
     name := "viewOrElseLazy: returns value when present"
     run := do
       let prism : Prism' (Option Int) Int := somePrism' Int
-      let result := (preview' prism (some 42)).getD 0
+      let result := ((some 42) ^? prism).getD 0
       ensureEq "viewOrElseLazy some" 42 result
   },
   {
     name := "viewOrElseLazy: calls default when missing"
     run := do
       let prism : Prism' (Option Int) Int := somePrism' Int
-      let result := (preview' prism (none : Option Int)).getD 999
+      let result := ((none : Option Int) ^? prism).getD 999
       ensureEq "viewOrElseLazy none" 999 result
   },
   {
     name := "hasFocus: returns true when present"
     run := do
       let prism : Prism' (Option Int) Int := somePrism' Int
-      ensure ((preview' prism (some 42)).isSome) "hasFocus some"
+      ensure (((some 42) ^? prism).isSome) "hasFocus some"
   },
   {
     name := "hasFocus: returns false when missing"
     run := do
       let prism : Prism' (Option Int) Int := somePrism' Int
-      ensure (not (preview' prism (none : Option Int)).isSome) "hasFocus none"
+      ensure (not ((none : Option Int) ^? prism).isSome) "hasFocus none"
   }
 ]
 
