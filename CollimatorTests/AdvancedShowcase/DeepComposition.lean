@@ -263,10 +263,10 @@ private def case_traversalPrismComposition : TestCase := {
       lens' (fun a => a.city) (fun a c => { a with city := c })
 
     -- Compose: Traversal → Prism → Lens → Lens
-    let optEmpPrism : Prism' (Option Employee) Employee := somePrism' Employee
-    let step1 : Traversal' (List (Option Employee)) Employee := traversed ∘ optEmpPrism
-    let step2 : Traversal' (List (Option Employee)) Address := step1 ∘ addressLens
-    let finalTraversal : Traversal' (List (Option Employee)) String := step2 ∘ cityLens
+    -- Using optic% macro for clean type annotation on composed optics
+    let finalTraversal := optic%
+      traversed ∘ somePrism' Employee ∘ addressLens ∘ cityLens
+      : Traversal' (List (Option Employee)) String
 
     -- Collect all cities (only from Some employees, None are skipped!)
     let cities := toListTraversal finalTraversal employees
@@ -323,9 +323,10 @@ private def case_traversalPrismSum : TestCase := {
     let salaryLens : Lens' Employee Int :=
       lens' (fun e => e.salary) (fun e s => { e with salary := s })
 
-    let rightPrism : Prism' (Sum String Employee) Employee := right' String Employee
-    let step1 : Traversal' (List (Sum String Employee)) Employee := traversed ∘ rightPrism
-    let finalTraversal : Traversal' (List (Sum String Employee)) Int := step1 ∘ salaryLens
+    -- Using optic% for the composed traversal
+    let finalTraversal := optic%
+      traversed ∘ right' String Employee ∘ salaryLens
+      : Traversal' (List (Sum String Employee)) Int
 
     -- Collect salaries (only from Right/success cases)
     let salaries := Fold.toListTraversal finalTraversal results
@@ -443,10 +444,9 @@ private def case_affineViaAt : TestCase := {
       lens' (fun e => e.salary) (fun e s => { e with salary := s })
 
     -- Compose: Lens to Option Employee → Prism (somePrism) → Lens to salary
-    let finalAffine : AffineTraversal' (List Employee) Int :=
-      atLens ∘
-      ofPrism (somePrism' Employee) ∘
-      salaryLens
+    let finalAffine := optic%
+      atLens ∘ ofPrism (somePrism' Employee) ∘ salaryLens
+      : AffineTraversal' (List Employee) Int
 
     -- Preview element at valid index
     let salary := AffineTraversalOps.preview' finalAffine employees
@@ -464,8 +464,9 @@ private def case_affineViaAt : TestCase := {
 
     -- Access out-of-bounds index
     let atLens10 : Lens' (List Employee) (Option Employee) := HasAt.focus 10
-    let outOfBounds : AffineTraversal' (List Employee) Employee :=
+    let outOfBounds := optic%
       atLens10 ∘ ofPrism (somePrism' Employee)
+      : AffineTraversal' (List Employee) Employee
 
     let noEmployee := AffineTraversalOps.preview' outOfBounds employees
     ensureEq "Out of bounds preview fails" (none : Option Employee) noEmployee
@@ -580,24 +581,17 @@ private def case_foldAggregations : TestCase := {
 
     -- 1. Collect all zip codes from the entire company
     -- Company → all departments → all employees → address → zipCode
-    let allZipsTraversal : Traversal' Company String :=
-      departmentsLens ∘
-      traversed (α := Department) (β := Department) ∘
-      employeesLens ∘
-      traversed (α := Employee) (β := Employee) ∘
-      addressLens ∘
-      zipCodeLens
+    let allZipsTraversal := optic%
+      departmentsLens ∘ traversed ∘ employeesLens ∘ traversed ∘ addressLens ∘ zipCodeLens
+      : Traversal' Company String
 
     let allZipCodes : List String := toListTraversal allZipsTraversal company
     ensureEq "Collect all zip codes" ["10001", "94102", "90001", "78701", "02101"] allZipCodes
 
     -- 2. Collect all salaries and compute sum (demonstrates fold aggregation)
-    let allSalariesTraversal : Traversal' Company Int :=
-      departmentsLens ∘
-      traversed (α := Department) (β := Department) ∘
-      employeesLens ∘
-      traversed (α := Employee) (β := Employee) ∘
-      salaryLens
+    let allSalariesTraversal := optic%
+      departmentsLens ∘ traversed ∘ employeesLens ∘ traversed ∘ salaryLens
+      : Traversal' Company Int
 
     let allSalaries : List Int := toListTraversal allSalariesTraversal company
     ensureEq "Collect all salaries" [100000, 110000, 90000, 95000, 85000] allSalaries
@@ -611,24 +605,18 @@ private def case_foldAggregations : TestCase := {
     ensureEq "Average salary" 96000 avgSalary
 
     -- 3. Count employees across all departments (demonstrates counting)
-    let allEmployeesTraversal : Traversal' Company Employee :=
-      departmentsLens ∘
-      traversed (α := Department) (β := Department) ∘
-      employeesLens ∘
-      traversed (α := Employee) (β := Employee)
+    let allEmployeesTraversal := optic%
+      departmentsLens ∘ traversed ∘ employeesLens ∘ traversed
+      : Traversal' Company Employee
 
     let allEmployees : List Employee := toListTraversal allEmployeesTraversal company
     let employeeCount := allEmployees.length
     ensureEq "Total employee count" 5 employeeCount
 
     -- 4. Collect all cities (demonstrates another read-only property)
-    let allCitiesTraversal : Traversal' Company String :=
-      departmentsLens ∘
-      traversed (α := Department) (β := Department) ∘
-      employeesLens ∘
-      traversed (α := Employee) (β := Employee) ∘
-      addressLens ∘
-      cityLens
+    let allCitiesTraversal := optic%
+      departmentsLens ∘ traversed ∘ employeesLens ∘ traversed ∘ addressLens ∘ cityLens
+      : Traversal' Company String
 
     let allCities := toListTraversal allCitiesTraversal company
     ensureEq "Collect all cities" ["NYC", "SF", "LA", "Austin", "Boston"] allCities
@@ -703,14 +691,10 @@ private def case_ultimateComposition : TestCase := {
       lens' (fun d => d.employees) (fun d emps => { d with employees := emps })
 
     -- Build the mega-composition: all employee names at character level
-    let companyToAllNameChars : Traversal' Company Char :=
-      departmentsLens ∘
-      traversed (α := Department) (β := Department) ∘
-      employeesLens ∘
-      traversed (α := Employee) (β := Employee) ∘
-      nameLens ∘
-      stringToListIso ∘
-      traversed (α := Char) (β := Char)
+    let companyToAllNameChars := optic%
+      departmentsLens ∘ traversed ∘ employeesLens ∘ traversed ∘
+      nameLens ∘ stringToListIso ∘ traversed
+      : Traversal' Company Char
 
     -- Capitalize all employee names across the entire company!
     let allCaps : Company := Traversal.over' companyToAllNameChars Char.toUpper company
@@ -874,12 +858,9 @@ private def case_allSalaries : TestCase := {
       lens' (fun e => e.salary) (fun e sal => { e with salary := sal })
 
     -- Compose: Company → all Depts → all Employees → salary
-    let companyToAllSalaries : Traversal' Company Int :=
-      departmentsLens ∘
-      traversed (α := Department) (β := Department) ∘
-      employeesLens ∘
-      traversed (α := Employee) (β := Employee) ∘
-      salaryLens
+    let companyToAllSalaries := optic%
+      departmentsLens ∘ traversed ∘ employeesLens ∘ traversed ∘ salaryLens
+      : Traversal' Company Int
 
     -- Collect all salaries (read operation) using toListTraversal
     let allSalaries : List Int := toListTraversal companyToAllSalaries company

@@ -22,3 +22,4 @@ build/
 
 # Lake manifest lock (optional - some prefer to commit this)
 # lake-manifest.json
+scratch/

@@ -223,4 +223,5 @@ provide the necessary type context.
 -/
 scoped macro "optic%" e:term ":" t:term : term => `(($e : $t))
 
+
 end Collimator.Operators
