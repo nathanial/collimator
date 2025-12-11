@@ -115,16 +115,16 @@ private def case_nestedTuples : TestCase := {
       lens1 ∘ lens2
 
     -- View the deeply nested value
-    let str := view' composed data
+    let str := data ^. composed
     ensureEq "View nested string" "hello" str
 
     -- Modify the deeply nested value
-    let modified := over' composed (fun s => s ++ "!") data
+    let modified := data & composed %~ (· ++ "!")
     let expected := ((42, "hello!"), 3.14)
     ensureEq "Modify through composition" expected modified
 
     -- Set a new value
-    let updated := set' composed "world" data
+    let updated := data & composed .~ "world"
     let expected2 := ((42, "world"), 3.14)
     ensureEq "Set through composition" expected2 updated
 }
@@ -179,12 +179,12 @@ private def case_companyZipCode : TestCase := {
       headLens (α := Employee) ∘ Employee.addressLens ∘ Address.zipCodeLens
 
     -- View the deeply nested zip code
-    let zip := view' companyToZip company
+    let zip := company ^. companyToZip
     ensureEq "View nested zip code" "12345" zip
 
     -- Modify the deeply nested zip code
-    let modified := over' companyToZip (fun _ => "99999") company
-    let newZip := view' companyToZip modified
+    let modified := company & companyToZip %~ (fun _ => "99999")
+    let newZip := modified ^. companyToZip
     ensureEq "Modified zip code" "99999" newZip
 
     -- Verify other fields unchanged
@@ -194,8 +194,8 @@ private def case_companyZipCode : TestCase := {
     ensureEq "City unchanged" "Springfield" modified.departments.head!.employees.head!.address.city
 
     -- Set a completely new zip code
-    let updated := set' companyToZip "54321" company
-    let finalZip := view' companyToZip updated
+    let updated := company & companyToZip .~ "54321"
+    let finalZip := updated ^. companyToZip
     ensureEq "Set new zip code" "54321" finalZip
 }
 
@@ -212,20 +212,20 @@ private def case_isoTraversalComposition : TestCase := {
       stringToListIso ∘ traversed (α := Char) (β := Char)
 
     -- Collect all chars as a list (demonstrates the Iso transformation + Traversal focus)
-    let chars := toListTraversal stringCharsTraversal s
+    let chars := s ^.. stringCharsTraversal
     ensureEq "Chars collected via Iso ∘ Traversal" ['h', 'e', 'l', 'l', 'o'] chars
 
     -- Modify all chars to uppercase
-    let upper := Traversal.over' stringCharsTraversal Char.toUpper s
+    let upper := s & stringCharsTraversal %~ Char.toUpper
     ensureEq "All chars to uppercase" "HELLO" upper
 
     -- Transform specific chars
-    let exclaimed := Traversal.over' stringCharsTraversal (fun c => if c == 'l' then '!' else c) s
+    let exclaimed := s & stringCharsTraversal %~ (fun c => if c == 'l' then '!' else c)
     ensureEq "Replace l with !" "he!!o" exclaimed
 
     -- Empty string edge case
     let empty := ""
-    let emptyChars := Fold.toListTraversal stringCharsTraversal empty
+    let emptyChars := empty ^.. stringCharsTraversal
     ensureEq "Empty string has no chars" ([] : List Char) emptyChars
 
     -- Key insight: Iso enables type transformation (String ↔ List Char)
@@ -277,12 +277,12 @@ private def case_traversalPrismComposition : TestCase := {
       : Traversal' (List (Option Employee)) String
 
     -- Collect all cities (only from Some employees, None are skipped!)
-    let cities := toListTraversal finalTraversal employees
+    let cities := employees ^.. finalTraversal
     ensureEq "Collect cities (None skipped)" ["NYC", "LA", "SF"] cities
 
     -- Modify all cities to "Remote"
-    let remote : List (Option Employee) := Traversal.over' finalTraversal (fun _ => "Remote") employees
-    let remoteCities := Fold.toListTraversal finalTraversal remote
+    let remote : List (Option Employee) := employees & finalTraversal %~ (fun _ => "Remote")
+    let remoteCities := remote ^.. finalTraversal
     ensureEq "All cities changed to Remote" ["Remote", "Remote", "Remote"] remoteCities
 
     -- Verify None values are preserved (count remains same)
@@ -334,12 +334,12 @@ private def case_traversalPrismSum : TestCase := {
       : Traversal' (List (Sum String Employee)) Int
 
     -- Collect salaries (only from Right/success cases)
-    let salaries := Fold.toListTraversal finalTraversal results
+    let salaries := results ^.. finalTraversal
     ensureEq "Collect salaries (errors skipped)" [100000, 110000] salaries
 
     -- Give 10% raise to successful employees only
-    let raised : List (Sum String Employee) := Traversal.over' finalTraversal (fun s => s + s / 10) results
-    let newSalaries := Fold.toListTraversal finalTraversal raised
+    let raised : List (Sum String Employee) := results & finalTraversal %~ (fun s => s + s / 10)
+    let newSalaries := raised ^.. finalTraversal
     ensureEq "Salaries raised (errors untouched)" [110000, 121000] newSalaries
 
     -- Verify error messages are unchanged
@@ -383,16 +383,16 @@ private def case_affineTraversal : TestCase := {
       Address.cityLens
 
     -- Preview: succeeds on non-empty list
-    let city := AffineTraversalOps.preview' finalAffine employees
+    let city := employees ^? finalAffine
     ensureEq "Preview head city succeeds" (some "NYC") city
 
     -- Preview: fails on empty list (key difference from Lens!)
-    let noCity := AffineTraversalOps.preview' finalAffine empty
+    let noCity := empty ^? finalAffine
     ensureEq "Preview on empty list fails" (none : Option String) noCity
 
     -- Modify: works on non-empty list
-    let modified : List Employee := AffineTraversalOps.over finalAffine (fun _ => "SF") employees
-    let newCity := AffineTraversalOps.preview' finalAffine modified
+    let modified : List Employee := employees & finalAffine %~ (fun _ => "SF")
+    let newCity := modified ^? finalAffine
     ensureEq "Modified head city" (some "SF") newCity
 
     -- Verify second employee unchanged
@@ -404,7 +404,7 @@ private def case_affineTraversal : TestCase := {
     | none => ensure false "Expected tail"
 
     -- Set on empty list: no effect (key behavior!)
-    let stillEmpty : List Employee := AffineTraversalOps.set finalAffine "Denver" empty
+    let stillEmpty : List Employee := empty & finalAffine .~ "Denver"
     ensureEq "Set on empty list is no-op" empty stillEmpty
 
     -- Key insight: AffineTraversal = "at most one focus"
@@ -446,12 +446,12 @@ private def case_affineViaAt : TestCase := {
       : AffineTraversal' (List Employee) Int
 
     -- Preview element at valid index
-    let salary := AffineTraversalOps.preview' finalAffine employees
+    let salary := employees ^? finalAffine
     ensureEq "Preview salary at index 1" (some 110000) salary
 
     -- Modify element at valid index
-    let raised : List Employee := AffineTraversalOps.over finalAffine (· + 10000) employees
-    let newSalary := AffineTraversalOps.preview' finalAffine raised
+    let raised : List Employee := employees & finalAffine %~ (· + 10000)
+    let newSalary := raised ^? finalAffine
     ensureEq "Raised salary at index 1" (some 120000) newSalary
 
     -- Verify other employees unchanged
@@ -465,11 +465,11 @@ private def case_affineViaAt : TestCase := {
       atLens10 ∘ ofPrism (somePrism' Employee)
       : AffineTraversal' (List Employee) Employee
 
-    let noEmployee := AffineTraversalOps.preview' outOfBounds employees
+    let noEmployee := employees ^? outOfBounds
     ensureEq "Out of bounds preview fails" (none : Option Employee) noEmployee
 
     -- Modify out-of-bounds: no effect
-    let unchanged : List Employee := AffineTraversalOps.over outOfBounds (fun e => { e with salary := 0 }) employees
+    let unchanged : List Employee := employees & outOfBounds %~ (fun e => { e with salary := 0 })
     ensureEq "Out of bounds modify is no-op" employees unchanged
 
     -- Key insight: Lens to Option + somePrism = AffineTraversal
@@ -534,7 +534,7 @@ private def case_foldAggregations : TestCase := {
         { c with departments := d' :: c.departments.tail! })
 
     -- Use the composed Lens to read a single value (first employee's city)
-    let firstCity := view' companyToFirstCity company
+    let firstCity := company ^. companyToFirstCity
     ensureEq "Fold reads first employee's city" "NYC" firstCity
 
     -- Path: Company → departments → [0] → employees → [0] → salary
@@ -547,7 +547,7 @@ private def case_foldAggregations : TestCase := {
         let d' := { d with employees := e' :: d.employees.tail! }
         { c with departments := d' :: c.departments.tail! })
 
-    let firstSalary := view' firstEmpSalaryLens company
+    let firstSalary := company ^. firstEmpSalaryLens
     ensureEq "Fold reads first employee's salary" 100000 firstSalary
 
     -- Key insight: Folds are type-safe read-only optics
@@ -563,7 +563,7 @@ private def case_foldAggregations : TestCase := {
       Company.departmentsLens ∘ traversed ∘ Department.employeesLens ∘ traversed ∘ Employee.addressLens ∘ Address.zipCodeLens
       : Traversal' Company String
 
-    let allZipCodes : List String := toListTraversal allZipsTraversal company
+    let allZipCodes : List String := company ^.. allZipsTraversal
     ensureEq "Collect all zip codes" ["10001", "94102", "90001", "78701", "02101"] allZipCodes
 
     -- 2. Collect all salaries and compute sum (demonstrates fold aggregation)
@@ -571,7 +571,7 @@ private def case_foldAggregations : TestCase := {
       Company.departmentsLens ∘ traversed ∘ Department.employeesLens ∘ traversed ∘ Employee.salaryLens
       : Traversal' Company Int
 
-    let allSalaries : List Int := toListTraversal allSalariesTraversal company
+    let allSalaries : List Int := company ^.. allSalariesTraversal
     ensureEq "Collect all salaries" [100000, 110000, 90000, 95000, 85000] allSalaries
 
     -- Sum salaries (fold aggregation)
@@ -587,7 +587,7 @@ private def case_foldAggregations : TestCase := {
       Company.departmentsLens ∘ traversed ∘ Department.employeesLens ∘ traversed
       : Traversal' Company Employee
 
-    let allEmployees : List Employee := toListTraversal allEmployeesTraversal company
+    let allEmployees : List Employee := company ^.. allEmployeesTraversal
     let employeeCount := allEmployees.length
     ensureEq "Total employee count" 5 employeeCount
 
@@ -596,7 +596,7 @@ private def case_foldAggregations : TestCase := {
       Company.departmentsLens ∘ traversed ∘ Department.employeesLens ∘ traversed ∘ Employee.addressLens ∘ Address.cityLens
       : Traversal' Company String
 
-    let allCities := toListTraversal allCitiesTraversal company
+    let allCities := company ^.. allCitiesTraversal
     ensureEq "Collect all cities" ["NYC", "SF", "LA", "Austin", "Boston"] allCities
 
     -- Get unique cities (demonstrates post-processing)
@@ -652,7 +652,7 @@ private def case_ultimateComposition : TestCase := {
       Employee.nameLens ∘ (stringToListIso ∘ traversed (α := Char) (β := Char))
 
     -- Capitalize all characters in employee name
-    let capitalized : Employee := Traversal.over' nameCharsTraversal Char.toUpper emp1
+    let capitalized : Employee := emp1 & nameCharsTraversal %~ Char.toUpper
     ensureEq "Lens ∘ Iso ∘ Traversal: name to uppercase" "ALICE" capitalized.name
 
     -- Example 2: Company-wide name transformation
@@ -666,7 +666,7 @@ private def case_ultimateComposition : TestCase := {
       : Traversal' Company Char
 
     -- Capitalize all employee names across the entire company!
-    let allCaps : Company := Traversal.over' companyToAllNameChars Char.toUpper company
+    let allCaps : Company := company & companyToAllNameChars %~ Char.toUpper
 
     -- Verify all names are now uppercase
     ensureEq "First dept, first employee" "ALICE" allCaps.departments[0]!.employees[0]!.name
@@ -674,7 +674,7 @@ private def case_ultimateComposition : TestCase := {
     ensureEq "Second dept, first employee" "CAROL" allCaps.departments[1]!.employees[0]!.name
 
     -- Collect all name characters (demonstrates Traversal as Fold)
-    let allChars := toListTraversal companyToAllNameChars company
+    let allChars := company ^.. companyToAllNameChars
     ensureEq "All name chars collected" ['a','l','i','c','e','b','o','b','c','a','r','o','l'] allChars
 
     -- Example 3: Add filtering to the mix - filter by character
@@ -682,11 +682,11 @@ private def case_ultimateComposition : TestCase := {
     let aCharsOnly : Traversal' Company Char :=
       Collimator.Combinators.filtered companyToAllNameChars (· == 'a')
 
-    let countAs := (toListTraversal aCharsOnly company).length
+    let countAs := (company ^.. aCharsOnly).length
     ensureEq "Count 'a' characters in all names" 2 countAs  -- alice(1) + carol(1) = 2
 
     -- Replace all 'a' with 'A'
-    let replacedAs : Company := Traversal.over' aCharsOnly (fun _ => 'A') company
+    let replacedAs : Company := company & aCharsOnly %~ (fun _ => 'A')
     ensureEq "Replaced 'a' with 'A' in alice" "Alice" replacedAs.departments[0]!.employees[0]!.name
     ensureEq "Replaced 'a' with 'A' in carol" "cArol" replacedAs.departments[1]!.employees[0]!.name
 
@@ -741,16 +741,16 @@ private def case_nestedOptions : TestCase := {
       Address.cityLens
 
     -- Test 1: Preview succeeds when CEO exists
-    let cityWithCEO := AffineTraversalOps.preview' ceoToCity companyWithCEO
+    let cityWithCEO := companyWithCEO ^? ceoToCity
     ensureEq "Preview CEO city succeeds" (some "NYC") cityWithCEO
 
     -- Test 2: Preview short-circuits when CEO is None
-    let cityNoCEO := AffineTraversalOps.preview' ceoToCity companyNoCEO
+    let cityNoCEO := companyNoCEO ^? ceoToCity
     ensureEq "Preview CEO city fails (short-circuit)" (none : Option String) cityNoCEO
 
     -- Test 3: Set modifies when CEO exists
-    let movedCEO : CompanyWithCEO := AffineTraversalOps.set ceoToCity "Boston" companyWithCEO
-    let newCity := AffineTraversalOps.preview' ceoToCity movedCEO
+    let movedCEO : CompanyWithCEO := companyWithCEO & ceoToCity .~ "Boston"
+    let newCity := movedCEO ^? ceoToCity
     ensureEq "Set CEO city succeeds" (some "Boston") newCity
 
     -- Verify CEO name unchanged
@@ -759,11 +759,11 @@ private def case_nestedOptions : TestCase := {
     | none => ensure false "Expected CEO to exist"
 
     -- Test 4: Set is no-op when CEO is None (short-circuit)
-    let unchangedNoCEO : CompanyWithCEO := AffineTraversalOps.set ceoToCity "Boston" companyNoCEO
+    let unchangedNoCEO : CompanyWithCEO := companyNoCEO & ceoToCity .~ "Boston"
     ensureEq "Set on None is no-op" companyNoCEO unchangedNoCEO
 
     -- Test 5: Over is no-op when CEO is None
-    let upperNoCEO : CompanyWithCEO := AffineTraversalOps.over ceoToCity String.toUpper companyNoCEO
+    let upperNoCEO : CompanyWithCEO := companyNoCEO & ceoToCity %~ String.toUpper
     ensureEq "Over on None is no-op" companyNoCEO upperNoCEO
 
     -- Test 6: Nested Option chaining - CEO → address → street
@@ -773,10 +773,10 @@ private def case_nestedOptions : TestCase := {
       Employee.addressLens ∘
       Address.streetLens
 
-    let street := AffineTraversalOps.preview' ceoToStreet companyWithCEO
+    let street := companyWithCEO ^? ceoToStreet
     ensureEq "Nested preview succeeds" (some "1 Executive Blvd") street
 
-    let noStreet := AffineTraversalOps.preview' ceoToStreet companyNoCEO
+    let noStreet := companyNoCEO ^? ceoToStreet
     ensureEq "Nested preview short-circuits" (none : Option String) noStreet
 
     -- Key insights:
@@ -810,13 +810,13 @@ private def case_allSalaries : TestCase := {
       Company.departmentsLens ∘ traversed ∘ Department.employeesLens ∘ traversed ∘ Employee.salaryLens
       : Traversal' Company Int
 
-    -- Collect all salaries (read operation) using toListTraversal
-    let allSalaries : List Int := toListTraversal companyToAllSalaries company
+    -- Collect all salaries (read operation) using ^..
+    let allSalaries : List Int := company ^.. companyToAllSalaries
     ensureEq "All salaries collected" [100000, 110000, 90000, 95000] allSalaries
 
     -- Give everyone a 10% raise
-    let raised : Company := Traversal.over' companyToAllSalaries (fun sal => sal + (sal / 10)) company
-    let newSalaries : List Int := toListTraversal companyToAllSalaries raised
+    let raised : Company := company & companyToAllSalaries %~ (fun sal => sal + (sal / 10))
+    let newSalaries : List Int := raised ^.. companyToAllSalaries
     ensureEq "All salaries raised 10%" [110000, 121000, 99000, 104500] newSalaries
 
     -- Verify company name unchanged
@@ -831,8 +831,8 @@ private def case_allSalaries : TestCase := {
     ensureEq "Bob name preserved" "Bob" raised.departments.head!.employees.tail!.head!.name
 
     -- Set all salaries to a fixed amount
-    let normalized : Company := Traversal.over' companyToAllSalaries (fun _ => 100000) company
-    let finalSalaries : List Int := toListTraversal companyToAllSalaries normalized
+    let normalized : Company := company & companyToAllSalaries .~ 100000
+    let finalSalaries : List Int := normalized ^.. companyToAllSalaries
     ensureEq "All salaries normalized" [100000, 100000, 100000, 100000] finalSalaries
 }
 
