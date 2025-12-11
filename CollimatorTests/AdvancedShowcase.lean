@@ -5,5 +5,4 @@ import CollimatorTests.AdvancedShowcase.EffectfulTraversals
 import CollimatorTests.AdvancedShowcase.FilteredIndexed
 import CollimatorTests.AdvancedShowcase.HeterogeneousCompositions
 import CollimatorTests.AdvancedShowcase.MindBending
-import CollimatorTests.AdvancedShowcase.PolymorphicIsos
 import CollimatorTests.AdvancedShowcase.PrismMagic

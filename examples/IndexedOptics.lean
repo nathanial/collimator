@@ -26,6 +26,7 @@ Use indexed optics when you need to:
 open Collimator
 open Collimator.Instances.List  -- For traversed, itraversed
 open Collimator.Indexed         -- For HasAt, HasIx
+open scoped Collimator.Operators
 
 /-! ## Basic Indexed Traversal -/
 
@@ -33,13 +34,13 @@ open Collimator.Indexed         -- For HasAt, HasIx
 example : List (Nat × String) :=
   -- itraversed returns (index, value) pairs
   let items := ["apple", "banana", "cherry"]
-  Fold.toListTraversal itraversed items
+  items ^.. itraversed
   -- Result: [(0, "apple"), (1, "banana"), (2, "cherry")]
 
 /-- Transform values using their index.
     Note: itraversed works on (Nat × α) pairs -/
 def indexedPrefix (items : List String) : List String :=
-  let indexed := Fold.toListTraversal itraversed items
+  let indexed := items ^.. itraversed
   indexed.map fun (i, s) => s!"{i}:{s}"
 
 #eval indexedPrefix ["a", "b", "c", "d"]
@@ -50,14 +51,14 @@ def indexedPrefix (items : List String) : List String :=
 /-- Modify only elements at even indices. -/
 example : List Int :=
   let nums := [10, 20, 30, 40, 50]
-  Traversal.over' (ifilteredList fun i _ => i % 2 == 0) (· * 100) nums
+  nums & ifilteredList (fun i _ => i % 2 == 0) %~ (· * 100)
   -- Result: [1000, 20, 3000, 40, 5000]
 
 /-- Filter by both index and value. -/
 example : List Nat :=
   let nums := [5, 10, 15, 20, 25, 30]
   -- Keep only elements where index < value / 5
-  Fold.toListTraversal (ifilteredList fun i v => decide (i < v / 5)) nums
+  nums ^.. ifilteredList (fun i v => decide (i < v / 5))
   -- Elements: (0,5) -> 0 < 1 ✓, (1,10) -> 1 < 2 ✓, (2,15) -> 2 < 3 ✓,
   --           (3,20) -> 3 < 4 ✓, (4,25) -> 4 < 5 ✓, (5,30) -> 5 < 6 ✓
   -- Result: [5, 10, 15, 20, 25, 30] (all pass in this case)
@@ -68,18 +69,18 @@ example : List Nat :=
 example : Option String :=
   let items := ["first", "second", "third"]
   -- atLens gives a Lens to Option α
-  view' (atLens 1) items
+  items ^. atLens 1
   -- Result: some "second"
 
 example : Option String :=
   let items := ["first", "second", "third"]
-  view' (atLens 10) items  -- Out of bounds
+  items ^. atLens 10  -- Out of bounds
   -- Result: none
 
 /-- Update at a specific index. -/
 example : List String :=
   let items := ["a", "b", "c"]
-  set' (atLens 1) (some "REPLACED") items
+  items & atLens 1 .~ some "REPLACED"
   -- Result: ["a", "REPLACED", "c"]
 
 /-! ## Traversal-based Index Access with HasIx -/
@@ -87,13 +88,13 @@ example : List String :=
 /-- ix creates a traversal that focuses one element. -/
 example : List Int :=
   let nums : List Int := [10, 20, 30, 40, 50]
-  Traversal.over' (ix (s := List Int) (a := Int) 2) (· + 1000) nums
+  nums & ix (s := List Int) (a := Int) 2 %~ (· + 1000)
   -- Result: [10, 20, 1030, 40, 50]
 
 /-- Out-of-bounds ix is a no-op (empty traversal). -/
 example : List Int :=
   let nums : List Int := [10, 20, 30]
-  Traversal.over' (ix (s := List Int) (a := Int) 100) (· + 1000) nums
+  nums & ix (s := List Int) (a := Int) 100 %~ (· + 1000)
   -- Result: [10, 20, 30] (unchanged)
 
 /-! ## Composing Indexed Optics -/
@@ -105,16 +106,14 @@ example : List (List Int) :=
   let rowTrav : Traversal' (List (List Int)) (List Int) := ix 1  -- Focus row at index 1
   let colTrav : Traversal' (List Int) Int := ix 2               -- Focus column at index 2
   -- Compose: first row, then column within that row
-  Traversal.over' rowTrav
-    (fun row => Traversal.over' colTrav (· * 100) row)
-    matrix
+  matrix & rowTrav %~ (fun row => row & colTrav %~ (· * 100))
   -- Result: [[1, 2, 3], [4, 5, 600], [7, 8, 9]]
 
 /-! ## Practical Example: Numbered List -/
 
 /-- Create a numbered list from items. -/
 def numberItems (items : List String) : List String :=
-  let pairs := Fold.toListTraversal itraversed items
+  let pairs := items ^.. itraversed
   pairs.map fun (i, s) => s!"{i + 1}. {s}"
 
 #eval numberItems ["Buy milk", "Walk dog", "Write code"]
@@ -124,7 +123,7 @@ def numberItems (items : List String) : List String :=
 
 /-- Apply alternating transformations based on index. -/
 def alternating (items : List String) : List String :=
-  let indexed := Fold.toListTraversal itraversed items
+  let indexed := items ^.. itraversed
   indexed.map fun (i, s) =>
     if i % 2 == 0 then s.toUpper else s.toLower
 
@@ -137,7 +136,7 @@ def alternating (items : List String) : List String :=
 |---------|----------------|------------|
 | Returns | `Lens' s (Option a)` | `Traversal' s a` |
 | Type | Lens (always focuses) | Traversal (0-or-1 focus) |
-| Get | `view'` returns `Option a` | Use `toListOf` |
+| Get | `^.` returns `Option a` | Use `^..` |
 | Set | Can set to `some v` or `none` | Only modifies if present |
 | Missing | Returns `none` | Empty traversal (no-op) |
 

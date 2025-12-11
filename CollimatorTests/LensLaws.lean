@@ -2,6 +2,7 @@ import Batteries
 import Collimator.Optics
 import Collimator.Theorems.LensLaws
 import Collimator.Combinators
+import Collimator.Operators
 import CollimatorTests.Framework
 
 namespace CollimatorTests.LensLaws
@@ -10,6 +11,7 @@ open Collimator
 open Collimator.Theorems
 open Collimator.Combinators
 open CollimatorTests
+open scoped Collimator.Operators
 
 /-! ## Test Structures -/
 
@@ -62,8 +64,8 @@ private def case_getLens_putLaw : TestCase := {
     let p : Point := { x := 5, y := 10 }
     let xLens : Lens' Point Int := lens' Point.getLens_x Point.setLens_x
     let newValue := 42
-    let modified := set' xLens newValue p
-    let viewed := view' xLens modified
+    let modified := p & xLens .~ newValue
+    let viewed := modified ^. xLens
     ensureEq "GetPut law" newValue viewed
 }
 
@@ -75,8 +77,8 @@ private def case_putgetLaw : TestCase := {
   run := do
     let p : Point := { x := 7, y := 14 }
     let xLens : Lens' Point Int := lens' Point.getLens_x Point.setLens_x
-    let currentValue := view' xLens p
-    let unchanged := set' xLens currentValue p
+    let currentValue := p ^. xLens
+    let unchanged := p & xLens .~ currentValue
     ensureEq "PutGet law" p unchanged
 }
 
@@ -88,9 +90,9 @@ private def case_putputLaw : TestCase := {
   run := do
     let p : Point := { x := 3, y := 9 }
     let yLens : Lens' Point Int := lens' Point.getLens_y Point.setLens_y
-    let intermediate := set' yLens 100 p
-    let final := set' yLens 200 intermediate
-    let direct := set' yLens 200 p
+    let intermediate := p & yLens .~ 100
+    let final := intermediate & yLens .~ 200
+    let direct := p & yLens .~ 200
     ensureEq "PutPut law" direct final
 }
 
@@ -104,19 +106,19 @@ private def case_tupleLensLaws : TestCase := {
     let firstLens : Lens' (Nat × String) Nat := _1 (α := Nat) (β := String) (γ := Nat)
 
     -- GetPut
-    let modified1 := set' firstLens 99 pair
-    let viewed1 := view' firstLens modified1
+    let modified1 := pair & firstLens .~ 99
+    let viewed1 := modified1 ^. firstLens
     ensureEq "Tuple _1 GetPut" 99 viewed1
 
     -- PutGet
-    let current := view' firstLens pair
-    let unchanged := set' firstLens current pair
+    let current := pair ^. firstLens
+    let unchanged := pair & firstLens .~ current
     ensureEq "Tuple _1 PutGet" pair unchanged
 
     -- PutPut
-    let intermediate := set' firstLens 11 pair
-    let final := set' firstLens 22 intermediate
-    let direct := set' firstLens 22 pair
+    let intermediate := pair & firstLens .~ 11
+    let final := intermediate & firstLens .~ 22
+    let direct := pair & firstLens .~ 22
     ensureEq "Tuple _1 PutPut" direct final
 }
 
@@ -135,8 +137,8 @@ private def case_compositionGetPutLaw : TestCase := {
     let composed : Lens' Rectangle Int := topLeftLens ∘ xLens
 
     let newValue := -50
-    let modified := set' composed newValue r
-    let viewed := view' composed modified
+    let modified := r & composed .~ newValue
+    let viewed := modified ^. composed
     ensureEq "Composed GetPut law" newValue viewed
 }
 
@@ -154,8 +156,8 @@ private def case_compositionPutGetLaw : TestCase := {
     let yLens : Lens' Point Int := lens' Point.getLens_y Point.setLens_y
     let composed : Lens' Rectangle Int := topLeftLens ∘ yLens
 
-    let currentValue := view' composed r
-    let unchanged := set' composed currentValue r
+    let currentValue := r ^. composed
+    let unchanged := r & composed .~ currentValue
     ensureEq "Composed PutGet law" r unchanged
 }
 
@@ -173,9 +175,9 @@ private def case_compositionPutPutLaw : TestCase := {
     let xLens : Lens' Point Int := lens' Point.getLens_x Point.setLens_x
     let composed : Lens' Rectangle Int := topLeftLens ∘ xLens
 
-    let intermediate := set' composed 777 r
-    let final := set' composed 888 intermediate
-    let direct := set' composed 888 r
+    let intermediate := r & composed .~ 777
+    let final := intermediate & composed .~ 888
+    let direct := r & composed .~ 888
     ensureEq "Composed PutPut law" direct final
 }
 
@@ -193,10 +195,10 @@ private def case_lensLawTheorems : TestCase := {
 
     -- These operations should satisfy the laws by construction
     -- (the laws are proven in LensLaws.lean)
-    let test1 := view' xLens (set' xLens 10 p)
-    let test2 := set' xLens (view' xLens p) p
-    let test3 := set' xLens 30 (set' xLens 20 p)
-    let test4 := set' xLens 30 p
+    let test1 := (p & xLens .~ 10) ^. xLens
+    let test2 := p & xLens .~ (p ^. xLens)
+    let test3 := p & xLens .~ 20 & xLens .~ 30
+    let test4 := p & xLens .~ 30
 
     ensureEq "Law theorem GetPut" 10 test1
     ensureEq "Law theorem PutGet" p test2
@@ -226,12 +228,12 @@ private def case_compositionLawfulInstance : TestCase := {
     let comp2 : Lens' Rectangle Int := topLeftLens ∘ yLens
 
     -- Verify the compositions work correctly
-    ensureEq "Composed X view" 0 (view' comp1 r)
-    ensureEq "Composed Y view" 0 (view' comp2 r)
+    ensureEq "Composed X view" 0 (r ^. comp1)
+    ensureEq "Composed Y view" 0 (r ^. comp2)
 
-    let r' := set' comp1 25 r
-    ensureEq "Composed X set" 25 (view' comp1 r')
-    ensureEq "Composed X preserves Y" 0 (view' comp2 r')
+    let r' := r & comp1 .~ 25
+    ensureEq "Composed X set" 25 (r' ^. comp1)
+    ensureEq "Composed X preserves Y" 0 (r' ^. comp2)
 }
 
 /--

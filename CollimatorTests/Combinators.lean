@@ -29,30 +29,29 @@ private def case_operatorSyntax : TestCase := {
   name := "operator syntax view/over/set works for lenses",
   run := do
     let p : Player := { name := "Ada", score := 10 }
-    ensureEq "view" 10 (Collimator.view' scoreLens p)
-    let setter : Setter Player Player Int Int := scoreLens
-    let updated := Setter.over' setter (fun n => n + 5) p
-    ensureEq "over" 15 (Collimator.view' scoreLens updated)
-    let reset := Setter.set' setter 0 p
-    ensureEq "set" 0 (Collimator.view' scoreLens reset)
+    ensureEq "view" 10 (p ^. scoreLens)
+    let updated := p & scoreLens %~ (· + 5)
+    ensureEq "over" 15 (updated ^. scoreLens)
+    let reset := p & scoreLens .~ 0
+    ensureEq "set" 0 (reset ^. scoreLens)
 }
 
 private def case_prodInstances : TestCase := {
   name := "product instances supply convenient lenses",
   run := do
     let pair := (3, true)
-    let firstLens : Setter (Int × Bool) (Int × Bool) Int Int :=
+    let firstLens : Lens' (Int × Bool) Int :=
       Collimator.Instances.Prod.first (α := Int) (β := Bool) (γ := Int)
-    let secondLens : Setter (Int × Bool) (Int × Bool) Bool Bool :=
+    let secondLens : Lens' (Int × Bool) Bool :=
       Collimator.Instances.Prod.second (α := Int) (β := Bool) (γ := Bool)
-    let bumpedFirst := Setter.over' firstLens (fun n => n + 1) pair
+    let bumpedFirst := pair & firstLens %~ (· + 1)
     ensureEq "bump first" (4, true) bumpedFirst
-    let toggled := Setter.over' secondLens not pair
+    let toggled := pair & secondLens %~ not
     ensureEq "toggle second" (3, false) toggled
     let triple : (Int × Int) × Int := ((1, 2), 3)
-    let lens : Setter ((Int × Int) × Int) ((Int × Int) × Int) Int Int :=
+    let lens : Lens' ((Int × Int) × Int) Int :=
       Collimator.Instances.Prod.firstOfTriple (α := Int) (β := Int) (γ := Int) (δ := Int)
-    let incremented := Setter.over' lens (fun n => n + 10) triple
+    let incremented := triple & lens %~ (· + 10)
     ensureEq "first of triple" ((11, 2), 3) incremented
 }
 
@@ -64,8 +63,8 @@ private def case_sumPrisms : TestCase := {
         (α := Int) (β := String) (γ := Int)
     let inLeft : Sum Int String := Sum.inl (7 : Int)
     let inRight : Sum Int String := Sum.inr (α := Int) ("optics" : String)
-    ensureEq "preview left" (some (7 : Int)) (preview' leftPrism inLeft)
-    ensureEq "preview right" (none : Option Int) (preview' leftPrism inRight)
+    ensureEq "preview left" (some (7 : Int)) (inLeft ^? leftPrism)
+    ensureEq "preview right" (none : Option Int) (inRight ^? leftPrism)
     let expectedReview : Sum Int String := Sum.inl (5 : Int)
     ensureEq "review" expectedReview (review' leftPrism (5 : Int))
 }
@@ -75,8 +74,8 @@ private def case_optionPrisms : TestCase := {
   run := do
     let somePrism : Prism (Option Int) (Option Int) Int Int :=
       Collimator.Instances.Option.somePrism (α := Int) (β := Int)
-    ensureEq "preview some" (some 9) (preview' somePrism (some 9))
-    ensureEq "preview none" (none : Option Int) (preview' somePrism none)
+    ensureEq "preview some" (some 9) ((some 9) ^? somePrism)
+    ensureEq "preview none" (none : Option Int) (none ^? somePrism)
     ensureEq "review some" (some 4) (review' somePrism 4)
 }
 
@@ -86,7 +85,7 @@ private def case_listIx : TestCase := {
     let elements := [10, 20, 30]
     let traversal : Traversal' (List Int) Int :=
       ix (ι := Nat) (s := List Int) (a := Int) 1
-    let updated := Traversal.over' traversal (fun n => n + 7) elements
+    let updated := elements & traversal %~ (· + 7)
     ensureEq "ix modifies" [10, 27, 30] updated
 }
 
@@ -96,8 +95,8 @@ private def case_listAt : TestCase := {
     let xs := ["lean", "optic", "library"]
     let l : Lens' (List String) (Option String) :=
       atLens (ι := Nat) (s := List String) (a := String) 2
-    ensureEq "get existing" (some "library") (view' l xs)
-    ensureEq "missing" (none : Option String) (view' l ["lean"])
+    ensureEq "get existing" (some "library") (xs ^. l)
+    ensureEq "missing" (none : Option String) (["lean"] ^. l)
 }
 
 private def case_arrayIx : TestCase := {
@@ -106,10 +105,9 @@ private def case_arrayIx : TestCase := {
     let arr : Array Int := #[1, 2, 3]
     let traversal : Traversal' (Array Int) Int :=
       ix (ι := Nat) (s := Array Int) (a := Int) 0
-    let updated := Traversal.over' traversal (fun n => n * 2) arr
+    let updated := arr & traversal %~ (· * 2)
     ensureEq "modify first" #[2, 2, 3] updated
-    let untouched :=
-      Traversal.over' (ix (ι := Nat) (s := Array Int) (a := Int) 5) (fun n => n + 1) arr
+    let untouched := arr & (ix (ι := Nat) (s := Array Int) (a := Int) 5) %~ (· + 1)
     ensureEq "oob" #[1, 2, 3] untouched
 }
 
@@ -120,7 +118,7 @@ private def case_filteredTraversal : TestCase := {
       Collimator.Instances.List.traversed (α := Int) (β := Int)
     let evens : Traversal' (List Int) Int :=
       filtered tr (fun n => n % 2 == 0)
-    let result := Traversal.over' evens (fun n => n + 1) [1, 2, 3, 4]
+    let result := [1, 2, 3, 4] & evens %~ (· + 1)
     ensureEq "filtered update" [1, 3, 3, 5] result
 }
 
@@ -129,7 +127,7 @@ private def case_itraversedUsesIndex : TestCase := {
   run := do
     let base : Traversal' (List Int) (Nat × Int) :=
       Collimator.Instances.List.itraversed
-    let bumped := Traversal.over' base (fun | (idx, v) => (idx, v + idx)) [5, 5, 5]
+    let bumped := [5, 5, 5] & base %~ (fun | (idx, v) => (idx, v + idx))
     ensureEq "index applied" [5, 6, 7] bumped
 }
 

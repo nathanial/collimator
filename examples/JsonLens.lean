@@ -150,30 +150,30 @@ def examples : IO Unit := do
   -- Access nested field: data.users[0].name
   let firstUserName : AffineTraversal' JsonValue String :=
     field "users" ∘ index 0 ∘ field "name" ∘ _string
-  IO.println s!"First user name: {AffineTraversalOps.preview' firstUserName sampleData}"
+  IO.println s!"First user name: {sampleData ^? firstUserName}"
   -- Output: First user name: some "Alice"
 
   -- Access count field
   let countPath : AffineTraversal' JsonValue Int := field "count" ∘ _number
-  IO.println s!"Count: {AffineTraversalOps.preview' countPath sampleData}"
+  IO.println s!"Count: {sampleData ^? countPath}"
   -- Output: Count: some 3
 
   -- Modify: increment all ages by 1
   let allAges : Traversal' JsonValue Int :=
     field "users" ∘ elements ∘ field "age" ∘ _number
-  let updated := Traversal.over' allAges (· + 1) sampleData
+  let updated := sampleData & allAges %~ (· + 1)
   IO.println s!"After incrementing ages:"
 
   -- Verify first user's new age
   let firstAge : AffineTraversal' JsonValue Int :=
     field "users" ∘ index 0 ∘ field "age" ∘ _number
-  IO.println s!"  Alice's new age: {AffineTraversalOps.preview' firstAge updated}"
+  IO.println s!"  Alice's new age: {updated ^? firstAge}"
   -- Output: Alice's new age: some 31
 
   -- Collect all names
   let allNames : Traversal' JsonValue String :=
     field "users" ∘ elements ∘ field "name" ∘ _string
-  let names := Fold.toListTraversal allNames sampleData
+  let names := sampleData ^.. allNames
   IO.println s!"All user names: {names}"
   -- Output: All user names: ["Alice", "Bob", "Charlie"]
 

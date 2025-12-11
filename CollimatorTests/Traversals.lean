@@ -1,6 +1,7 @@
 import Collimator.Core
 import Batteries
 import Collimator.Optics
+import Collimator.Operators
 import Collimator.Concrete.FunArrow
 import CollimatorTests.Framework
 
@@ -14,6 +15,7 @@ open Collimator.Traversal
 open Collimator.Fold
 open Collimator.Setter
 open Collimator.AffineTraversalOps
+open scoped Collimator.Operators
 open CollimatorTests
 
 structure Point where
@@ -33,7 +35,7 @@ private def case_traversalOverList : TestCase := {
   name := "traversal over updates each list element",
   run := do
     let tr : Traversal' (List Int) Int := Traversal.eachList
-    let updated := Traversal.over' tr (fun n => n + 1) [1, 2, 3]
+    let updated := [1, 2, 3] & tr %~ (· + 1)
     ensureEq "list increment" [2, 3, 4] updated
 }
 
@@ -77,8 +79,8 @@ private def case_foldLength : TestCase := {
 private def case_setterSet : TestCase := {
   name := "setter set updates value",
   run := do
-    let st : Setter Point Point Int Int := pointLens
-    let updated := Setter.set' st 42 { x := 1, y := 2 }
+    let st : Lens' Point Int := pointLens
+    let updated := { x := 1, y := 2 } & st .~ 42
     ensureEq "setter set" { x := 42, y := 2 } updated
 }
 
@@ -87,9 +89,9 @@ private def case_affinePreviewAndSet : TestCase := {
   run := do
     let affine : AffineTraversal' (Option Int) Int :=
       AffineTraversalOps.ofPrism optionPrism
-    ensureEq "preview some" (some 5) (AffineTraversalOps.preview' affine (some 5))
-    ensureEq "preview none" (none : Option Int) (AffineTraversalOps.preview' affine none)
-    let reset := AffineTraversalOps.set affine 99 (some 1)
+    ensureEq "preview some" (some 5) ((some 5) ^? affine)
+    ensureEq "preview none" (none : Option Int) (none ^? affine)
+    let reset := (some 1) & affine .~ 99
     ensureEq "set value" (some 99) reset
 }
 

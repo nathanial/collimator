@@ -1,6 +1,7 @@
 import Collimator.Core
 import Batteries
 import Collimator.Optics
+import Collimator.Operators
 import Collimator.Concrete.FunArrow
 import CollimatorTests.Framework
 
@@ -9,6 +10,7 @@ namespace CollimatorTests.BasicOperations
 open Collimator
 open Collimator.Core
 open Collimator.Concrete
+open scoped Collimator.Operators
 open CollimatorTests
 
 structure Point where
@@ -35,11 +37,11 @@ private def case_lensViewOverSet : TestCase := {
   name := "lens view/over/set modify records",
   run := do
     let p : Point := { x := 3, y := 5 }
-    ensureEq "view extracts field" 3 (view' pointLens p)
-    let incremented := over' pointLens (fun n => n + 2) p
+    ensureEq "view extracts field" 3 (p ^. pointLens)
+    let incremented := p & pointLens %~ (· + 2)
     ensureEq "over updates field" 5 incremented.x
     ensureEq "over preserves other fields" 5 incremented.y
-    let reset := set' pointLens 10 p
+    let reset := p & pointLens .~ 10
     ensureEq "set replaces field" 10 reset.x
     ensureEq "set preserves other fields" 5 reset.y
 }
@@ -52,9 +54,9 @@ private def case_tupleLenses : TestCase := {
       _1 (α := Nat) (β := String) (γ := Nat)
     let secondLens : Lens (Nat × String) (Nat × String) String String :=
       _2 (α := Nat) (β := String) (γ := String)
-    ensureEq "_1 views first" 4 (view' firstLens pair)
-    ensureEq "_2 views second" "lean" (view' secondLens pair)
-    let updated := set' secondLens "core" pair
+    ensureEq "_1 views first" 4 (pair ^. firstLens)
+    ensureEq "_2 views second" "lean" (pair ^. secondLens)
+    let updated := pair & secondLens .~ "core"
     ensureEq "set _2 replaces second" (4, "core") updated
 }
 
@@ -62,8 +64,8 @@ private def case_constLens : TestCase := {
   name := "const lens ignores updates",
   run := do
     let l : Lens' String Int := const (s := String) (a := Int) 42
-    ensureEq "view const" 42 (view' l "value")
-    ensureEq "set const returns original" "value" ((set' l 0) "value")
+    ensureEq "view const" 42 ("value" ^. l)
+    ensureEq "set const returns original" "value" ("value" & l .~ 0)
 }
 
 private def optionPrism : Prism (Sum Unit Nat) (Sum Unit Nat) Nat Nat :=

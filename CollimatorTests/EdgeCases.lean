@@ -2,6 +2,7 @@ import Batteries
 import Collimator.Optics
 import Collimator.Combinators
 import Collimator.Instances
+import Collimator.Operators
 import CollimatorTests.Framework
 
 /-!
@@ -18,6 +19,7 @@ open Collimator.Concrete
 open Collimator.Combinators
 open Collimator.Instances
 open CollimatorTests
+open scoped Collimator.Operators
 
 /-! ## Empty Structure Tests -/
 
@@ -28,7 +30,7 @@ private def case_empty_list_traversal : TestCase := {
   name := "Edge: Traversal over empty list returns empty list",
   run := do
     let tr : Traversal' (List Int) Int := Traversal.eachList
-    let result := Traversal.over' tr (· + 100) []
+    let result := ([] : List Int) & tr %~ (· + 100)
     ensureEq "Empty list traversal" ([] : List Int) result
 }
 
@@ -39,7 +41,7 @@ private def case_empty_list_fold : TestCase := {
   name := "Edge: Fold over empty list returns empty",
   run := do
     let tr : Traversal' (List Int) Int := Traversal.eachList
-    let result := Fold.toListTraversal tr []
+    let result := ([] : List Int) ^.. tr
     ensureEq "Empty list fold" ([] : List Int) result
 }
 
@@ -50,7 +52,7 @@ private def case_none_traversal : TestCase := {
   name := "Edge: Traversal over none returns none",
   run := do
     let tr : Traversal' (Option Int) Int := Traversal.eachOption
-    let result := Traversal.over' tr (· * 2) none
+    let result := (none : Option Int) & tr %~ (· * 2)
     ensureEq "None traversal" (none : Option Int) result
 }
 
@@ -61,7 +63,7 @@ private def case_prism_no_match : TestCase := {
   name := "Edge: Prism preview returns none for non-matching",
   run := do
     let p : Prism' (Sum Int String) Int := Collimator.Instances.Sum.left' (α := Int) (β := String)
-    let result := preview' p (Sum.inr "not an int")
+    let result := Sum.inr "not an int" ^? p
     ensureEq "Prism no match" (none : Option Int) result
 }
 
@@ -73,7 +75,7 @@ private def case_affine_no_focus : TestCase := {
   run := do
     let prism : Prism' (Option Int) Int := Collimator.Instances.Option.somePrism' Int
     let aff : AffineTraversal' (Option Int) Int := AffineTraversalOps.ofPrism prism
-    let result := AffineTraversalOps.set aff 999 none
+    let result := (none : Option Int) & aff .~ 999
     ensureEq "Affine no focus" (none : Option Int) result
 }
 
@@ -86,7 +88,7 @@ private def case_single_element_list : TestCase := {
   name := "Edge: Single element list traversal",
   run := do
     let tr : Traversal' (List Int) Int := Traversal.eachList
-    let result := Traversal.over' tr (· + 1) [42]
+    let result := [42] & tr %~ (· + 1)
     ensureEq "Single element" [43] result
 }
 
@@ -97,7 +99,7 @@ private def case_some_traversal : TestCase := {
   name := "Edge: Some value traversal",
   run := do
     let tr : Traversal' (Option Int) Int := Traversal.eachOption
-    let result := Traversal.over' tr (· * 3) (some 7)
+    let result := some 7 & tr %~ (· * 3)
     ensureEq "Some traversal" (some 21) result
 }
 
@@ -117,8 +119,8 @@ private def case_three_level_lens : TestCase := {
 
     let composed : Lens' ((((Int × Int) × Int) × Int)) Int := l1 ∘ l2 ∘ l3
 
-    ensureEq "3-level view" 1 (view' composed nested)
-    ensureEq "3-level set" ((((99, 2), 3), 4)) (set' composed 99 nested)
+    ensureEq "3-level view" 1 (nested ^. composed)
+    ensureEq "3-level set" ((((99, 2), 3), 4)) (nested & composed .~ 99)
 }
 
 /--
@@ -136,8 +138,8 @@ private def case_five_level_lens : TestCase := {
 
     let composed : Lens' (((((Int × Int) × Int) × Int) × Int)) Int := l1 ∘ l2 ∘ l3 ∘ l4
 
-    ensureEq "5-level view" 1 (view' composed nested)
-    ensureEq "5-level set" (((((42, 2), 3), 4), 5)) (set' composed 42 nested)
+    ensureEq "5-level view" 1 (nested ^. composed)
+    ensureEq "5-level set" (((((42, 2), 3), 4), 5)) (nested & composed .~ 42)
 }
 
 /--
@@ -153,7 +155,7 @@ private def case_lens_traversal_composition : TestCase := {
 
     let composed : Traversal' (List Int × String) Int := lensToList ∘ traverseList
 
-    let result := Traversal.over' composed (· + 10) pair
+    let result := pair & composed %~ (· + 10)
     ensureEq "Lens ∘ Traversal" (([11, 12, 13], "hello")) result
 }
 
@@ -170,7 +172,7 @@ private def case_traversal_lens_composition : TestCase := {
 
     let composed : Traversal' (List (Int × String)) Int := traverseList ∘ lensToFirst
 
-    let result := Traversal.over' composed (· * 2) pairs
+    let result := pairs & composed %~ (· * 2)
     ensureEq "Traversal ∘ Lens" ([(2, "a"), (4, "b"), (6, "c")]) result
 }
 
@@ -188,13 +190,13 @@ private def case_lens_prism_composition : TestCase := {
 
     let composed : AffineTraversal' (Option Int × String) Int := lensToOpt ∘ prismToSome
 
-    let preview1 := AffineTraversalOps.preview' composed pair1
+    let preview1 := pair1 ^? composed
     ensureEq "Lens ∘ Prism preview some" (some 42) preview1
 
-    let preview2 := AffineTraversalOps.preview' composed pair2
+    let preview2 := pair2 ^? composed
     ensureEq "Lens ∘ Prism preview none" (none : Option Int) preview2
 
-    let set1 := AffineTraversalOps.set composed 99 pair1
+    let set1 := pair1 & composed .~ 99
     ensureEq "Lens ∘ Prism set some" ((some 99, "test")) set1
 }
 
@@ -209,7 +211,7 @@ private def case_large_list_traversal : TestCase := {
     let largeList : List Int := (List.range 1000).map (Int.ofNat ·)
     let tr : Traversal' (List Int) Int := Traversal.eachList
 
-    let result := Traversal.over' tr (· + 1) largeList
+    let result := largeList & tr %~ (· + 1)
 
     ensure (result.length == 1000) "Large list same length"
     ensure (result.head? == some 1) "Large list first element"
@@ -225,7 +227,7 @@ private def case_large_list_fold : TestCase := {
     let largeList : List Int := (List.range 500).map (Int.ofNat ·)
     let tr : Traversal' (List Int) Int := Traversal.eachList
 
-    let result := Fold.toListTraversal tr largeList
+    let result := largeList ^.. tr
 
     ensure (result.length == 500) "Fold preserves length"
     ensure (result == largeList) "Fold preserves elements"
@@ -243,7 +245,7 @@ private def case_nested_list_traversal : TestCase := {
     let innerTr : Traversal' (List Int) Int := Traversal.eachList
 
     let composed : Traversal' (List (List Int)) Int := outerTr ∘ innerTr
-    let result := Traversal.over' composed (· * 10) nestedList
+    let result := nestedList & composed %~ (· * 10)
 
     ensureEq "Nested traversal" ([[10, 20], [30, 40, 50], [60]]) result
 }
@@ -258,9 +260,9 @@ private def case_identity_lens : TestCase := {
   run := do
     let idLens : Lens' Int Int := lens' id (fun _ x => x)
 
-    ensureEq "Id lens view" 42 (view' idLens 42)
-    ensureEq "Id lens set" 99 (set' idLens 99 42)
-    ensureEq "Id lens over" 50 (over' idLens (· + 8) 42)
+    ensureEq "Id lens view" 42 (42 ^. idLens)
+    ensureEq "Id lens set" 99 (42 & idLens .~ 99)
+    ensureEq "Id lens over" 50 (42 & idLens %~ (· + 8))
 }
 
 /--
@@ -273,8 +275,8 @@ private def case_constant_lens : TestCase := {
 
     let pair : (Int × Int) := (10, 20)
 
-    ensureEq "Const lens view" 0 (view' constLens pair)
-    ensureEq "Const lens set" pair (set' constLens 999 pair)
+    ensureEq "Const lens view" 0 (pair ^. constLens)
+    ensureEq "Const lens set" pair (pair & constLens .~ 999)
 }
 
 /-! ## Effect Edge Cases -/

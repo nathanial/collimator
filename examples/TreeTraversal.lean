@@ -247,17 +247,17 @@ def examples : IO Unit := do
   IO.println "Binary Tree:"
   IO.println s!"  Original values: {BinTree.toList sampleBinTree}"
 
-  let doubled := Traversal.over' BinTree.values (· * 2) sampleBinTree
+  let doubled := sampleBinTree & BinTree.values %~ (· * 2)
   IO.println s!"  After doubling: {BinTree.toList doubled}"
 
   -- Collect all values using toListTraversal
-  let values := Fold.toListTraversal BinTree.values sampleBinTree
+  let values := sampleBinTree ^.. BinTree.values
   IO.println s!"  Collected via traversal: {values}"
   IO.println ""
 
   -- Rose tree
   IO.println "Rose Tree:"
-  IO.println s!"  Root value: {sampleRoseTree ^.' RoseTree.rootValue}"
+  IO.println s!"  Root value: {sampleRoseTree ^. RoseTree.rootValue}"
   IO.println s!"  Size: {RoseTree.size sampleRoseTree}"
   IO.println s!"  Depth: {RoseTree.depth sampleRoseTree}"
 

@@ -121,7 +121,7 @@ inductive ValidationResult (α : Type) where
 /-- Validate a single field with custom error message -/
 def validateField {s a : Type} (path : AffineTraversal' s a) (errMsg : String)
     (form : s) : ValidationResult a :=
-  match AffineTraversalOps.preview' path form with
+  match form ^? path with
   | some v => .ok v
   | none => .errors [errMsg]
 
@@ -164,9 +164,9 @@ def validateForm (form : RawFormData) : ValidationResult ValidatedForm :=
 /-- Trim whitespace from all string fields -/
 def sanitizeForm (form : RawFormData) : RawFormData :=
   form
-    & formName %~' String.trim
-    & formEmail %~' String.trim
-    & formAge %~' String.trim
+    & formName %~ String.trim
+    & formEmail %~ String.trim
+    & formAge %~ String.trim
 
 /-! ## Example Usage -/
 
@@ -209,10 +209,10 @@ def examples : IO Unit := do
 
   -- Partial validation with preview
   IO.println "Individual field validation:"
-  IO.println s!"  Valid name in validForm: {AffineTraversalOps.preview' validName validForm}"
-  IO.println s!"  Valid name in invalidForm: {AffineTraversalOps.preview' validName invalidForm}"
-  IO.println s!"  Valid age in validForm: {AffineTraversalOps.preview' validAgeField validForm}"
-  IO.println s!"  Valid age in invalidForm: {AffineTraversalOps.preview' validAgeField invalidForm}"
+  IO.println s!"  Valid name in validForm: {validForm ^? validName}"
+  IO.println s!"  Valid name in invalidForm: {invalidForm ^? validName}"
+  IO.println s!"  Valid age in validForm: {validForm ^? validAgeField}"
+  IO.println s!"  Valid age in invalidForm: {invalidForm ^? validAgeField}"
   IO.println ""
 
   -- Sanitization
@@ -236,10 +236,10 @@ def examples : IO Unit := do
 
   -- Using prisms for safe parsing
   IO.println "Parsing examples:"
-  IO.println s!"  Parse '42': {preview' parseInt "42"}"
-  IO.println s!"  Parse 'abc': {preview' parseInt "abc"}"
+  IO.println s!"  Parse '42': {"42" ^? parseInt}"
+  IO.println s!"  Parse 'abc': {"abc" ^? parseInt}"
   let parseAndValidate : Prism' String Int := parseInt ∘ inRange 0 150
-  IO.println s!"  Parse and validate '25' (0-150): {preview' parseAndValidate "25"}"
-  IO.println s!"  Parse and validate '200' (0-150): {preview' parseAndValidate "200"}"
+  IO.println s!"  Parse and validate '25' (0-150): {"25" ^? parseAndValidate}"
+  IO.println s!"  Parse and validate '200' (0-150): {"200" ^? parseAndValidate}"
 
 -- #eval examples

@@ -2,6 +2,7 @@ import Batteries
 import Collimator.Optics
 import Collimator.Combinators
 import Collimator.Instances
+import Collimator.Operators
 import CollimatorTests.Framework
 
 /-!
@@ -17,6 +18,7 @@ open Collimator.Core
 open Collimator.Concrete
 open Collimator.Combinators
 open CollimatorTests
+open scoped Collimator.Operators
 
 /-! ## Test Structures -/
 
@@ -74,14 +76,14 @@ GetPut law: view l (set l v s) = v
 private def lens_getPut_prop (seed : Nat) : Bool :=
   let s := randomPoint seed
   let v := randomInt (seed + 100)
-  view' Point.xLens (set' Point.xLens v s) == v
+  (s & Point.xLens .~ v) ^. Point.xLens == v
 
 /--
 PutGet law: set l (view l s) s = s
 -/
 private def lens_putGet_prop (seed : Nat) : Bool :=
   let s := randomPoint seed
-  set' Point.xLens (view' Point.xLens s) s == s
+  (s & Point.xLens .~ (s ^. Point.xLens)) == s
 
 /--
 PutPut law: set l v (set l v' s) = set l v s
@@ -90,7 +92,7 @@ private def lens_putPut_prop (seed : Nat) : Bool :=
   let s := randomPoint seed
   let v := randomInt (seed + 100)
   let v' := randomInt (seed + 200)
-  set' Point.xLens v (set' Point.xLens v' s) == set' Point.xLens v s
+  (s & Point.xLens .~ v' & Point.xLens .~ v) == (s & Point.xLens .~ v)
 
 /-! ## Iso Laws Properties -/
 
@@ -135,7 +137,7 @@ Identity law: over t id s = s
 private def traversal_identity_prop (seed : Nat) : Bool :=
   let xs : List Int := (List.range ((seed % 10) + 1)).map (Int.ofNat ·)
   let tr : Traversal' (List Int) Int := Traversal.eachList
-  Traversal.over' tr id xs == xs
+  (xs & tr %~ id) == xs
 
 /--
 Traversal preserves list length
@@ -143,7 +145,7 @@ Traversal preserves list length
 private def traversal_length_prop (seed : Nat) : Bool :=
   let xs : List Int := (List.range ((seed % 20) + 1)).map (Int.ofNat ·)
   let tr : Traversal' (List Int) Int := Traversal.eachList
-  (Traversal.over' tr (· + 1) xs).length == xs.length
+  (xs & tr %~ (· + 1)).length == xs.length
 
 /-! ## Composed Lens Laws Properties -/
 
@@ -154,7 +156,7 @@ private def composed_getPut_prop (seed : Nat) : Bool :=
   let r := randomRectangle seed
   let v := randomInt (seed + 100)
   let composed : Lens' Rectangle Int := Rectangle.topLeftLens ∘ Point.xLens
-  view' composed (set' composed v r) == v
+  (r & composed .~ v) ^. composed == v
 
 /--
 Composed lenses satisfy PutGet law
@@ -162,7 +164,7 @@ Composed lenses satisfy PutGet law
 private def composed_putGet_prop (seed : Nat) : Bool :=
   let r := randomRectangle seed
   let composed : Lens' Rectangle Int := Rectangle.topLeftLens ∘ Point.xLens
-  set' composed (view' composed r) r == r
+  (r & composed .~ (r ^. composed)) == r
 
 /--
 Composed lenses satisfy PutPut law
@@ -172,7 +174,7 @@ private def composed_putPut_prop (seed : Nat) : Bool :=
   let v := randomInt (seed + 100)
   let v' := randomInt (seed + 200)
   let composed : Lens' Rectangle Int := Rectangle.topLeftLens ∘ Point.xLens
-  set' composed v (set' composed v' r) == set' composed v r
+  (r & composed .~ v' & composed .~ v) == (r & composed .~ v)
 
 /-! ## Test Cases -/
 
@@ -267,7 +269,7 @@ private def case_stress_large_list : TestCase := {
   run := do
     let largeList : List Int := (List.range 1000).map (Int.ofNat ·)
     let tr : Traversal' (List Int) Int := Traversal.eachList
-    let result := Traversal.over' tr (· + 1) largeList
+    let result := largeList & tr %~ (· + 1)
     ensure (result.length == 1000) "Large list length preserved"
     ensure (result.head? == some 1) "First element modified"
 }
@@ -284,8 +286,8 @@ private def case_stress_deep_composition : TestCase := {
 
     let composed : Lens' (((((Int × Int) × Int) × Int) × Int)) Int := l1 ∘ l2 ∘ l3 ∘ l4
 
-    ensure (view' composed nested == 1) "Deep view"
-    ensure (view' composed (set' composed 99 nested) == 99) "Deep set"
+    ensure (nested ^. composed == 1) "Deep view"
+    ensure ((nested & composed .~ 99) ^. composed == 99) "Deep set"
 }
 
 /--

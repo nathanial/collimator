@@ -2,6 +2,7 @@ import Batteries
 import Collimator.Optics
 import Collimator.Theorems.PrismLaws
 import Collimator.Combinators
+import Collimator.Operators
 import CollimatorTests.Framework
 
 namespace CollimatorTests.PrismLaws
@@ -10,6 +11,7 @@ open Collimator
 open Collimator.Theorems
 open Collimator.Combinators
 open CollimatorTests
+open scoped Collimator.Operators
 
 /-! ## Test Structures -/
 
@@ -105,7 +107,7 @@ private def case_previewReviewLaw : TestCase := {
     let circlePrism : Prism' Shape Int := prism Shape.buildCircle Shape.splitCircle
     let radius := 42
     let reviewed := review' circlePrism radius
-    let previewed := preview' circlePrism reviewed
+    let previewed := reviewed ^? circlePrism
     ensureEq "Preview-Review law" (some radius) previewed
 }
 
@@ -117,7 +119,7 @@ private def case_reviewPreviewLaw : TestCase := {
   run := do
     let circlePrism : Prism' Shape Int := prism Shape.buildCircle Shape.splitCircle
     let s : Shape := Shape.circle 100
-    match preview' circlePrism s with
+    match s ^? circlePrism with
     | none => throw (IO.userError "Expected preview to succeed")
     | some a =>
       let reconstructed := review' circlePrism a
@@ -132,7 +134,7 @@ private def case_previewFailsOnMismatch : TestCase := {
   run := do
     let circlePrism : Prism' Shape Int := prism Shape.buildCircle Shape.splitCircle
     let s : Shape := Shape.rectangle 10 20
-    let result := preview' circlePrism s
+    let result := s ^? circlePrism
     ensureEq "Preview on mismatch" none result
 }
 
@@ -147,12 +149,12 @@ private def case_rectanglePrismLaws : TestCase := {
     -- Preview-Review
     let dims := (15, 25)
     let reviewed1 := review' rectPrism dims
-    let previewed1 := preview' rectPrism reviewed1
+    let previewed1 := reviewed1 ^? rectPrism
     ensureEq "Rectangle Preview-Review" (some dims) previewed1
 
     -- Review-Preview
     let s : Shape := Shape.rectangle 30 40
-    match preview' rectPrism s with
+    match s ^? rectPrism with
     | none => throw (IO.userError "Expected preview to succeed")
     | some d =>
       let reconstructed := review' rectPrism d
@@ -171,7 +173,7 @@ private def case_compositionPreviewReviewLaw : TestCase := {
 
     let radius := 77
     let reviewed := review' composed radius
-    let previewed := preview' composed reviewed
+    let previewed := reviewed ^? composed
     ensureEq "Composed Preview-Review law" (some radius) previewed
 }
 
@@ -186,7 +188,7 @@ private def case_compositionReviewPreviewLaw : TestCase := {
     let composed : Prism' Container Int := boxPrism ∘ circlePrism
 
     let c : Container := Container.box (Shape.circle 99)
-    match preview' composed c with
+    match c ^? composed with
     | none => throw (IO.userError "Expected preview to succeed")
     | some a =>
       let reconstructed := review' composed a
@@ -204,7 +206,7 @@ private def case_composedPreviewFailure : TestCase := {
     let composed : Prism' Container Int := boxPrism ∘ circlePrism
 
     let c : Container := Container.empty
-    let result := preview' composed c
+    let result := c ^? composed
     ensureEq "Composed preview on outer mismatch" none result
 }
 
@@ -219,7 +221,7 @@ private def case_composedPreviewInnerFailure : TestCase := {
     let composed : Prism' Container Int := boxPrism ∘ circlePrism
 
     let c : Container := Container.box (Shape.rectangle 5 10)
-    let result := preview' composed c
+    let result := c ^? composed
     ensureEq "Composed preview on inner mismatch" none result
 }
 
@@ -235,9 +237,9 @@ private def case_prismLawTheorems : TestCase := {
     let circlePrism : Prism' Shape Int := prism Shape.buildCircle Shape.splitCircle
 
     -- These operations should satisfy the laws by construction
-    let test1 := preview' circlePrism (review' circlePrism 50)
+    let test1 := (review' circlePrism 50) ^? circlePrism
     let s := Shape.circle 75
-    let test2 := match preview' circlePrism s with
+    let test2 := match s ^? circlePrism with
       | some a => review' circlePrism a
       | none => s
 
@@ -259,7 +261,7 @@ private def case_compositionLawfulInstance : TestCase := {
 
     -- Verify the composition works correctly
     let c := Container.box (Shape.rectangle 8 12)
-    let viewed := preview' composed c
+    let viewed := c ^? composed
     ensureEq "Composed preview" (some (8, 12)) viewed
 
     let c' := review' composed (20, 30)
@@ -280,19 +282,19 @@ private def case_optionPrism : TestCase := {
 
     -- Preview-Review
     let reviewed := review' somePrism 123
-    let previewed := preview' somePrism reviewed
+    let previewed := reviewed ^? somePrism
     ensureEq "Option Preview-Review" (some 123) previewed
 
     -- Review-Preview on Some
     let opt := some 456
-    match preview' somePrism opt with
+    match opt ^? somePrism with
     | none => throw (IO.userError "Expected preview to succeed")
     | some a =>
       let reconstructed := review' somePrism a
       ensureEq "Option Review-Preview" opt reconstructed
 
     -- Preview on None
-    let result := preview' somePrism (none : Option Int)
+    let result := (none : Option Int) ^? somePrism
     ensureEq "Option preview on none" none result
 }
 
