@@ -11,6 +11,7 @@ Infix operators for optic operations:
 - `%~` - over (modify)
 - `.~` - set
 - `&` - reverse application
+- `optic%` - type-annotated optic definition
 
 ## Composition
 
@@ -29,6 +30,29 @@ let trav := myLens ∘ myTraversal
 
 The profunctor constraints are automatically propagated by Lean's type system.
 No special composition operator or typeclass is needed!
+
+## Type Inference for Composed Optics
+
+**Inline composition works without annotations** when used directly with operations:
+
+```lean
+-- These work - the operation provides type context
+over' (traversed ∘ nameLens ∘ addressLens) f data
+view' (outerLens ∘ innerLens) data
+```
+
+**Named optics need type annotations** because Lean can't infer the profunctor type:
+
+```lean
+-- This may fail with "stuck typeclass" error:
+-- def myOptic := traversed ∘ nameLens ∘ addressLens
+
+-- Use optic% to add the type annotation cleanly:
+def myOptic := optic% traversed ∘ nameLens ∘ addressLens : Traversal' Company String
+```
+
+The `optic%` macro simply wraps the expression with a type annotation, providing
+the context Lean needs to resolve the profunctor constraints.
 -/
 
 namespace Collimator.Operators
@@ -172,5 +196,31 @@ point & xLens .~ 10 & yLens .~ 20  -- { x := 10, y := 20 }
 scoped syntax:80 term:81 " .~ " term:81 : term
 scoped macro_rules
   | `($optic .~ $value) => `(Collimator.set' $optic $value)
+
+/--
+Define a composed optic with an explicit type annotation.
+
+When composing optics, Lean sometimes can't infer the profunctor type parameter.
+This macro provides a clean syntax for adding the required type annotation.
+
+```lean
+-- Instead of:
+def myOptic : Traversal' (List Person) String :=
+  traversed ∘ nameLens ∘ addressLens
+
+-- Write:
+def myOptic := optic% traversed ∘ nameLens ∘ addressLens : Traversal' (List Person) String
+
+-- Multi-line for complex chains:
+def complexOptic := optic%
+  departmentsLens ∘ traversed ∘ employeesLens ∘ traversed ∘ salaryLens
+  : Traversal' Company Int
+```
+
+Note: This is only needed when defining named optics. Inline usage with
+`view'`, `over'`, etc. works without annotations because those operations
+provide the necessary type context.
+-/
+scoped macro "optic%" e:term ":" t:term : term => `(($e : $t))
 
 end Collimator.Operators
