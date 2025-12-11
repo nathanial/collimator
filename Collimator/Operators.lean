@@ -124,6 +124,20 @@ instance : Coe (Prism' s a) (APreview s a) where
 instance : Coe (AffineTraversal' s a) (APreview s a) where
   coe aff := fun faa => aff (P := Forget (Option a)) faa
 
+-- Prism to AffineTraversal coercion (for composition)
+instance : Coe (Prism s t a b) (AffineTraversal s t a b) where
+  coe p := fun {P} [Profunctor P] [Strong P] [Choice P] pab => p (P := P) pab
+
+instance : Coe (Prism' s a) (AffineTraversal' s a) where
+  coe p := fun {P} [Profunctor P] [Strong P] [Choice P] pab => p (P := P) pab
+
+-- Lens to AffineTraversal coercion (for composition)
+instance : Coe (Lens s t a b) (AffineTraversal s t a b) where
+  coe l := fun {P} [Profunctor P] [Strong P] [Choice P] pab => l (P := P) pab
+
+instance : Coe (Lens' s a) (AffineTraversal' s a) where
+  coe l := fun {P} [Profunctor P] [Strong P] [Choice P] pab => l (P := P) pab
+
 /-!
 ## Universal Operation Functions
 
@@ -328,5 +342,55 @@ elab "fieldLens%" _structName:ident fieldName:ident : term => do
   let stx ← match Lean.Parser.runParserCategory env `term code with
     | .ok stx => pure stx
     | .error e => throwError "fieldLens% parse error: {e}"
+
+  elabTerm stx none
+
+/-!
+## Constructor Prism Elaborator
+
+The `ctorPrism%` elaborator creates prisms for inductive type constructors with minimal boilerplate.
+-/
+
+/--
+Create a prism for an inductive type constructor.
+
+This elaborator generates the review/preview boilerplate for a constructor prism:
+
+```lean
+-- Instead of:
+def strConfigPrism : Prism' ConfigValue String :=
+  prism (fun s => ConfigValue.str s)
+        (fun v => match v with
+         | ConfigValue.str s => Sum.inr s
+         | other => Sum.inl other)
+
+-- Write:
+def strConfigPrism : Prism' ConfigValue String := ctorPrism% ConfigValue.str
+```
+
+The elaborator generates:
+```
+prism Constructor (fun s => match s with
+  | Constructor x => Sum.inr x
+  | other => Sum.inl other)
+```
+
+Supports constructors with:
+- Single argument: `ConfigValue.str` → focuses on `String`
+- Multiple arguments: `Address.domestic` → focuses on tuple `(String × String)`
+- No arguments: `JsonValue.null` → focuses on `Unit`
+
+Note: A type annotation is typically needed for proper type inference.
+-/
+elab "ctorPrism%" ctorName:ident : term => do
+  let ctorNameId := ctorName.getId
+
+  -- Generate the prism code as a string and parse it.
+  let code := s!"Collimator.prism {ctorNameId} (fun s => match s with | {ctorNameId} x => Sum.inr x | other => Sum.inl other)"
+
+  let env ← getEnv
+  let stx ← match Lean.Parser.runParserCategory env `term code with
+    | .ok stx => pure stx
+    | .error e => throwError "ctorPrism% parse error: {e}"
 
   elabTerm stx none
