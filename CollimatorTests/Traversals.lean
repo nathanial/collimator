@@ -36,7 +36,7 @@ private def case_traversalOverList : TestCase := {
   run := do
     let tr : Traversal' (List Int) Int := Traversal.eachList
     let updated := [1, 2, 3] & tr %~ (· + 1)
-    ensureEq "list increment" [2, 3, 4] updated
+    updated ≡ [2, 3, 4]
 }
 
 private def case_traverseOptionEffect : TestCase := {
@@ -46,8 +46,8 @@ private def case_traverseOptionEffect : TestCase := {
     let step : Int → Option Int := fun n => if n ≥ 0 then some (n + 1) else none
     let success := Traversal.traverse' tr step [0, 2]
     let failure := Traversal.traverse' tr step [0, -1, 3]
-    ensureEq "success case" (some [1, 3]) success
-    ensureEq "failure case" (none : Option (List Int)) failure
+    success ≡? [1, 3]
+    shouldBeNone failure
 }
 
 private def case_foldToList : TestCase := {
@@ -56,8 +56,8 @@ private def case_foldToList : TestCase := {
     let fld : Fold' (Option Int) Int :=
       Fold.ofAffine (s := Option Int) (t := Option Int) (a := Int) (b := Int)
         (AffineTraversalOps.ofPrism optionPrism)
-    ensureEq "some" [7] (Fold.toList fld (some 7))
-    ensureEq "none" ([] : List Int) (Fold.toList fld none)
+    Fold.toList fld (some 7) ≡ [7]
+    Fold.toList fld none ≡ ([] : List Int)
 }
 
 private def case_foldAggregates : TestCase := {
@@ -66,14 +66,14 @@ private def case_foldAggregates : TestCase := {
     let fld : Fold' Point Int := Fold.ofLens pointLens
     let points := [{ x := 2, y := 1 }, { x := -1, y := 5 }, { x := 4, y := 9 }]
     let lifted := points.map (Fold.toList fld)
-    ensureEq "values fold" ([[2], [-1], [4]] : List (List Int)) lifted
+    lifted ≡ ([[2], [-1], [4]] : List (List Int))
 }
 
 private def case_foldLength : TestCase := {
   name := "fold length counts focuses",
   run := do
     let fld : Fold' Point Int := Fold.ofLens pointLens
-    ensureEq "single focus" 1 ((Fold.toList fld { x := 5, y := 0 }).length)
+    (Fold.toList fld { x := 5, y := 0 }).length ≡ 1
 }
 
 private def case_setterSet : TestCase := {
@@ -81,7 +81,7 @@ private def case_setterSet : TestCase := {
   run := do
     let st : Lens' Point Int := pointLens
     let updated := { x := 1, y := 2 } & st .~ 42
-    ensureEq "setter set" { x := 42, y := 2 } updated
+    updated ≡ { x := 42, y := 2 }
 }
 
 private def case_affinePreviewAndSet : TestCase := {
@@ -89,10 +89,10 @@ private def case_affinePreviewAndSet : TestCase := {
   run := do
     let affine : AffineTraversal' (Option Int) Int :=
       AffineTraversalOps.ofPrism optionPrism
-    ensureEq "preview some" (some 5) ((some 5) ^? affine)
-    ensureEq "preview none" (none : Option Int) (none ^? affine)
+    (some 5) ^? affine ≡? 5
+    shouldBeNone (none ^? affine)
     let reset := (some 1) & affine .~ 99
-    ensureEq "set value" (some 99) reset
+    reset ≡ some 99
 }
 
 /--

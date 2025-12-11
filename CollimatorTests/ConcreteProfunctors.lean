@@ -37,7 +37,7 @@ private def case_forget_dimap_id : TestCase := {
   run := do
     let forget : Forget Int Int String := fun x => x * 2
     let result := Profunctor.dimap (id : Int → Int) (id : String → String) forget
-    ensureEq "Forget dimap id" (forget 5) (result 5)
+    result 5 ≡ forget 5
 }
 
 /--
@@ -61,7 +61,7 @@ private def case_forget_dimap_comp : TestCase := {
     let inner := Profunctor.dimap double (id : String → String) forget
     let rhs := Profunctor.dimap inc (id : String → String) inner
 
-    ensureEq "Forget dimap comp" (lhs 2) (rhs 2)
+    lhs 2 ≡ rhs 2
 }
 
 /--
@@ -73,7 +73,7 @@ private def case_forget_strong_first : TestCase := {
     let forget : Forget Int Int String := fun x => x + 100
     let lifted := Strong.first (P := Forget Int) (γ := String) forget
     let result := lifted (7, "hello")
-    ensureEq "Forget Strong first" 107 result
+    result ≡ 107
 }
 
 /--
@@ -85,7 +85,7 @@ private def case_forget_strong_second : TestCase := {
     let forget : Forget Int Int String := fun x => x + 50
     let lifted := Strong.second (P := Forget Int) (γ := Bool) forget
     let result := lifted (true, 20)
-    ensureEq "Forget Strong second" 70 result
+    result ≡ 70
 }
 
 /--
@@ -97,7 +97,7 @@ private def case_forget_choice_left : TestCase := {
     let forget : Forget Int Int String := fun x => x * 10
     let lifted := Choice.left (P := Forget Int) (γ := Bool) forget
     let result := lifted (Sum.inl 3)
-    ensureEq "Forget Choice left inl" 30 result
+    result ≡ 30
 }
 
 /--
@@ -109,7 +109,7 @@ private def case_forget_choice_left_inr : TestCase := {
     let forget : Forget Int Int String := fun x => x * 10
     let lifted := Choice.left (P := Forget Int) (γ := Bool) forget
     let result := lifted (Sum.inr true)
-    ensureEq "Forget Choice left inr" 0 result  -- default for Int is 0
+    result ≡ 0  -- default for Int is 0
 }
 
 /--
@@ -128,11 +128,11 @@ private def case_forget_wandering : TestCase := {
     -- Since Const R ignores the second type param, we get accumulation
 
     -- Test basic properties of the forget profunctor
-    ensureEq "Forget collects single" [42] (forget 42)
+    forget 42 ≡ [42]
 
     -- Test that Strong.first extracts and applies forget
     let strongForget := Strong.first (P := Forget (List Int)) (γ := String) forget
-    ensureEq "Forget Strong first" [7] (strongForget (7, "ignored"))
+    strongForget (7, "ignored") ≡ [7]
 }
 
 /-! ## Star Tests -/
@@ -145,7 +145,7 @@ private def case_star_dimap_id : TestCase := {
   run := do
     let star : Star Option Int Int := Star.mk (fun x => some (x + 1))
     let result := Profunctor.dimap (id : Int → Int) (id : Int → Int) star
-    ensureEq "Star dimap id" (star.run 5) (result.run 5)
+    result.run 5 ≡ star.run 5
 }
 
 /--
@@ -157,7 +157,7 @@ private def case_star_strong_first : TestCase := {
     let star : Star Option Int Int := Star.mk (fun x => some (x * 2))
     let lifted := Strong.first (P := Star Option) (γ := String) star
     let result := lifted.run (10, "test")
-    ensureEq "Star Strong first" (some (20, "test")) result
+    result ≡ some (20, "test")
 }
 
 /--
@@ -169,7 +169,7 @@ private def case_star_strong_second : TestCase := {
     let star : Star Option Int Int := Star.mk (fun x => some (x + 5))
     let lifted := Strong.second (P := Star Option) (γ := Bool) star
     let result := lifted.run (true, 7)
-    ensureEq "Star Strong second" (some (true, 12)) result
+    result ≡ some (true, 12)
 }
 
 /--
@@ -181,7 +181,7 @@ private def case_star_choice_left : TestCase := {
     let star : Star Option Int Int := Star.mk (fun x => some (x * 3))
     let lifted := Choice.left (P := Star Option) (γ := String) star
     let result := lifted.run (Sum.inl 4)
-    ensureEq "Star Choice left inl" (some (Sum.inl 12)) result
+    result ≡ some (Sum.inl 12)
 }
 
 /--
@@ -193,7 +193,7 @@ private def case_star_choice_left_inr : TestCase := {
     let star : Star Option Int Int := Star.mk (fun x => some (x * 3))
     let lifted := Choice.left (P := Star Option) (γ := String) star
     let result := lifted.run (Sum.inr "hello")
-    ensureEq "Star Choice left inr" (some (Sum.inr "hello")) result
+    result ≡ some (Sum.inr "hello")
 }
 
 /--
@@ -205,8 +205,8 @@ private def case_star_option_short_circuit : TestCase := {
     let star : Star Option Int Int := Star.mk (fun x => if x > 0 then some (x + 1) else none)
     let positiveResult := star.run 5
     let negativeResult := star.run (-3)
-    ensureEq "Star positive" (some 6) positiveResult
-    ensureEq "Star negative" (none : Option Int) negativeResult
+    positiveResult ≡ some 6
+    negativeResult ≡ (none : Option Int)
 }
 
 /--
@@ -224,8 +224,8 @@ private def case_star_wandering : TestCase := {
     let successResult := lifted.run [1, 2, 3]
     let failResult := lifted.run [1, -2, 3]
 
-    ensureEq "Star Wandering success" (some [2, 4, 6]) successResult
-    ensureEq "Star Wandering fail" (none : Option (List Int)) failResult
+    successResult ≡ some [2, 4, 6]
+    failResult ≡ (none : Option (List Int))
 }
 
 /-! ## Tagged Tests -/
@@ -238,7 +238,7 @@ private def case_tagged_dimap_id : TestCase := {
   run := do
     let tagged : Tagged Int String := "hello"
     let result := Profunctor.dimap (id : Int → Int) (id : String → String) tagged
-    ensureEq "Tagged dimap id" tagged result
+    result ≡ tagged
 }
 
 /--
@@ -249,7 +249,7 @@ private def case_tagged_dimap_post : TestCase := {
   run := do
     let tagged : Tagged Int Int := 42
     let result := Profunctor.dimap (fun _ : String => 0) double tagged
-    ensureEq "Tagged dimap post" 84 result
+    result ≡ 84
 }
 
 /--
@@ -260,7 +260,7 @@ private def case_tagged_choice_left : TestCase := {
   run := do
     let tagged : Tagged Int String := "test"
     let lifted := Choice.left (P := fun α β => Tagged α β) (γ := Bool) tagged
-    ensureEq "Tagged Choice left" (Sum.inl "test") lifted
+    lifted ≡ Sum.inl "test"
 }
 
 /--
@@ -271,7 +271,7 @@ private def case_tagged_choice_right : TestCase := {
   run := do
     let tagged : Tagged Int String := "test"
     let lifted := Choice.right (P := fun α β => Tagged α β) (γ := Bool) tagged
-    ensureEq "Tagged Choice right" (Sum.inr "test") lifted
+    lifted ≡ Sum.inr "test"
 }
 
 /-! ## FunArrow Tests -/
@@ -284,7 +284,7 @@ private def case_funarrow_dimap_id : TestCase := {
   run := do
     let arrow : FunArrow Int Int := FunArrow.mk double
     let result := Profunctor.dimap (id : Int → Int) (id : Int → Int) arrow
-    ensureEq "FunArrow dimap id" (arrow.run 5) (result.run 5)
+    result.run 5 ≡ arrow.run 5
 }
 
 /--
@@ -296,7 +296,7 @@ private def case_funarrow_dimap_comp : TestCase := {
     let arrow : FunArrow Int Int := FunArrow.mk double
     let result := Profunctor.dimap inc inc arrow
     -- (inc ∘ double ∘ inc) 3 = inc (double (inc 3)) = inc (double 4) = inc 8 = 9
-    ensureEq "FunArrow dimap comp" 9 (result.run 3)
+    result.run 3 ≡ 9
 }
 
 /--
@@ -308,7 +308,7 @@ private def case_funarrow_strong_first : TestCase := {
     let arrow : FunArrow Int Int := FunArrow.mk double
     let lifted := Strong.first (P := fun α β => FunArrow α β) (γ := String) arrow
     let result := lifted.run (5, "hello")
-    ensureEq "FunArrow Strong first" (10, "hello") result
+    result ≡ (10, "hello")
 }
 
 /--
@@ -320,7 +320,7 @@ private def case_funarrow_strong_second : TestCase := {
     let arrow : FunArrow Int Int := FunArrow.mk inc
     let lifted := Strong.second (P := fun α β => FunArrow α β) (γ := Bool) arrow
     let result := lifted.run (true, 10)
-    ensureEq "FunArrow Strong second" (true, 11) result
+    result ≡ (true, 11)
 }
 
 /--
@@ -333,8 +333,8 @@ private def case_funarrow_choice_left : TestCase := {
     let lifted := Choice.left (P := fun α β => FunArrow α β) (γ := String) arrow
     let inlResult := lifted.run (Sum.inl 7)
     let inrResult := lifted.run (Sum.inr "test")
-    ensureEq "FunArrow Choice left inl" (Sum.inl 14) inlResult
-    ensureEq "FunArrow Choice left inr" (Sum.inr "test") inrResult
+    inlResult ≡ Sum.inl 14
+    inrResult ≡ Sum.inr "test"
 }
 
 /--
@@ -347,8 +347,8 @@ private def case_funarrow_choice_right : TestCase := {
     let lifted := Choice.right (P := fun α β => FunArrow α β) (γ := String) arrow
     let inlResult := lifted.run (Sum.inl "test")
     let inrResult := lifted.run (Sum.inr 7)
-    ensureEq "FunArrow Choice right inl" (Sum.inl "test") inlResult
-    ensureEq "FunArrow Choice right inr" (Sum.inr 14) inrResult
+    inlResult ≡ Sum.inl "test"
+    inrResult ≡ Sum.inr 14
 }
 
 /--
@@ -362,7 +362,7 @@ private def case_funarrow_closed : TestCase := {
     -- closed takes a String → Int function and returns a String → Int function
     let inputFn : String → Int := fun s => s.length
     let resultFn := closed.run inputFn
-    ensureEq "FunArrow Closed" 10 (resultFn "hello")  -- length "hello" = 5, doubled = 10
+    resultFn "hello" ≡ 10  -- length "hello" = 5, doubled = 10
 }
 
 /--
@@ -378,7 +378,7 @@ private def case_funarrow_wandering : TestCase := {
 
     let lifted := Wandering.wander (P := fun α β => FunArrow α β) walk arrow
     let result := lifted.run [1, 2, 3]
-    ensureEq "FunArrow Wandering" [2, 4, 6] result
+    result ≡ [2, 4, 6]
 }
 
 /-! ## Costar Tests -/
@@ -391,7 +391,7 @@ private def case_costar_dimap_id : TestCase := {
   run := do
     let costar : Costar List Int Int := Costar.mk (fun xs => xs.foldl (· + ·) 0)
     let result := Profunctor.dimap (id : Int → Int) (id : Int → Int) costar
-    ensureEq "Costar dimap id" (costar.run [1, 2, 3]) (result.run [1, 2, 3])
+    result.run [1, 2, 3] ≡ costar.run [1, 2, 3]
 }
 
 /--
@@ -403,7 +403,7 @@ private def case_costar_dimap_pre_post : TestCase := {
     let costar : Costar List Int Int := Costar.mk (fun xs => xs.foldl (· + ·) 0)
     let result := Profunctor.dimap double inc costar
     -- First maps double over [1, 2, 3] to get [2, 4, 6], then sums to 12, then inc to 13
-    ensureEq "Costar dimap" 13 (result.run [1, 2, 3])
+    result.run [1, 2, 3] ≡ 13
 }
 
 /--
@@ -422,7 +422,7 @@ private def case_costar_closed : TestCase := {
     let resultFn := closed.run fns
     -- For input "hello": map (fun h => h "hello") [f1, f2] = [5, 42]
     -- Then costar counts length = 2
-    ensureEq "Costar Closed test" 2 (resultFn "hello")
+    resultFn "hello" ≡ 2
 }
 
 /--
@@ -434,8 +434,8 @@ private def case_costar_option : TestCase := {
     let costar : Costar Option Int Int := Costar.mk (fun opt => opt.getD 0)
     let someResult := costar.run (some 42)
     let noneResult := costar.run none
-    ensureEq "Costar Option some" 42 someResult
-    ensureEq "Costar Option none" 0 noneResult
+    someResult ≡ 42
+    noneResult ≡ 0
 }
 
 /-! ## All Test Cases -/

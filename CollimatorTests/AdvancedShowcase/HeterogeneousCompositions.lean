@@ -130,12 +130,9 @@ private def case_lensTraversal : TestCase := {
     let afterRaise : Project := project & raiseComposed %~ (fun s => s * 110 / 100)
 
     -- Verify all salaries increased
-    if afterRaise.employees[0]!.salary != 88000 then
-      throw (IO.userError s!"Expected salary 88000, got {afterRaise.employees[0]!.salary}")
-    if afterRaise.employees[1]!.salary != 82500 then
-      throw (IO.userError s!"Expected salary 82500, got {afterRaise.employees[1]!.salary}")
-    if afterRaise.employees[2]!.salary != 99000 then
-      throw (IO.userError s!"Expected salary 99000, got {afterRaise.employees[2]!.salary}")
+    afterRaise.employees[0]!.salary ≡ 88000
+    afterRaise.employees[1]!.salary ≡ 82500
+    afterRaise.employees[2]!.salary ≡ 99000
 
     -- Compare with imperative code:
     -- let mut newEmployees = []
@@ -149,8 +146,8 @@ private def case_lensTraversal : TestCase := {
     let contactComposed := optic% employeesLens ∘ List.traversed ∘ contactLens : Traversal' Project Contact
     let noContact : Project := project & contactComposed %~ (fun _ => Contact.none)
 
-    if !noContact.employees.all (fun e => e.contact == Contact.none) then
-      throw (IO.userError "Expected all contacts to be none")
+    shouldSatisfy (noContact.employees.all (fun e => e.contact == Contact.none))
+      "all contacts to be none"
     IO.println "✓ Lens ∘ Traversal: cleared all contact information"
 }
 
@@ -181,20 +178,15 @@ private def case_traversalPrism : TestCase := {
 
     -- Only Alice's email should be updated
     match updated[0]!.contact with
-    | Contact.email e =>
-        if e != "alice@newdomain.com" then
-          throw (IO.userError s!"Expected alice@newdomain.com, got {e}")
+    | Contact.email e => e ≡ "alice@newdomain.com"
     | _ => throw (IO.userError "Expected email contact")
 
     -- Bob has phone (unchanged)
-    if updated[1]!.contact != Contact.phone "555-1234" then
-      throw (IO.userError "Bob's phone should be unchanged")
+    updated[1]!.contact ≡ Contact.phone "555-1234"
 
     -- Carol's email unchanged (different domain)
     match updated[2]!.contact with
-    | Contact.email e =>
-        if e != "carol@company.org" then
-          throw (IO.userError s!"Expected carol@company.org, got {e}")
+    | Contact.email e => e ≡ "carol@company.org"
     | _ => throw (IO.userError "Expected email contact")
 
     IO.println "✓ Traversal ∘ Prism: updated only matching email contacts"
@@ -204,9 +196,7 @@ private def case_traversalPrism : TestCase := {
     let phones : List Employee := employees & phoneComposed %~ (fun p => "PHONE:" ++ p)
 
     match phones[1]!.contact with
-    | Contact.phone p =>
-        if p != "PHONE:555-1234" then
-          throw (IO.userError s!"Expected PHONE:555-1234, got {p}")
+    | Contact.phone p => p ≡ "PHONE:555-1234"
     | _ => throw (IO.userError "Expected phone contact")
 
     IO.println "✓ Traversal ∘ Prism: modified only phone contacts"
@@ -247,30 +237,24 @@ private def case_lensPrismLens : TestCase := {
     -- Verify Alice's address updated
     match withCountry.members[0]!.address with
     | some (Address.domestic s c) =>
-        if s != "123 Main St" then
-          throw (IO.userError s!"Expected '123 Main St', got {s}")
-        if c != "Boston, USA" then
-          throw (IO.userError s!"Expected 'Boston, USA', got {c}")
+        s ≡ "123 Main St"
+        c ≡ "Boston, USA"
     | _ => throw (IO.userError "Expected domestic address")
 
     -- Bob's international address unchanged
     match withCountry.members[1]!.address with
     | some (Address.international _ c _) =>
-        if c != "London" then
-          throw (IO.userError s!"Expected 'London', got {c}")
+        c ≡ "London"
     | _ => throw (IO.userError "Expected international address")
 
     -- Carol has no address (unchanged)
-    if withCountry.members[2]!.address != none then
-      throw (IO.userError "Carol should have no address")
+    shouldBeNone withCountry.members[2]!.address
 
     -- Dave's address updated
     match withCountry.members[3]!.address with
     | some (Address.domestic s c) =>
-        if s != "789 Oak Ave" then
-          throw (IO.userError s!"Expected '789 Oak Ave', got {s}")
-        if c != "Seattle, USA" then
-          throw (IO.userError s!"Expected 'Seattle, USA', got {c}")
+        s ≡ "789 Oak Ave"
+        c ≡ "Seattle, USA"
     | _ => throw (IO.userError "Expected domestic address")
 
     IO.println "✓ Lens ∘ Prism ∘ Lens: updated nested optional variant fields"
@@ -330,16 +314,13 @@ private def case_deepChains : TestCase := {
 
     -- Verify specific employees got raises
     let alice := afterRaise.departments[0]!.projects[0]!.employees[0]!
-    if alice.salary != 115000 then
-      throw (IO.userError s!"Expected Alice salary 115000, got {alice.salary}")
+    alice.salary ≡ 115000
 
     let carol := afterRaise.departments[0]!.projects[1]!.employees[0]!
-    if carol.salary != 120750 then
-      throw (IO.userError s!"Expected Carol salary 120750, got {carol.salary}")
+    carol.salary ≡ 120750
 
     let eve := afterRaise.departments[1]!.projects[0]!.employees[0]!
-    if eve.salary != 97750 then
-      throw (IO.userError s!"Expected Eve salary 97750, got {eve.salary}")
+    eve.salary ≡ 97750
 
     IO.println "✓ Deep chain: updated salaries across 5 levels of nesting"
 
@@ -357,29 +338,22 @@ private def case_deepChains : TestCase := {
 
     -- Verify Alice's email updated (Backend project: 500000 >= 400000)
     match updated.departments[0]!.projects[0]!.employees[0]!.contact with
-    | Contact.email e =>
-        if e != "alice@techcorp.com" then
-          throw (IO.userError s!"Expected alice@techcorp.com, got {e}")
+    | Contact.email e => e ≡ "alice@techcorp.com"
     | _ => throw (IO.userError "Expected email contact")
 
     -- Carol's email updated (Frontend project: 400000 >= 400000)
     match updated.departments[0]!.projects[1]!.employees[0]!.contact with
-    | Contact.email e =>
-        if e != "carol@techcorp.com" then
-          throw (IO.userError s!"Expected carol@techcorp.com, got {e}")
+    | Contact.email e => e ≡ "carol@techcorp.com"
     | _ => throw (IO.userError "Expected email contact")
 
     -- Eve's email NOT updated (Enterprise project: 300000 < 400000)
     match updated.departments[1]!.projects[0]!.employees[0]!.contact with
-    | Contact.email e =>
-        if e != "eve@tech.com" then
-          throw (IO.userError s!"Expected eve@tech.com (unchanged), got {e}")
+    | Contact.email e => e ≡ "eve@tech.com"
     | _ => throw (IO.userError "Expected email contact")
 
     -- Bob's phone unchanged (phones are never affected by emailPrism)
-    if updated.departments[0]!.projects[0]!.employees[1]!.contact !=
-       Contact.phone "555-0001" then
-      throw (IO.userError "Bob's phone should be unchanged")
+    updated.departments[0]!.projects[0]!.employees[1]!.contact ≡
+      Contact.phone "555-0001"
 
     IO.println "✓ Deep chain: updated emails only in high-budget projects (>= 400000)"
 
@@ -410,8 +384,7 @@ private def case_typeInference : TestCase := {
     -- Lean infers this is a Traversal
     let composed1 := optic% employeesLens ∘ List.traversed ∘ salaryLens : Traversal' Project Nat
     let result1 : Project := project & composed1 %~ (· + 5000)
-    if result1.employees[0]!.salary != 85000 then
-      throw (IO.userError s!"Expected salary 85000, got {result1.employees[0]!.salary}")
+    result1.employees[0]!.salary ≡ 85000
 
     IO.println "✓ Type inference: Lens ∘ Traversal ∘ Lens → Traversal"
 
@@ -420,9 +393,7 @@ private def case_typeInference : TestCase := {
     let result2 : Project := project & composed2 %~ (fun (s : String) => s ++ " (work)")
 
     match result2.employees[0]!.contact with
-    | Contact.email e =>
-        if e != "alice@test.com (work)" then
-          throw (IO.userError s!"Expected 'alice@test.com (work)', got {e}")
+    | Contact.email e => e ≡ "alice@test.com (work)"
     | _ => throw (IO.userError "Expected email contact")
 
     IO.println "✓ Type inference: Lens ∘ Traversal ∘ Lens ∘ Prism → Traversal"
@@ -488,23 +459,17 @@ private def case_realWorldScenario : TestCase := {
 
     -- Verify all changes applied correctly
     let alice := final.departments[0]!.projects[0]!.employees[0]!
-    if alice.salary != 108000 then  -- 90000 * 1.2
-      throw (IO.userError s!"Expected Alice salary 108000, got {alice.salary}")
+    alice.salary ≡ 108000  -- 90000 * 1.2
     match alice.contact with
-    | Contact.email e =>
-        if e != "alice@bigcorp.com" then
-          throw (IO.userError s!"Expected alice@bigcorp.com, got {e}")
+    | Contact.email e => e ≡ "alice@bigcorp.com"
     | _ => throw (IO.userError "Expected email contact")
 
     let mvpBudget := final.departments[0]!.projects[0]!.budget
-    if mvpBudget != 400000 then  -- 200000 * 2
-      throw (IO.userError s!"Expected budget 400000, got {mvpBudget}")
+    mvpBudget ≡ 400000  -- 200000 * 2
 
     let carol := final.departments[0]!.projects[0]!.employees[2]!
-    if carol.salary != 114000 then  -- 95000 * 1.2
-      throw (IO.userError s!"Expected Carol salary 114000, got {carol.salary}")
-    if carol.contact != Contact.phone "555-0001" then  -- Phone unchanged
-      throw (IO.userError "Expected Carol's phone to be unchanged")
+    carol.salary ≡ 114000  -- 95000 * 1.2
+    carol.contact ≡ Contact.phone "555-0001"  -- Phone unchanged
 
     IO.println "✓ Real-world: applied company-wide reorganization with 3 optics pipelines"
 

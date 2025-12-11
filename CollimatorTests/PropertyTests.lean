@@ -270,8 +270,8 @@ private def case_stress_large_list : TestCase := {
     let largeList : List Int := (List.range 1000).map (Int.ofNat ·)
     let tr : Traversal' (List Int) Int := Traversal.eachList
     let result := largeList & tr %~ (· + 1)
-    ensure (result.length == 1000) "Large list length preserved"
-    ensure (result.head? == some 1) "First element modified"
+    result.length ≡ 1000
+    result.head? ≡? 1
 }
 
 private def case_stress_deep_composition : TestCase := {
@@ -286,8 +286,8 @@ private def case_stress_deep_composition : TestCase := {
 
     let composed : Lens' (((((Int × Int) × Int) × Int) × Int)) Int := l1 ∘ l2 ∘ l3 ∘ l4
 
-    ensure (nested ^. composed == 1) "Deep view"
-    ensure ((nested & composed .~ 99) ^. composed == 99) "Deep set"
+    nested ^. composed ≡ 1
+    (nested & composed .~ 99) ^. composed ≡ 99
 }
 
 /--

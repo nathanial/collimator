@@ -69,13 +69,11 @@ def case_getterBasics : TestCase := {
 
     -- Use view
     let name := nameGetter.view alice
-    if name != "Alice" then
-      throw (IO.userError s!"Expected Alice, got {name}")
+    name ≡ "Alice"
 
     -- Use coercion (getter as function)
     let name2 := nameGetter alice
-    if name2 != "Alice" then
-      throw (IO.userError s!"Expected Alice from coercion, got {name2}")
+    name2 ≡ "Alice"
 
     IO.println "✓ Getter: basic construction and view"
 }
@@ -90,8 +88,7 @@ def case_getterFromLens : TestCase := {
     let ageGetter := Getter.ofLens personAgeLens
 
     let age := ageGetter.view bob
-    if age != 25 then
-      throw (IO.userError s!"Expected 25, got {age}")
+    age ≡ 25
 
     -- Getters are read-only - can only view, not set
     -- (This is enforced by the type system)
@@ -113,16 +110,14 @@ def case_getterComposition : TestCase := {
     let ceoAgeGetter := ceoGetter.compose ageGetter
 
     let ceoAge := ceoAgeGetter.view company
-    if ceoAge != 45 then
-      throw (IO.userError s!"Expected 45, got {ceoAge}")
+    ceoAge ≡ 45
 
     -- Compose with name
     let nameGetter := Getter.ofLens personNameLens
     let ceoNameGetter := ceoGetter.compose nameGetter
 
     let ceoName := ceoNameGetter.view company
-    if ceoName != "Carol" then
-      throw (IO.userError s!"Expected Carol, got {ceoName}")
+    ceoName ≡ "Carol"
 
     IO.println "✓ Getter: composition works correctly"
 }
@@ -142,20 +137,17 @@ def case_getterUseCases : TestCase := {
 
     -- Extract all names
     let names := people.map nameGetter.view
-    if names != ["Alice", "Bob", "Carol"] then
-      throw (IO.userError s!"Expected names list, got {repr names}")
+    names ≡ ["Alice", "Bob", "Carol"]
 
     -- Find average age using getter
     let ages := people.map ageGetter.view
     let totalAge := ages.foldl (· + ·) 0
-    if totalAge != 90 then
-      throw (IO.userError s!"Expected total 90, got {totalAge}")
+    totalAge ≡ 90
 
     -- Computed getter (derived value)
     let isAdultGetter := getter (fun p : Person => decide (p.age >= 18))
     let allAdults := people.map isAdultGetter.view
-    if !allAdults.all (fun b => b) then
-      throw (IO.userError "Expected all adults")
+    shouldSatisfy (allAdults.all (fun b => b)) "all adults"
 
     IO.println "✓ Getter: practical use cases work correctly"
 }
@@ -171,13 +163,11 @@ def case_reviewBasics : TestCase := {
 
     -- Use review to construct
     let alice := personReview.review ("Alice", 30)
-    if alice.name != "Alice" || alice.age != 30 then
-      throw (IO.userError s!"Expected Person Alice 30, got {repr alice}")
+    alice ≡ Person.mk "Alice" 30
 
     -- Use coercion (review as function)
     let bob := personReview ("Bob", 25)
-    if bob.name != "Bob" || bob.age != 25 then
-      throw (IO.userError s!"Expected Person Bob 25, got {repr bob}")
+    bob ≡ Person.mk "Bob" 25
 
     IO.println "✓ Review: basic construction and review"
 }
@@ -191,14 +181,12 @@ def case_reviewFromPrism : TestCase := {
 
     -- Use review to construct
     let circle := circleReview.review 5.0
-    if circle != Shape.circle 5.0 then
-      throw (IO.userError s!"Expected circle 5.0, got {repr circle}")
+    circle ≡ Shape.circle 5.0
 
     -- Rect prism
     let rectReview := Review.ofPrism rectPrism
     let rect := rectReview.review (10.0, 20.0)
-    if rect != Shape.rect 10.0 20.0 then
-      throw (IO.userError s!"Expected rect 10 20, got {repr rect}")
+    rect ≡ Shape.rect 10.0 20.0
 
     IO.println "✓ Review: conversion from Prism works correctly"
 }
@@ -220,12 +208,10 @@ def case_reviewFromIso : TestCase := {
 
     -- Use review to construct (Int × String) from (String × Int)
     let pair := swapReview.review ("hello", 42)
-    if pair != (42, "hello") then
-      throw (IO.userError s!"Expected (42, hello), got {repr pair}")
+    pair ≡ (42, "hello")
 
     let pair2 := swapReview.review ("world", 100)
-    if pair2 != (100, "world") then
-      throw (IO.userError s!"Expected (100, world), got {repr pair2}")
+    pair2 ≡ (100, "world")
 
     IO.println "✓ Review: conversion from Iso works correctly"
 }
@@ -244,8 +230,7 @@ def case_reviewComposition : TestCase := {
     let optCircleReview := optionReview.compose circleReview
 
     let optCircle := optCircleReview.review 7.5
-    if optCircle != some (Shape.circle 7.5) then
-      throw (IO.userError s!"Expected some (circle 7.5), got {repr optCircle}")
+    optCircle ≡ some (Shape.circle 7.5)
 
     IO.println "✓ Review: composition works correctly"
 }
@@ -261,14 +246,12 @@ def case_reviewUseCases : TestCase := {
     -- Build shapes from data
     let radii := [1.0, 2.0, 3.0]
     let circles := radii.map circleFactory.review
-    if circles.length != 3 then
-      throw (IO.userError s!"Expected 3 circles, got {circles.length}")
+    circles.length ≡ 3
 
     -- Build from tuples
     let dims := [(1.0, 2.0), (3.0, 4.0)]
     let rects := dims.map rectFactory.review
-    if rects.length != 2 then
-      throw (IO.userError s!"Expected 2 rects, got {rects.length}")
+    rects.length ≡ 2
 
     -- Smart constructor pattern
     let validPersonReview := mkReview (fun pair : String × Nat =>
@@ -276,12 +259,10 @@ def case_reviewUseCases : TestCase := {
     )
 
     let validPerson := validPersonReview.review ("Dave", 40)
-    if validPerson.name != "Dave" then
-      throw (IO.userError s!"Expected Dave, got {validPerson.name}")
+    validPerson.name ≡ "Dave"
 
     let invalidPerson := validPersonReview.review ("", 0)
-    if invalidPerson.name != "Invalid" then
-      throw (IO.userError s!"Expected Invalid, got {invalidPerson.name}")
+    invalidPerson.name ≡ "Invalid"
 
     IO.println "✓ Review: practical use cases work correctly"
 }
@@ -299,13 +280,11 @@ def case_getterReviewDuality : TestCase := {
     -- Getter extracts
     let person := Person.mk "Eve" 28
     let extractedAge := ageGetter.view person
-    if extractedAge != 28 then
-      throw (IO.userError s!"Expected 28, got {extractedAge}")
+    extractedAge ≡ 28
 
     -- Review constructs
     let constructedShape := circleReview.review 10.0
-    if constructedShape != Shape.circle 10.0 then
-      throw (IO.userError s!"Expected circle 10.0, got {repr constructedShape}")
+    constructedShape ≡ Shape.circle 10.0
 
     -- They are dual operations:
     -- Getter: S → A (extract focus from whole)

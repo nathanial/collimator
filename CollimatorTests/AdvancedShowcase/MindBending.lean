@@ -13,6 +13,10 @@ open Collimator.Instances.Option (somePrism')
 open scoped Collimator.Operators
 open CollimatorTests
 
+-- Provide BEq and Repr instances for Id since it doesn't have them by default
+instance [BEq α] : BEq (Id α) := inferInstanceAs (BEq α)
+instance [Repr α] : Repr (Id α) := inferInstanceAs (Repr α)
+
 /-!
 # Mind-Bending Examples
 
@@ -131,11 +135,11 @@ private def case_binaryTreeTraversal : TestCase := {
       (Tree.leaf 10)
       (Tree.node (Tree.leaf 20) (Tree.leaf 30))
 
-    ensureEq "All leaves doubled" expected doubled
+    doubled ≡ expected
 
     -- Collect all leaf values using Fold.toListTraversal
     let leaves := Fold.toListTraversal Tree.leaves tree
-    ensureEq "All leaves collected" [5, 10, 15] leaves
+    leaves ≡ [5, 10, 15]
 }
 
 /-- Test: Depth-aware recursive traversal using depth tracking -/
@@ -165,7 +169,7 @@ private def case_depthAwareTraversal : TestCase := {
       (Tree.leaf 101)
       (Tree.node (Tree.leaf 202) (Tree.leaf 203))
 
-    ensureEq "Values transformed by depth" expected result
+    shouldBe result expected
 
     -- Verify we can also collect depth information
     let collectWithDepth (depth : Nat) (x : Int) : StateT (List (Nat × Int)) Id Int := do
@@ -173,7 +177,7 @@ private def case_depthAwareTraversal : TestCase := {
       pure x
 
     let (_, depthInfo) := (Tree.walkWithDepth collectWithDepth 0 tree).run []
-    ensureEq "Collected depth info" [(1, 1), (2, 2), (2, 3)] depthInfo.reverse
+    depthInfo.reverse ≡ [(1, 1), (2, 2), (2, 3)]
 }
 
 /-- Test: Rose tree (n-ary tree) recursive traversal -/
@@ -204,24 +208,24 @@ private def case_roseTreeTraversal : TestCase := {
     -- Verify root
     match upper with
     | Rose.node value children =>
-      ensureEq "Root uppercase" "ROOT" value
-      ensureEq "Three children" 3 children.length
+      value ≡ "ROOT"
+      children.length ≡ 3
 
       -- Verify first child
       match children.head? with
       | some (Rose.node value children) =>
-        ensureEq "First child uppercase" "A" value
-        ensureEq "First child has 2 children" 2 children.length
-      | none => ensure false "Expected first child"
+        value ≡ "A"
+        children.length ≡ 2
+      | none => shouldSatisfy false "Expected first child"
 
     -- Count all nodes using Plated.cosmosCount (works on tree structure, not values)
     -- This counts Rose nodes, not String values
     let nodeCount := cosmosCount tree
-    ensureEq "Total node count (via Plated)" 7 nodeCount
+    nodeCount ≡ 7
 
     -- Also verify via collecting values
     let values := Fold.toListTraversal Rose.values tree
-    ensureEq "Total value count" 7 values.length
+    values.length ≡ 7
 }
 
 /-- Test: Rose tree with deeply nested structure -/
@@ -249,11 +253,11 @@ private def case_deeplyNestedRoseTree : TestCase := {
 
     -- Collect all values using Fold.toListTraversal
     let values := Fold.toListTraversal Rose.values multiplied
-    ensureEq "All values multiplied by 10" [10, 20, 30, 40, 50, 60, 70, 80, 90] values
+    values ≡ [10, 20, 30, 40, 50, 60, 70, 80, 90]
 
     -- Verify depth using Plated.depth
     let treeDepth := depth deepTree
-    ensureEq "Tree depth (via Plated)" 4 treeDepth
+    treeDepth ≡ 4
 }
 
 /-- Test: Recursive validation with Option applicative -/
@@ -269,9 +273,7 @@ private def case_recursiveValidation : TestCase := {
       if x > 0 then some x else none
 
     let result1 := Traversal.traverse' Tree.leaves validatePositive tree1
-    match result1 with
-    | some t => ensureEq "Valid tree passes" tree1 t
-    | none => ensure false "Expected validation to succeed"
+    result1 ≡? tree1
 
     -- Tree with negative value - should fail
     let tree2 := Tree.node
@@ -279,22 +281,20 @@ private def case_recursiveValidation : TestCase := {
       (Tree.node (Tree.leaf (-10)) (Tree.leaf 15))
 
     let result2 := Traversal.traverse' Tree.leaves validatePositive tree2
-    match result2 with
-    | none => pure ()  -- Expected: validation fails
-    | some _ => ensure false "Expected validation to fail"
+    shouldBeNone result2
 
     -- Also demonstrate Plated.allOf for validation
     let allPositive := allOf (fun (t : Tree Int) =>
       match t with
       | Tree.leaf x => x > 0
       | Tree.node _ _ => true) tree1
-    ensure allPositive "allOf reports all leaves positive"
+    shouldSatisfy allPositive "allOf reports all leaves positive"
 
     let allPositive2 := allOf (fun (t : Tree Int) =>
       match t with
       | Tree.leaf x => x > 0
       | Tree.node _ _ => true) tree2
-    ensure (!allPositive2) "allOf detects negative leaf"
+    shouldSatisfy (!allPositive2) "allOf detects negative leaf"
 }
 
 /-- Test: Recursive transformation with accumulating state -/
@@ -322,16 +322,16 @@ private def case_recursiveStatefulTransform : TestCase := {
 
     -- Values should be: [0, 10, 30, 60, 100]
     -- Transform: 10->0 (sum before), 20->10, 30->30, 40->60, 50->100
-    ensureEq "Final sum" 150 finalSum
+    finalSum ≡ 150
 
     -- Verify root was replaced with 0 (initial sum)
     match transformed with
     | Rose.node value _ =>
-      ensureEq "Root replaced with initial sum" 0 value
+      value ≡ 0
 
     -- Collect all transformed values using Fold.toListTraversal
     let transformedValues := Fold.toListTraversal tr transformed
-    ensureEq "All transformed values are running sums" [0, 10, 30, 60, 100] transformedValues
+    transformedValues ≡ [0, 10, 30, 60, 100]
 }
 
 /-- Test: Composing recursive traversals -/
@@ -355,11 +355,11 @@ private def case_composedRecursiveTraversal : TestCase := {
       (Tree.leaf (some 10))
       (Tree.node (Tree.leaf none) (Tree.leaf (some 30)))
 
-    ensureEq "Composed traversal works" expected doubled
+    doubled ≡ expected
 
     -- Collect only present values using Fold.toListTraversal
     let collected := Fold.toListTraversal composed treeOfOptions
-    ensureEq "Collected only present values" [5, 15] collected
+    collected ≡ [5, 15]
 }
 
 /-- Test: Self-modifying recursive structure (mind-bending!) -/
@@ -408,27 +408,27 @@ private def case_selfModifyingTraversal : TestCase := {
 
     match result with
     | Rose.node root children =>
-      ensureEq "Root: unchanged (before large value)" 5 root
+      root ≡ 5
 
       match children with
       | [Rose.node v1 c1, Rose.node v2 c2, Rose.node v3 c3] =>
-        ensureEq "Child 1: unchanged (before large value)" 10 v1
-        ensure (c1.isEmpty) "Child 1 has no children"
+        v1 ≡ 10
+        shouldSatisfy c1.isEmpty "Child 1 has no children"
 
-        ensureEq "Child 2: large value activates negation" 15 v2
+        v2 ≡ 15
         match c2 with
         | [Rose.node v2_1 _, Rose.node v2_2 _] =>
-          ensureEq "Grandchild 2.1: negated after parent" (-8) v2_1
-          ensureEq "Grandchild 2.2: still negated" (-3) v2_2
-        | _ => ensure false "Expected 2 grandchildren under child 2"
+          v2_1 ≡ (-8)
+          v2_2 ≡ (-3)
+        | _ => shouldSatisfy false "Expected 2 grandchildren under child 2"
 
-        ensureEq "Child 3: large value stays positive" 20 v3
+        v3 ≡ 20
         match c3 with
         | [Rose.node v3_1 _] =>
-          ensureEq "Grandchild 3.1: negated after parent" (-2) v3_1
-        | _ => ensure false "Expected 1 grandchild under child 3"
+          v3_1 ≡ (-2)
+        | _ => shouldSatisfy false "Expected 1 grandchild under child 3"
 
-      | _ => ensure false "Expected 3 children"
+      | _ => shouldSatisfy false "Expected 3 children"
 
     -- Key insight: The State monad threads through the ENTIRE recursive traversal!
     -- Earlier nodes can affect how later (even deeply nested) nodes are transformed.
@@ -475,7 +475,7 @@ private def case_deepRecursiveTree : TestCase := {
     let (_, depthValuePairs) := (Tree.walkWithDepth collectValues 0 deepTree).run []
 
     -- Verify depths: leaves 1,2,5 at depth 2; leaves 3,4 at depth 3
-    ensureEq "Depth-value pairs collected" [(2, 1), (2, 2), (3, 3), (3, 4), (2, 5)] depthValuePairs.reverse
+    depthValuePairs.reverse ≡ [(2, 1), (2, 2), (3, 3), (3, 4), (2, 5)]
 
     -- Verify transformations based on depth
     let collectTransformed (_depth : Nat) (x : Int) : StateT (List Int) Id Int := do
@@ -485,7 +485,7 @@ private def case_deepRecursiveTree : TestCase := {
     let (_, transformedValues) := (Tree.walkWithDepth collectTransformed 0 result).run []
 
     -- Verify: 1*3=3, 2*3=6, 3*4=12, 4*4=16, 5*3=15
-    ensureEq "Values transformed by depth multiplier" [3, 6, 12, 16, 15] transformedValues.reverse
+    transformedValues.reverse ≡ [3, 6, 12, 16, 15]
 }
 
 /-! ## Plated Capabilities -/
@@ -516,7 +516,7 @@ private def case_platedTransform : TestCase := {
       (Tree.leaf 10)
       (Tree.node (Tree.leaf 3) (Tree.leaf 14))
 
-    ensureEq "Bottom-up simplification" expected simplified
+    simplified ≡ expected
 }
 
 /-- Test: Plated.rewrite for iterative rewriting -/
@@ -547,7 +547,7 @@ private def case_platedRewrite : TestCase := {
     -- Expected: node(10, []) since 1+2+3+4 = 10
     let expected := Rose.node 10 []
 
-    ensureEq "Iterative flattening" expected flattened
+    flattened ≡ expected
 }
 
 /-- Test: Using Plated utilities together -/
@@ -564,7 +564,7 @@ private def case_platedUtilities : TestCase := {
 
     -- universeList collects all nodes
     let allNodes := universeList tree
-    ensureEq "universeList count" 5 allNodes.length
+    allNodes.length ≡ 5
 
     -- findOf finds first matching node
     let found := findOf (fun (t : Rose String) =>
@@ -573,21 +573,21 @@ private def case_platedUtilities : TestCase := {
       | _ => false) tree
 
     match found with
-    | some (Rose.node v _) => ensureEq "findOf found target" "target" v
-    | none => ensure false "Expected to find target"
+    | some (Rose.node v _) => v ≡ "target"
+    | none => shouldSatisfy false "Expected to find target"
 
     -- anyOf checks if any node matches
     let hasTarget := anyOf (fun (t : Rose String) =>
       match t with
       | Rose.node "target" _ => true
       | _ => false) tree
-    ensure hasTarget "anyOf finds target"
+    shouldSatisfy hasTarget "anyOf finds target"
 
     let hasMissing := anyOf (fun (t : Rose String) =>
       match t with
       | Rose.node "missing" _ => true
       | _ => false) tree
-    ensure (!hasMissing) "anyOf correctly reports missing"
+    shouldSatisfy (!hasMissing) "anyOf correctly reports missing"
 }
 
 def cases : List TestCase := [
