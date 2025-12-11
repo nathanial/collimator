@@ -38,7 +38,7 @@ open Collimator.Instances.List
 open Collimator.Instances.Option
 open Collimator.Instances.String
 open Collimator.Combinators.Bitraversal
-open Collimator.Combinators.Plated
+open Collimator.Combinators
 open CollimatorTests
 
 open scoped Collimator.Operators

@@ -440,7 +440,7 @@ end Collimator.Combinators.Bitraversal
 
 /-! ## Plated: Recursive Structure Traversals -/
 
-namespace Collimator.Combinators.Plated
+namespace Collimator.Combinators
 
 open Collimator
 
@@ -620,4 +620,4 @@ instance instPlatedOption {α : Type} : Plated (Option α) where
     (fun {F : Type → Type} [Applicative F] (_f : Option α → F (Option α)) (x : Option α) =>
       pure x)
 
-end Collimator.Combinators.Plated
+end Collimator.Combinators

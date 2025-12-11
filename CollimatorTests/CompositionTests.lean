@@ -31,7 +31,6 @@ namespace CollimatorTests.CompositionTests
 open Collimator
 open Collimator.Core
 open Collimator.Combinators
-open Collimator.Combinators.Plated
 open Collimator.Instances
 open Collimator.Instances.List
 open Collimator.Instances.Prod
