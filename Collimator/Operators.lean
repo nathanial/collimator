@@ -384,11 +384,42 @@ Note: A type annotation is typically needed for proper type inference.
 -/
 elab "ctorPrism%" ctorName:ident : term => do
   let ctorNameId := ctorName.getId
-
-  -- Generate the prism code as a string and parse it.
-  let code := s!"Collimator.prism {ctorNameId} (fun s => match s with | {ctorNameId} x => Sum.inr x | other => Sum.inl other)"
-
   let env ← getEnv
+
+  -- Resolve the constructor name in the current scope
+  let resolvedName ← resolveGlobalConstNoOverload ctorName
+
+  -- Look up constructor info to determine arity
+  let some ctorInfo := env.find? resolvedName
+    | throwError "ctorPrism%: unknown constructor '{ctorNameId}'"
+
+  let numParams ← match ctorInfo with
+    | .ctorInfo ci => pure ci.numFields
+    | _ => throwError "ctorPrism%: '{ctorNameId}' is not a constructor"
+
+  -- Use the original identifier string (works in scope since we're in the same module)
+  let ctorStr := toString ctorNameId
+  -- Generate code based on arity
+  let code ← match numParams with
+    | 0 =>
+      -- Zero args: focus on Unit
+      pure s!"Collimator.prism (fun () => {ctorStr}) (fun s => match s with | {ctorStr} => Sum.inr () | other => Sum.inl other)"
+    | 1 =>
+      -- Single arg: focus on the value directly
+      pure s!"Collimator.prism {ctorStr} (fun s => match s with | {ctorStr} x => Sum.inr x | other => Sum.inl other)"
+    | n =>
+      -- Multiple args: focus on a tuple
+      -- Generate: x0, x1, x2, ...
+      let vars := (List.range n).map (fun i => s!"x{i}")
+      let varList := String.intercalate ", " vars
+      -- Pattern: Constructor x0 x1 x2
+      let pattern := s!"{ctorStr} " ++ String.intercalate " " vars
+      -- Tuple construction: (x0, x1, x2)
+      let tuple := s!"({varList})"
+      -- Tuple deconstruction in lambda: fun (x0, x1, x2) => Constructor x0 x1 x2
+      let review := s!"(fun {tuple} => {pattern})"
+      pure s!"Collimator.prism {review} (fun s => match s with | {pattern} => Sum.inr {tuple} | other => Sum.inl other)"
+
   let stx ← match Lean.Parser.runParserCategory env `term code with
     | .ok stx => pure stx
     | .error e => throwError "ctorPrism% parse error: {e}"

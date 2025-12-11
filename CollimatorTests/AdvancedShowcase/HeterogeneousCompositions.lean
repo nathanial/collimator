@@ -81,46 +81,20 @@ private structure Team where
 
 /-! ## Lenses -/
 
-private def salaryLens : Lens' Employee Nat :=
-  lens' (fun e => e.salary) (fun e s => { e with salary := s })
-
-private def contactLens : Lens' Employee Contact :=
-  lens' (fun e => e.contact) (fun e c => { e with contact := c })
-
-private def employeesLens : Lens' Project (List Employee) :=
-  lens' (fun p => p.employees) (fun p es => { p with employees := es })
-
-private def budgetLens : Lens' Project Nat :=
-  lens' (fun p => p.budget) (fun p b => { p with budget := b })
-
-private def projectsLens : Lens' Department (List Project) :=
-  lens' (fun d => d.projects) (fun d ps => { d with projects := ps })
-
-private def departmentsLens : Lens' Company (List Department) :=
-  lens' (fun c => c.departments) (fun c ds => { c with departments := ds })
-
-private def addressLens : Lens' Person (Option Address) :=
-  lens' (fun p => p.address) (fun p a => { p with address := a })
-
-private def ageLens : Lens' Person Nat :=
-  lens' (fun p => p.age) (fun p a => { p with age := a })
-
-private def membersLens : Lens' Team (List Person) :=
-  lens' (fun t => t.members) (fun t ms => { t with members := ms })
+private def salaryLens : Lens' Employee Nat := fieldLens% Employee salary
+private def contactLens : Lens' Employee Contact := fieldLens% Employee contact
+private def employeesLens : Lens' Project (List Employee) := fieldLens% Project employees
+private def budgetLens : Lens' Project Nat := fieldLens% Project budget
+private def projectsLens : Lens' Department (List Project) := fieldLens% Department projects
+private def departmentsLens : Lens' Company (List Department) := fieldLens% Company departments
+private def addressLens : Lens' Person (Option Address) := fieldLens% Person address
+private def ageLens : Lens' Person Nat := fieldLens% Person age
+private def membersLens : Lens' Team (List Person) := fieldLens% Team members
 
 /-! ## Prisms -/
 
-private def emailPrism : Prism' Contact String :=
-  prism (fun e => Contact.email e)
-        (fun c => match c with
-         | Contact.email e => Sum.inr e
-         | _ => Sum.inl c)
-
-private def phonePrism : Prism' Contact String :=
-  prism (fun p => Contact.phone p)
-        (fun c => match c with
-         | Contact.phone p => Sum.inr p
-         | _ => Sum.inl c)
+private def emailPrism : Prism' Contact String := ctorPrism% Contact.email
+private def phonePrism : Prism' Contact String := ctorPrism% Contact.phone
 
 private def somePrism {α : Type} : Prism' (Option α) α :=
   prism (fun a => some a)
@@ -128,36 +102,8 @@ private def somePrism {α : Type} : Prism' (Option α) α :=
          | some a => Sum.inr a
          | none => Sum.inl none)
 
-private def domesticPrism : Prism' Address (String × String) :=
-  prism (fun (s, c) => Address.domestic s c)
-        (fun a => match a with
-         | Address.domestic s c => Sum.inr (s, c)
-         | _ => Sum.inl a)
-
-private def internationalPrism : Prism' Address (String × String × String) :=
-  prism (fun (s, c, co) => Address.international s c co)
-        (fun a => match a with
-         | Address.international s c co => Sum.inr (s, c, co)
-         | _ => Sum.inl a)
-
-/-! ## Traversals -/
-
--- Specialized traversals for each type to avoid type annotation burden
-private def employeeTraversal : Traversal (List Employee) (List Employee) Employee Employee :=
-  List.traversed
-
-private def projectTraversal : Traversal (List Project) (List Project) Project Project :=
-  List.traversed
-
-private def departmentTraversal : Traversal (List Department) (List Department) Department Department :=
-  List.traversed
-
-private def personTraversal : Traversal (List Person) (List Person) Person Person :=
-  List.traversed
-
--- Keep the polymorphic version for any remaining uses
-private def listTraversal {α β : Type} : Traversal (List α) (List β) α β :=
-  List.traversed
+private def domesticPrism : Prism' Address (String × String) := ctorPrism% Address.domestic
+private def internationalPrism : Prism' Address (String × String × String) := ctorPrism% Address.international
 
 /-! ## Test Cases -/
 
@@ -178,10 +124,9 @@ private def case_lensTraversal : TestCase := {
 
     -- Lens ∘ Traversal: Give everyone a 10% raise
     -- employeesLens focuses on the employee list
-    -- employeeTraversal then traverses each employee
+    -- List.traversed then traverses each employee
     -- salaryLens focuses on each employee's salary
-    let raiseComposed : Traversal' Project Nat :=
-      employeesLens ∘ employeeTraversal ∘ salaryLens
+    let raiseComposed := optic% employeesLens ∘ List.traversed ∘ salaryLens : Traversal' Project Nat
     let afterRaise : Project := project & raiseComposed %~ (fun s => s * 110 / 100)
 
     -- Verify all salaries increased
@@ -201,7 +146,7 @@ private def case_lensTraversal : TestCase := {
     IO.println "✓ Lens ∘ Traversal: gave 10% raise to all employees"
 
     -- Another example: Clear all contact info
-    let contactComposed : Traversal' Project Contact := employeesLens ∘ employeeTraversal ∘ contactLens
+    let contactComposed := optic% employeesLens ∘ List.traversed ∘ contactLens : Traversal' Project Contact
     let noContact : Project := project & contactComposed %~ (fun _ => Contact.none)
 
     if !noContact.employees.all (fun e => e.contact == Contact.none) then
@@ -226,11 +171,11 @@ private def case_traversalPrism : TestCase := {
     ]
 
     -- Traversal ∘ Prism: Update only email contacts
-    -- employeeTraversal traverses all employees
+    -- List.traversed traverses all employees
     -- contactLens focuses on each contact field
     -- emailPrism only matches email contacts
     -- Note: Traversal ∘ Lens ∘ Prism all supported
-    let emailComposed : Traversal' (List Employee) String := employeeTraversal ∘ contactLens ∘ emailPrism
+    let emailComposed := optic% List.traversed ∘ contactLens ∘ emailPrism : Traversal' (List Employee) String
     let updated : List Employee := employees & emailComposed %~
       (fun (email : String) => email.replace "@example.com" "@newdomain.com")
 
@@ -255,7 +200,7 @@ private def case_traversalPrism : TestCase := {
     IO.println "✓ Traversal ∘ Prism: updated only matching email contacts"
 
     -- Another example: uppercase all phone numbers
-    let phoneComposed : Traversal' (List Employee) String := employeeTraversal ∘ contactLens ∘ phonePrism
+    let phoneComposed := optic% List.traversed ∘ contactLens ∘ phonePrism : Traversal' (List Employee) String
     let phones : List Employee := employees & phoneComposed %~ (fun p => "PHONE:" ++ p)
 
     match phones[1]!.contact with
@@ -285,13 +230,14 @@ private def case_lensPrismLens : TestCase := {
 
     -- Lens ∘ Traversal ∘ Lens ∘ Prism ∘ Prism: Complex composition
     -- membersLens → List Person
-    -- personTraversal → traverse each Person
+    -- List.traversed → traverse each Person
     -- addressLens → Option Address
     -- somePrism → Address (if present)
     -- domesticPrism → (String × String) (if domestic)
 
-    let domesticAddressComposed : Traversal' Team (String × String) :=
-      membersLens ∘ personTraversal ∘ addressLens ∘ somePrism ∘ domesticPrism
+    let domesticAddressComposed := optic%
+      membersLens ∘ List.traversed ∘ addressLens ∘ somePrism ∘ domesticPrism
+      : Traversal' Team (String × String)
 
     -- Update all domestic addresses to add "USA"
     -- This only affects Alice and Dave, not Bob (international) or Carol (none)
@@ -372,11 +318,12 @@ private def case_deepChains : TestCase := {
 
     -- Deep composition: Company → Departments → Projects → Employees → Salary
     -- This is a 5-level deep traversal through nested structures
-    let allSalariesComposed : Traversal' Company Nat :=
-      departmentsLens ∘ departmentTraversal ∘
-      projectsLens ∘ projectTraversal ∘
-      employeesLens ∘ employeeTraversal ∘
+    let allSalariesComposed := optic%
+      departmentsLens ∘ List.traversed ∘
+      projectsLens ∘ List.traversed ∘
+      employeesLens ∘ List.traversed ∘
       salaryLens
+      : Traversal' Company Nat
 
     -- Give everyone a 15% raise
     let afterRaise : Company := company & allSalariesComposed %~ (fun s => s * 115 / 100)
@@ -396,29 +343,45 @@ private def case_deepChains : TestCase := {
 
     IO.println "✓ Deep chain: updated salaries across 5 levels of nesting"
 
-    -- Another deep chain: Update only email contacts in high-budget projects
-    let highBudgetEmailsComposed : Traversal' Company String :=
-      departmentsLens ∘ departmentTraversal ∘
-      projectsLens ∘ projectTraversal ∘
-      employeesLens ∘ employeeTraversal ∘
+    -- Another deep chain: Update only email contacts in high-budget projects (>= 400000)
+    -- Uses `filtered` to only traverse projects meeting the budget threshold
+    let highBudgetEmails := optic%
+      departmentsLens ∘ List.traversed ∘
+      projectsLens ∘ filtered List.traversed (fun p => p.budget >= 400000) ∘
+      employeesLens ∘ List.traversed ∘
       contactLens ∘ emailPrism
+      : Traversal' Company String
 
-    let updated : Company := company & highBudgetEmailsComposed %~
+    let updated : Company := company & highBudgetEmails %~
       (fun (email : String) => email.replace "@tech.com" "@techcorp.com")
 
-    -- Verify Alice's email updated
+    -- Verify Alice's email updated (Backend project: 500000 >= 400000)
     match updated.departments[0]!.projects[0]!.employees[0]!.contact with
     | Contact.email e =>
         if e != "alice@techcorp.com" then
           throw (IO.userError s!"Expected alice@techcorp.com, got {e}")
     | _ => throw (IO.userError "Expected email contact")
 
-    -- Bob's phone unchanged
+    -- Carol's email updated (Frontend project: 400000 >= 400000)
+    match updated.departments[0]!.projects[1]!.employees[0]!.contact with
+    | Contact.email e =>
+        if e != "carol@techcorp.com" then
+          throw (IO.userError s!"Expected carol@techcorp.com, got {e}")
+    | _ => throw (IO.userError "Expected email contact")
+
+    -- Eve's email NOT updated (Enterprise project: 300000 < 400000)
+    match updated.departments[1]!.projects[0]!.employees[0]!.contact with
+    | Contact.email e =>
+        if e != "eve@tech.com" then
+          throw (IO.userError s!"Expected eve@tech.com (unchanged), got {e}")
+    | _ => throw (IO.userError "Expected email contact")
+
+    -- Bob's phone unchanged (phones are never affected by emailPrism)
     if updated.departments[0]!.projects[0]!.employees[1]!.contact !=
        Contact.phone "555-0001" then
       throw (IO.userError "Bob's phone should be unchanged")
 
-    IO.println "✓ Deep chain: updated emails through 6 levels of nesting"
+    IO.println "✓ Deep chain: updated emails only in high-budget projects (>= 400000)"
 
     -- Imperative equivalent would require 4+ nested loops:
     -- for dept in company.departments:
@@ -445,7 +408,7 @@ private def case_typeInference : TestCase := {
 
     -- Minimal type annotations help type inference
     -- Lean infers this is a Traversal
-    let composed1 : Traversal' Project Nat := employeesLens ∘ employeeTraversal ∘ salaryLens
+    let composed1 := optic% employeesLens ∘ List.traversed ∘ salaryLens : Traversal' Project Nat
     let result1 : Project := project & composed1 %~ (· + 5000)
     if result1.employees[0]!.salary != 85000 then
       throw (IO.userError s!"Expected salary 85000, got {result1.employees[0]!.salary}")
@@ -453,7 +416,7 @@ private def case_typeInference : TestCase := {
     IO.println "✓ Type inference: Lens ∘ Traversal ∘ Lens → Traversal"
 
     -- This composition includes a Prism, so it's still a Traversal
-    let composed2 : Traversal' Project String := employeesLens ∘ employeeTraversal ∘ contactLens ∘ emailPrism
+    let composed2 := optic% employeesLens ∘ List.traversed ∘ contactLens ∘ emailPrism : Traversal' Project String
     let result2 : Project := project & composed2 %~ (fun (s : String) => s ++ " (work)")
 
     match result2.employees[0]!.contact with
@@ -497,27 +460,30 @@ private def case_realWorldScenario : TestCase := {
     ]
 
     -- Step 1: Give 20% raise to all employees (company-wide)
-    let allSalaries : Traversal' Company Nat :=
-      departmentsLens ∘ departmentTraversal ∘
-      projectsLens ∘ projectTraversal ∘
-      employeesLens ∘ employeeTraversal ∘
+    let allSalaries := optic%
+      departmentsLens ∘ List.traversed ∘
+      projectsLens ∘ List.traversed ∘
+      employeesLens ∘ List.traversed ∘
       salaryLens
+      : Traversal' Company Nat
     let afterRaises : Company := company & allSalaries %~ (fun s => s * 120 / 100)
 
     -- Step 2: Update email domain for all email contacts
-    let allEmails : Traversal' Company String :=
-      departmentsLens ∘ departmentTraversal ∘
-      projectsLens ∘ projectTraversal ∘
-      employeesLens ∘ employeeTraversal ∘
+    let allEmails := optic%
+      departmentsLens ∘ List.traversed ∘
+      projectsLens ∘ List.traversed ∘
+      employeesLens ∘ List.traversed ∘
       contactLens ∘ emailPrism
+      : Traversal' Company String
     let newDomain : Company := afterRaises & allEmails %~
                      (fun (e : String) => e.replace "@startup.com" "@bigcorp.com")
 
     -- Step 3: Double budget for all projects
-    let allBudgets : Traversal' Company Nat :=
-      departmentsLens ∘ departmentTraversal ∘
-      projectsLens ∘ projectTraversal ∘
+    let allBudgets := optic%
+      departmentsLens ∘ List.traversed ∘
+      projectsLens ∘ List.traversed ∘
       budgetLens
+      : Traversal' Company Nat
     let final : Company := newDomain & allBudgets %~ (· * 2)
 
     -- Verify all changes applied correctly
