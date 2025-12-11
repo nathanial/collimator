@@ -1,36 +1,3 @@
-/-!
-# Collimator: Profunctor Optics for Lean 4
-
-A comprehensive optics library based on profunctor encodings.
-
-## Quick Start
-
-```lean
-import Collimator.Prelude
-
-open Collimator
-open scoped Collimator.Operators
-
--- Define a lens
-def xLens : Lens' Point Int := lens' (·.x) (fun p x => { p with x := x })
-
--- Use it
-#eval point ^. xLens              -- view
-#eval point & xLens .~ 10         -- set
-#eval point & xLens %~ (· + 1)    -- over
-```
-
-## Main modules
-
-- `Collimator.Core`: Profunctor abstractions (Profunctor, Strong, Choice, Wandering, Closed)
-- `Collimator.Concrete`: Concrete profunctor implementations (Forget, Star, Costar, FunArrow, Tagged)
-- `Collimator.Optics`: Optic type definitions (Iso, Lens, Prism, Affine, Traversal, Fold, Setter)
-- `Collimator.Combinators`: Composition and operators
-- `Collimator.Instances`: Standard library type instances
-- `Collimator.Theorems`: Formal proofs of optic laws
-- `Collimator.Derive`: Metaprogramming for automatic lens derivation
--/
-
 -- Re-exports for simplified usage
 import Collimator.Exports
 
@@ -83,3 +50,37 @@ import Collimator.Integration
 import Collimator.Testing
 import Collimator.Tracing
 import Collimator.Commands
+
+
+/-!
+# Collimator: Profunctor Optics for Lean 4
+
+A comprehensive optics library based on profunctor encodings.
+
+## Quick Start
+
+```lean
+import Collimator.Prelude
+
+open Collimator
+open scoped Collimator.Operators
+
+-- Define a lens
+def xLens : Lens' Point Int := lens' (·.x) (fun p x => { p with x := x })
+
+-- Use it
+#eval point ^. xLens              -- view
+#eval point & xLens .~ 10         -- set
+#eval point & xLens %~ (· + 1)    -- over
+```
+
+## Main modules
+
+- `Collimator.Core`: Profunctor abstractions (Profunctor, Strong, Choice, Wandering, Closed)
+- `Collimator.Concrete`: Concrete profunctor implementations (Forget, Star, Costar, FunArrow, Tagged)
+- `Collimator.Optics`: Optic type definitions (Iso, Lens, Prism, Affine, Traversal, Fold, Setter)
+- `Collimator.Combinators`: Composition and operators
+- `Collimator.Instances`: Standard library type instances
+- `Collimator.Theorems`: Formal proofs of optic laws
+- `Collimator.Derive`: Metaprogramming for automatic lens derivation
+-/
