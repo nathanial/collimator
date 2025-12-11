@@ -1,118 +1,164 @@
 import Collimator.Optics
 import Collimator.Combinators
+import Collimator.Concrete.FunArrow
+import Collimator.Concrete.Forget
 
 /-!
 # Collimator Operators
 
-Infix operators for optic operations:
-- `∘` - standard function composition (works naturally with type alias optics!)
-- `^.` - view (for lenses)
-- `^?` - preview (for prisms/affine)
-- `%~` - over (modify)
-- `.~` - set
-- `&` - reverse application
-- `optic%` - type-annotated optic definition
+Haskell-style infix operators for optic operations. These operators work
+uniformly across all optic types (Lens, Traversal, Prism, AffineTraversal)
+thanks to automatic coercion to concrete optic types.
 
-## Composition
+## Operators
 
-With type alias optics, standard function composition (`∘`) works naturally:
+| Operator | Name | Usage | Works with |
+|----------|------|-------|------------|
+| `^.` | view | `s ^. lens` | Lens |
+| `^?` | preview | `s ^? prism` | Prism, AffineTraversal |
+| `^..` | toList | `s ^.. trav` | Traversal, Fold |
+| `%~` | over | `optic %~ f` | Lens, Traversal, Prism, AffineTraversal |
+| `.~` | set | `optic .~ v` | Lens, Traversal, Prism, AffineTraversal |
+| `&` | pipe | `s & optic .~ v` | (reverse application for chaining) |
+| `∘` | compose | `lens1 ∘ lens2` | All optics (standard function composition) |
 
-```lean
--- Compose two lenses
-let composed := outerLens ∘ innerLens
-
--- Compose a lens with a prism (gives AffineTraversal)
-let affine := myLens ∘ myPrism
-
--- Compose a lens with a traversal (gives Traversal)
-let trav := myLens ∘ myTraversal
-```
-
-The profunctor constraints are automatically propagated by Lean's type system.
-No special composition operator or typeclass is needed!
-
-## Type Inference for Composed Optics
-
-**Inline composition works without annotations** when used directly with operations:
+## Examples
 
 ```lean
--- These work - the operation provides type context
-over' (traversed ∘ nameLens ∘ addressLens) f data
-view' (outerLens ∘ innerLens) data
+open scoped Collimator.Operators
+
+-- View through a lens
+point ^. xLens                    -- 10
+
+-- Modify through a lens
+point & xLens %~ (· + 1)          -- increment x
+
+-- Set through a lens
+point & xLens .~ 99               -- replace x with 99
+
+-- Chain multiple updates
+point & xLens .~ 100 & yLens %~ (· + 5)
+
+-- Modify ALL elements through a traversal
+[1, 2, 3] & traversed %~ (· * 2)  -- [2, 4, 6]
+
+-- Collect all elements through a traversal
+[(1, "a"), (2, "b")] ^.. (traversed ∘ _1)  -- [1, 2]
+
+-- Preview through a prism (returns Option)
+(some 42) ^? somePrism'           -- some 42
+none ^? somePrism'                -- none
+
+-- Modify through a prism (only affects matching case)
+(some 42) & somePrism' %~ (· + 1) -- some 43
 ```
 
-**Named optics need type annotations** because Lean can't infer the profunctor type:
+## How It Works
 
-```lean
--- This may fail with "stuck typeclass" error:
--- def myOptic := traversed ∘ nameLens ∘ addressLens
+The operators work across all optic types by coercing polymorphic optics to
+concrete types. For example, `%~` coerces any settable optic to `ASetter`:
 
--- Use optic% to add the type annotation cleanly:
-def myOptic := optic% traversed ∘ nameLens ∘ addressLens : Traversal' Company String
+```
+ASetter s t a b = FunArrow a b → FunArrow s t
 ```
 
-The `optic%` macro simply wraps the expression with a type annotation, providing
-the context Lean needs to resolve the profunctor constraints.
+This is the same approach used by Haskell's lens library.
 -/
 
 namespace Collimator.Operators
 
 open Collimator
-open Collimator.Setter
+open Collimator.Core
+open Collimator.Concrete
 open Collimator.Combinators
 
+/-!
+## Concrete Optic Types
+
+These types instantiate the profunctor parameter to specific concrete profunctors,
+enabling uniform operations across all optic types via coercion.
+-/
+
+/-- Concrete setter type - any optic that can modify values. -/
+abbrev ASetter (s t a b : Type) := FunArrow a b → FunArrow s t
+
+/-- Concrete getter type - optics that can extract exactly one value. -/
+abbrev AGetter (s a : Type) := Forget a a a → Forget a s s
+
+/-- Concrete preview type - optics that can extract zero or one value. -/
+abbrev APreview (s a : Type) := Forget (Option a) a a → Forget (Option a) s s
+
+/-!
+## Coercion Instances
+
+These instances allow automatic coercion from polymorphic optics to concrete types.
+-/
+
+-- ASetter coercions (for %~ and .~)
+instance : Coe (Lens s t a b) (ASetter s t a b) where
+  coe l := fun fab => l (P := FunArrow) fab
+
+instance : Coe (Traversal s t a b) (ASetter s t a b) where
+  coe tr := fun fab => tr (P := FunArrow) fab
+
+instance : Coe (AffineTraversal s t a b) (ASetter s t a b) where
+  coe aff := fun fab => aff (P := FunArrow) fab
+
+instance : Coe (Prism s t a b) (ASetter s t a b) where
+  coe p := fun fab => p (P := FunArrow) fab
+
+instance : Coe (Iso s t a b) (ASetter s t a b) where
+  coe i := fun fab => i (P := FunArrow) fab
+
+-- AGetter coercions (for ^.)
+instance : Coe (Lens' s a) (AGetter s a) where
+  coe l := fun faa => l (P := Forget a) faa
+
+instance : Coe (Iso' s a) (AGetter s a) where
+  coe i := fun faa => i (P := Forget a) faa
+
+-- APreview coercions (for ^?)
+instance : Coe (Prism' s a) (APreview s a) where
+  coe p := fun faa => p (P := Forget (Option a)) faa
+
+instance : Coe (AffineTraversal' s a) (APreview s a) where
+  coe aff := fun faa => aff (P := Forget (Option a)) faa
+
+/-!
+## Universal Operation Functions
+
+These functions work on concrete optic types and are used by the operators.
+-/
+
+/-- Modify through any settable optic. -/
+def overU {s t a b : Type} (setter : ASetter s t a b) (f : a → b) (x : s) : t :=
+  (setter (FunArrow.mk f)).run x
+
+/-- Set through any settable optic. -/
+def setU {s t a b : Type} (setter : ASetter s t a b) (v : b) (x : s) : t :=
+  overU setter (fun _ => v) x
+
+/-- View through a getter (exactly one focus). -/
+def viewU {s a : Type} (getter : AGetter s a) (x : s) : a :=
+  getter id x
+
+/-- Preview through a prism or affine (zero or one focus). -/
+def previewU {s a : Type} (previewer : APreview s a) (x : s) : Option a :=
+  previewer some x
+
+/-- Collect all foci through a traversal. -/
+def toListU {s a : Type} [Inhabited (List a)] (tr : Traversal' s a) (x : s) : List a :=
+  Fold.toListTraversal tr x
 
 /-!
 ## Operators
-
-### Operator Quick Reference
-
-| Operator | Name | Usage | Description |
-|----------|------|-------|-------------|
-| `^.` | view | `s ^. lens` | Extract the focused value |
-| `^?` | preview | `s ^? prism` | Extract if present (returns `Option`) |
-| `%~` | over | `lens %~ f` | Modify with a function (use with `&`) |
-| `.~` | set | `lens .~ v` | Replace with a value (use with `&`) |
-| `&` | pipe | `s & lens .~ v` | Reverse application for chaining |
-| `∘` | compose | `lens1 ∘ lens2` | Standard function composition |
-
-### Examples
-
-```lean
-open scoped Collimator.Operators
-
-structure Point where x : Int; y : Int
-def xLens : Lens' Point Int := lens' (·.x) (fun p x => { p with x := x })
-def yLens : Lens' Point Int := lens' (·.y) (fun p y => { p with y := y })
-
-let p := Point.mk 10 20
-
--- View
-p ^. xLens                    -- 10
-
--- Set (note: use & to apply the setter)
-p & xLens .~ 99               -- { x := 99, y := 20 }
-
--- Modify
-p & xLens %~ (· * 2)          -- { x := 20, y := 20 }
-
--- Chain multiple updates
-p & xLens .~ 100 & yLens %~ (· + 5)  -- { x := 100, y := 25 }
-
--- Preview (for prisms/optional access)
-(some 42) ^? somePrism'       -- some 42
-none ^? somePrism'            -- none
-
--- Composition (use standard ∘)
-let composed := outerLens ∘ innerLens
-```
 -/
 
 /--
 Reverse function application, useful for chaining optic operators.
 
 ```lean
--- Instead of: set xLens 10 (set yLens 20 point)
+-- Instead of: setU xLens 10 (setU yLens 20 point)
 -- Write:      point & xLens .~ 10 & yLens .~ 20
 ```
 -/
@@ -121,52 +167,66 @@ scoped infixl:10 " & " => fun x f => f x
 /--
 View through a lens using infix notation.
 
-Extracts the focused value from the source. Works with Lens' and Iso'.
+Extracts the focused value from the source. Works with `Lens'` and `Iso'`.
 
 ```lean
-let point := Point.mk 10 20
 point ^. xLens  -- 10
 
 -- Composed access
-let nested := { outer := { inner := 42 } }
 nested ^. (outerLens ∘ innerLens)  -- 42
 ```
 -/
 scoped syntax:60 term:61 " ^. " term:61 : term
 scoped macro_rules
-  | `($s ^. $l) => `(Collimator.view' $l $s)
+  | `($s ^. $l) => `(viewU $l $s)
 
 /--
-Preview through a prism using infix notation.
+Preview through a prism or affine traversal using infix notation.
 
 Attempts to extract the focused value, returning `Option`. Returns `some`
-if the prism matches, `none` otherwise. Works with Prism', AffineTraversal'.
+if the optic matches, `none` otherwise.
 
 ```lean
 (some 42) ^? somePrism'    -- some 42
 none ^? somePrism'         -- none
 
--- Safe head access
-[1, 2, 3] ^? _head         -- some 1
-[] ^? _head                -- none
+-- Safe indexed access
+[1, 2, 3] ^? headAffine    -- some 1
+[] ^? headAffine           -- none
 ```
 -/
 scoped syntax:60 term:61 " ^? " term:61 : term
 scoped macro_rules
-  | `($s ^? $p) => `(Collimator.preview' $p $s)
+  | `($s ^? $p) => `(previewU $p $s)
 
 /--
-Modify the focus of a setter-like optic.
-
-Returns a function `s → s` that modifies the focused part(s). Use with `&`
-for a fluent syntax.
+Collect all foci through a traversal as a list.
 
 ```lean
--- Modify single field
-point & xLens %~ (· + 1)           -- increment x
+[1, 2, 3] ^.. traversed                    -- [1, 2, 3]
+[(1, "a"), (2, "b")] ^.. (traversed ∘ _1)  -- [1, 2]
+```
+-/
+scoped syntax:60 term:61 " ^.. " term:61 : term
+scoped macro_rules
+  | `($s ^.. $t) => `(toListU $t $s)
 
--- Modify all elements in a traversal
+/--
+Modify the focus of any settable optic.
+
+Works with Lens, Traversal, Prism, AffineTraversal, and Iso.
+Returns a function `s → t` that modifies the focused part(s).
+Use with `&` for fluent syntax.
+
+```lean
+-- Modify single field (Lens)
+point & xLens %~ (· + 1)
+
+-- Modify all elements (Traversal)
 [1, 2, 3] & traversed %~ (· * 2)   -- [2, 4, 6]
+
+-- Modify if present (Prism)
+(some 42) & somePrism' %~ (· + 1)  -- some 43
 
 -- Chained modifications
 point & xLens %~ (· * 2) & yLens %~ (· + 10)
@@ -174,28 +234,32 @@ point & xLens %~ (· * 2) & yLens %~ (· + 10)
 -/
 scoped syntax:80 term:81 " %~ " term:81 : term
 scoped macro_rules
-  | `($optic %~ $f) => `(Collimator.over' $optic $f)
+  | `($optic %~ $f) => `(overU $optic $f)
 
 /--
-Set the focus of a setter-like optic to a constant value.
+Set the focus of any settable optic to a constant value.
 
-Returns a function `s → s` that replaces the focused part(s). Use with `&`
-for a fluent syntax.
+Works with Lens, Traversal, Prism, AffineTraversal, and Iso.
+Returns a function `s → t` that replaces the focused part(s).
+Use with `&` for fluent syntax.
 
 ```lean
--- Set single field
-point & xLens .~ 100               -- { x := 100, y := 20 }
+-- Set single field (Lens)
+point & xLens .~ 100
 
--- Set all elements in a traversal
+-- Set all elements (Traversal)
 [1, 2, 3] & traversed .~ 0         -- [0, 0, 0]
 
+-- Set if present (Prism)
+(some 42) & somePrism' .~ 99       -- some 99
+
 -- Chained sets
-point & xLens .~ 10 & yLens .~ 20  -- { x := 10, y := 20 }
+point & xLens .~ 10 & yLens .~ 20
 ```
 -/
 scoped syntax:80 term:81 " .~ " term:81 : term
 scoped macro_rules
-  | `($optic .~ $value) => `(Collimator.set' $optic $value)
+  | `($optic .~ $value) => `(setU $optic $value)
 
 /--
 Define a composed optic with an explicit type annotation.
@@ -218,8 +282,7 @@ def complexOptic := optic%
 ```
 
 Note: This is only needed when defining named optics. Inline usage with
-`view'`, `over'`, etc. works without annotations because those operations
-provide the necessary type context.
+operators works without annotations because the operations provide type context.
 -/
 scoped macro "optic%" e:term ":" t:term : term => `(($e : $t))
 
