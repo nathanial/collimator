@@ -61,23 +61,17 @@ structure Container (α : Type) : Type where
 
 -- ## Lenses (all at Type level to avoid universe issues)
 
-def configValueLens : Lens' ConfigEntry (Option ConfigValue) :=
-  lens' (fun e => e.value) (fun e v => { e with value := v })
+def configValueLens : Lens' ConfigEntry (Option ConfigValue) := fieldLens% ConfigEntry value
 
-def userEmailLens : Lens' UserRecord (Option String) :=
-  lens' (fun u => u.email) (fun u e => { u with email := e })
+def userEmailLens : Lens' UserRecord (Option String) := fieldLens% UserRecord email
 
-def userProfileLens : Lens' UserRecord (Option ProfileData) :=
-  lens' (fun u => u.profile) (fun u p => { u with profile := p })
+def userProfileLens : Lens' UserRecord (Option ProfileData) := fieldLens% UserRecord profile
 
-def profileBioLens : Lens' ProfileData (Option String) :=
-  lens' (fun p => p.bio) (fun p b => { p with bio := b })
+def profileBioLens : Lens' ProfileData (Option String) := fieldLens% ProfileData bio
 
-def profileAgeLens : Lens' ProfileData (Option Nat) :=
-  lens' (fun p => p.age) (fun p a => { p with age := a })
+def profileAgeLens : Lens' ProfileData (Option Nat) := fieldLens% ProfileData age
 
-def containerValueLens (α : Type) : Lens' (Container α) (Option α) :=
-  lens' (fun c => c.value) (fun c v => { c with value := v })
+def containerValueLens (α : Type) : Lens' (Container α) (Option α) := fieldLens% Container value
 
 -- ## Prisms
 
