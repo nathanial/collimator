@@ -223,5 +223,47 @@ provide the necessary type context.
 -/
 scoped macro "optic%" e:term ":" t:term : term => `(($e : $t))
 
-
 end Collimator.Operators
+
+
+/-!
+## Field Lens Elaborator
+
+The `fieldLens%` elaborator creates lenses for structure fields with minimal boilerplate.
+-/
+
+open Lean Elab Term
+
+/--
+Create a lens for a structure field.
+
+This elaborator generates the getter/setter boilerplate for a field lens:
+
+```lean
+-- Instead of:
+def nameLens : Lens' Person String :=
+  lens' (fun p => p.name) (fun p v => { p with name := v })
+
+-- Write:
+def nameLens : Lens' Person String := fieldLens% Person name
+```
+
+The elaborator generates: `lens' (·.field) (fun s v => { s with field := v })`
+
+Note: A type annotation is typically needed for proper type inference.
+-/
+elab "fieldLens%" _structName:ident fieldName:ident : term => do
+  let fieldNameId := fieldName.getId
+
+  -- Generate the lens code as a string and parse it.
+  -- This works around Lean's syntax limitations with struct update syntax,
+  -- where the field name position requires special `structInstLVal` syntax
+  -- that can't be easily spliced via quotation.
+  let code := s!"Collimator.lens' (·.{fieldNameId}) (fun s v => \{ s with {fieldNameId} := v })"
+
+  let env ← getEnv
+  let stx ← match Lean.Parser.runParserCategory env `term code with
+    | .ok stx => pure stx
+    | .error e => throwError "fieldLens% parse error: {e}"
+
+  elabTerm stx none

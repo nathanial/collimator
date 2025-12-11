@@ -68,6 +68,33 @@ structure CompanyWithCEO where
   ceo : Option Employee
   deriving BEq, Repr
 
+/-! ## Field Lenses -/
+
+-- Address field lenses
+private def Address.streetLens : Lens' Address String := fieldLens% Address street
+private def Address.cityLens : Lens' Address String := fieldLens% Address city
+private def Address.zipCodeLens : Lens' Address String := fieldLens% Address zipCode
+
+-- Employee field lenses
+private def Employee.nameLens : Lens' Employee String := fieldLens% Employee name
+private def Employee.addressLens : Lens' Employee Address := fieldLens% Employee address
+private def Employee.salaryLens : Lens' Employee Int := fieldLens% Employee salary
+
+-- Department field lenses
+private def Department.nameLens : Lens' Department String := fieldLens% Department name
+private def Department.employeesLens : Lens' Department (List Employee) := fieldLens% Department employees
+
+-- Company field lenses
+private def Company.nameLens : Lens' Company String := fieldLens% Company name
+private def Company.departmentsLens : Lens' Company (List Department) := fieldLens% Company departments
+
+-- CompanyWithCEO field lenses
+private def CompanyWithCEO.nameLens : Lens' CompanyWithCEO String := fieldLens% CompanyWithCEO name
+private def CompanyWithCEO.departmentsLens : Lens' CompanyWithCEO (List Department) := fieldLens% CompanyWithCEO departments
+private def CompanyWithCEO.ceoLens : Lens' CompanyWithCEO (Option Employee) := fieldLens% CompanyWithCEO ceo
+
+/-! ## Isomorphisms -/
+
 /-- Isomorphism between String and List Char (for composition tests). -/
 private def stringToListIso : Iso String String (List Char) (List Char) :=
   iso
@@ -145,24 +172,11 @@ private def case_companyZipCode : TestCase := {
       departments := [department]
     }
 
-    -- Build lenses for each field
-    let departmentsLens : Lens' Company (List Department) :=
-      lens' (fun c => c.departments) (fun c depts => { c with departments := depts })
-
-    let employeesLens : Lens' Department (List Employee) :=
-      lens' (fun d => d.employees) (fun d emps => { d with employees := emps })
-
-    let addressLens : Lens' Employee Address :=
-      lens' (fun e => e.address) (fun e addr => { e with address := addr })
-
-    let zipCodeLens : Lens' Address String :=
-      lens' (fun a => a.zipCode) (fun a zip => { a with zipCode := zip })
-
     -- Compose all at once to avoid intermediate wrapping issues
     -- Company → List Dept → first Dept → List Emp → first Emp → Address → Zip
     let companyToZip : Lens' Company String :=
-      departmentsLens ∘ headLens (α := Department) ∘ employeesLens ∘
-      headLens (α := Employee) ∘ addressLens ∘ zipCodeLens
+      Company.departmentsLens ∘ headLens (α := Department) ∘ Department.employeesLens ∘
+      headLens (α := Employee) ∘ Employee.addressLens ∘ Address.zipCodeLens
 
     -- View the deeply nested zip code
     let zip := view' companyToZip company
@@ -256,16 +270,10 @@ private def case_traversalPrismComposition : TestCase := {
     -- addressLens : Lens Employee _ Address _
     -- cityLens : Lens Address _ String _
 
-    let addressLens : Lens' Employee Address :=
-      lens' (fun e => e.address) (fun e addr => { e with address := addr })
-
-    let cityLens : Lens' Address String :=
-      lens' (fun a => a.city) (fun a c => { a with city := c })
-
     -- Compose: Traversal → Prism → Lens → Lens
     -- Using optic% macro for clean type annotation on composed optics
     let finalTraversal := optic%
-      traversed ∘ somePrism' Employee ∘ addressLens ∘ cityLens
+      traversed ∘ somePrism' Employee ∘ Employee.addressLens ∘ Address.cityLens
       : Traversal' (List (Option Employee)) String
 
     -- Collect all cities (only from Some employees, None are skipped!)
@@ -320,12 +328,9 @@ private def case_traversalPrismSum : TestCase := {
     ]
 
     -- Compose: List (Sum String Employee) → Sum* → Employee → salary
-    let salaryLens : Lens' Employee Int :=
-      lens' (fun e => e.salary) (fun e s => { e with salary := s })
-
     -- Using optic% for the composed traversal
     let finalTraversal := optic%
-      traversed ∘ right' String Employee ∘ salaryLens
+      traversed ∘ right' String Employee ∘ Employee.salaryLens
       : Traversal' (List (Sum String Employee)) Int
 
     -- Collect salaries (only from Right/success cases)
@@ -367,12 +372,6 @@ private def case_affineTraversal : TestCase := {
     let empty : List Employee := []
 
     -- Build AffineTraversal: List Employee → Option Employee (via head) → Employee → Address → city
-    let addressLens : Lens' Employee Address :=
-      lens' (fun e => e.address) (fun e addr => { e with address := addr })
-
-    let cityLens : Lens' Address String :=
-      lens' (fun a => a.city) (fun a c => { a with city := c })
-
     -- Use HasAt.focus 0 for head access: Lens' (List Employee) (Option Employee)
     let headLens : Lens' (List Employee) (Option Employee) := HasAt.focus 0
 
@@ -380,8 +379,8 @@ private def case_affineTraversal : TestCase := {
     let finalAffine : AffineTraversal' (List Employee) String :=
       headLens ∘
       ofPrism (somePrism' Employee) ∘
-      addressLens ∘
-      cityLens
+      Employee.addressLens ∘
+      Address.cityLens
 
     -- Preview: succeeds on non-empty list
     let city := AffineTraversalOps.preview' finalAffine employees
@@ -440,12 +439,10 @@ private def case_affineViaAt : TestCase := {
 
     -- Build lens using HasAt, then compose with somePrism to get AffineTraversal
     let atLens : Lens' (List Employee) (Option Employee) := HasAt.focus 1  -- index 1 (Bob)
-    let salaryLens : Lens' Employee Int :=
-      lens' (fun e => e.salary) (fun e s => { e with salary := s })
 
     -- Compose: Lens to Option Employee → Prism (somePrism) → Lens to salary
     let finalAffine := optic%
-      atLens ∘ ofPrism (somePrism' Employee) ∘ salaryLens
+      atLens ∘ ofPrism (somePrism' Employee) ∘ Employee.salaryLens
       : AffineTraversal' (List Employee) Int
 
     -- Preview element at valid index
@@ -519,25 +516,6 @@ private def case_foldAggregations : TestCase := {
       departments := [engineering, sales, hr]
     }
 
-    -- Build traversals for deep collection
-    let departmentsLens : Lens' Company (List Department) :=
-      lens' (fun c => c.departments) (fun c depts => { c with departments := depts })
-
-    let employeesLens : Lens' Department (List Employee) :=
-      lens' (fun d => d.employees) (fun d emps => { d with employees := emps })
-
-    let addressLens : Lens' Employee Address :=
-      lens' (fun e => e.address) (fun e addr => { e with address := addr })
-
-    let zipCodeLens : Lens' Address String :=
-      lens' (fun a => a.zipCode) (fun a zip => { a with zipCode := zip })
-
-    let salaryLens : Lens' Employee Int :=
-      lens' (fun e => e.salary) (fun e sal => { e with salary := sal })
-
-    let cityLens : Lens' Address String :=
-      lens' (fun a => a.city) (fun a c => { a with city := c })
-
     -- PART 1: Demonstrate Fold type for read-only single-value access
     -- Folds are useful when you want to guarantee no modification can happen
 
@@ -582,7 +560,7 @@ private def case_foldAggregations : TestCase := {
     -- 1. Collect all zip codes from the entire company
     -- Company → all departments → all employees → address → zipCode
     let allZipsTraversal := optic%
-      departmentsLens ∘ traversed ∘ employeesLens ∘ traversed ∘ addressLens ∘ zipCodeLens
+      Company.departmentsLens ∘ traversed ∘ Department.employeesLens ∘ traversed ∘ Employee.addressLens ∘ Address.zipCodeLens
       : Traversal' Company String
 
     let allZipCodes : List String := toListTraversal allZipsTraversal company
@@ -590,7 +568,7 @@ private def case_foldAggregations : TestCase := {
 
     -- 2. Collect all salaries and compute sum (demonstrates fold aggregation)
     let allSalariesTraversal := optic%
-      departmentsLens ∘ traversed ∘ employeesLens ∘ traversed ∘ salaryLens
+      Company.departmentsLens ∘ traversed ∘ Department.employeesLens ∘ traversed ∘ Employee.salaryLens
       : Traversal' Company Int
 
     let allSalaries : List Int := toListTraversal allSalariesTraversal company
@@ -606,7 +584,7 @@ private def case_foldAggregations : TestCase := {
 
     -- 3. Count employees across all departments (demonstrates counting)
     let allEmployeesTraversal := optic%
-      departmentsLens ∘ traversed ∘ employeesLens ∘ traversed
+      Company.departmentsLens ∘ traversed ∘ Department.employeesLens ∘ traversed
       : Traversal' Company Employee
 
     let allEmployees : List Employee := toListTraversal allEmployeesTraversal company
@@ -615,7 +593,7 @@ private def case_foldAggregations : TestCase := {
 
     -- 4. Collect all cities (demonstrates another read-only property)
     let allCitiesTraversal := optic%
-      departmentsLens ∘ traversed ∘ employeesLens ∘ traversed ∘ addressLens ∘ cityLens
+      Company.departmentsLens ∘ traversed ∘ Department.employeesLens ∘ traversed ∘ Employee.addressLens ∘ Address.cityLens
       : Traversal' Company String
 
     let allCities := toListTraversal allCitiesTraversal company
@@ -669,12 +647,9 @@ private def case_ultimateComposition : TestCase := {
     -- Example 1: Lens ∘ Iso ∘ Traversal to modify employee names at character level
     -- Path: Employee → name (Lens) → List Char (Iso) → each char (Traversal)
 
-    let nameLens : Lens' Employee String :=
-      lens' (fun e => e.name) (fun e n => { e with name := n })
-
     -- Compose: Lens → Iso → Traversal to get character-level access
     let nameCharsTraversal : Traversal' Employee Char :=
-      nameLens ∘ (stringToListIso ∘ traversed (α := Char) (β := Char))
+      Employee.nameLens ∘ (stringToListIso ∘ traversed (α := Char) (β := Char))
 
     -- Capitalize all characters in employee name
     let capitalized : Employee := Traversal.over' nameCharsTraversal Char.toUpper emp1
@@ -684,16 +659,10 @@ private def case_ultimateComposition : TestCase := {
     -- Lens → Traversal → Lens → Traversal → Lens → Iso → Traversal
     -- Path: Company → departments → Dept* → employees → Emp* → name → chars → char*
 
-    let departmentsLens : Lens' Company (List Department) :=
-      lens' (fun c => c.departments) (fun c depts => { c with departments := depts })
-
-    let employeesLens : Lens' Department (List Employee) :=
-      lens' (fun d => d.employees) (fun d emps => { d with employees := emps })
-
     -- Build the mega-composition: all employee names at character level
     let companyToAllNameChars := optic%
-      departmentsLens ∘ traversed ∘ employeesLens ∘ traversed ∘
-      nameLens ∘ stringToListIso ∘ traversed
+      Company.departmentsLens ∘ traversed ∘ Department.employeesLens ∘ traversed ∘
+      Employee.nameLens ∘ stringToListIso ∘ traversed
       : Traversal' Company Char
 
     -- Capitalize all employee names across the entire company!
@@ -764,21 +733,12 @@ private def case_nestedOptions : TestCase := {
     }
 
     -- Build composition: Company → ceo (Lens) → Employee (Prism) → address (Lens) → city (Lens)
-    let ceoLens : Lens' CompanyWithCEO (Option Employee) :=
-      lens' (fun c => c.ceo) (fun c ceo => { c with ceo := ceo })
-
-    let addressLens : Lens' Employee Address :=
-      lens' (fun e => e.address) (fun e addr => { e with address := addr })
-
-    let cityLens : Lens' Address String :=
-      lens' (fun a => a.city) (fun a c => { a with city := c })
-
     -- Compose Lens → Prism → Lens → Lens using AffineTraversal
     let ceoToCity : AffineTraversal' CompanyWithCEO String :=
-      ceoLens ∘
+      CompanyWithCEO.ceoLens ∘
       ofPrism (somePrism' Employee) ∘
-      addressLens ∘
-      cityLens
+      Employee.addressLens ∘
+      Address.cityLens
 
     -- Test 1: Preview succeeds when CEO exists
     let cityWithCEO := AffineTraversalOps.preview' ceoToCity companyWithCEO
@@ -807,14 +767,11 @@ private def case_nestedOptions : TestCase := {
     ensureEq "Over on None is no-op" companyNoCEO upperNoCEO
 
     -- Test 6: Nested Option chaining - CEO → address → street
-    let streetLens : Lens' Address String :=
-      lens' (fun a => a.street) (fun a s => { a with street := s })
-
     let ceoToStreet : AffineTraversal' CompanyWithCEO String :=
-      ceoLens ∘
+      CompanyWithCEO.ceoLens ∘
       ofPrism (somePrism' Employee) ∘
-      addressLens ∘
-      streetLens
+      Employee.addressLens ∘
+      Address.streetLens
 
     let street := AffineTraversalOps.preview' ceoToStreet companyWithCEO
     ensureEq "Nested preview succeeds" (some "1 Executive Blvd") street
@@ -848,18 +805,9 @@ private def case_allSalaries : TestCase := {
     -- Build the composition: Company → List Dept → Dept* → List Emp → Emp* → salary
     -- This is: Lens → Traversal → Lens → Traversal → Lens
 
-    let departmentsLens : Lens' Company (List Department) :=
-      lens' (fun c => c.departments) (fun c depts => { c with departments := depts })
-
-    let employeesLens : Lens' Department (List Employee) :=
-      lens' (fun d => d.employees) (fun d emps => { d with employees := emps })
-
-    let salaryLens : Lens' Employee Int :=
-      lens' (fun e => e.salary) (fun e sal => { e with salary := sal })
-
     -- Compose: Company → all Depts → all Employees → salary
     let companyToAllSalaries := optic%
-      departmentsLens ∘ traversed ∘ employeesLens ∘ traversed ∘ salaryLens
+      Company.departmentsLens ∘ traversed ∘ Department.employeesLens ∘ traversed ∘ Employee.salaryLens
       : Traversal' Company Int
 
     -- Collect all salaries (read operation) using toListTraversal
