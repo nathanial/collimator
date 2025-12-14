@@ -24,18 +24,17 @@ lake update
 lake build
 ```
 
-**Requirements:** Lean 4.15.0 or compatible version.
+**Requirements:** Lean 4.25.2 or compatible version.
 
 ## Documentation
 
-- **[Tutorial](docs/tutorial.md)** - Progressive introduction to profunctor optics
-- **[Cheat Sheet](docs/cheatsheet.md)** - Quick reference for operations, types, and operators
 - **[Examples](examples/)** - Real-world usage patterns:
   - [JSON Navigation](examples/JsonLens.lean)
   - [Configuration Management](examples/ConfigUpdate.lean)
   - [Form Validation](examples/FormValidation.lean)
   - [Tree Traversal](examples/TreeTraversal.lean)
   - [Database Records](examples/DatabaseRecords.lean)
+  - [Indexed Optics](examples/IndexedOptics.lean)
 
 ## Quick Start
 
@@ -157,14 +156,15 @@ Operations are implemented by instantiating `P` with specific concrete profuncto
 
 ```
 Collimator/
-├── Core/           # Profunctor, Strong, Choice, Wandering, Closed
-├── Concrete/       # Forget, Star, Costar, FunArrow, Tagged
-├── Optics/         # Iso, Lens, Prism, Affine, Traversal, Fold, Setter
-├── Poly/           # Polymorphic operations (HasView, HasOver, etc.)
-├── Combinators/    # Composition, operators, indexed, filtered
-├── Instances/      # Array, List, Option, Prod, Sum
-├── Theorems/       # Law proofs, equivalences, normalization
-└── Derive/         # Macro support for automatic generation
+├── Core.lean         # Profunctor, Strong, Choice, Wandering, Closed
+├── Optics.lean       # Iso, Lens, Prism, Affine, Traversal, Fold, Setter
+├── Combinators.lean  # Composition, indexed, filtered
+├── Operators.lean    # Operator syntax (^., %~, &, etc.)
+├── Instances.lean    # Array, List, Option, Prod, Sum instances
+├── Concrete/         # Forget, Star, Costar, FunArrow, Tagged
+├── Theorems/         # Law proofs, equivalences, normalization
+├── Derive/           # Macro support for automatic lens generation
+└── Prelude.lean      # Batteries-included import
 ```
 
 ## Building & Testing
