@@ -9,6 +9,8 @@ A profunctor optics library for Lean 4.
 
 Optics (lenses, prisms, traversals, etc.) are encoded as polymorphic functions over profunctors, enabling composable, type-safe data access and modification patterns.
 
+*Developed in collaboration with [Claude](https://claude.ai) and [Codex](https://openai.com/index/openai-codex/).*
+
 ## Installation
 
 Add to your `lakefile.lean`:
