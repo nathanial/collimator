@@ -37,7 +37,7 @@ open scoped Collimator.Operators
 /-- Pad a string on the right with spaces to reach a minimum length -/
 private def padRight (s : String) (len : Nat) : String :=
   if s.length >= len then s
-  else s ++ String.mk (List.replicate (len - s.length) ' ')
+  else s ++ String.ofList (List.replicate (len - s.length) ' ')
 
 /-! ## Optic Kind Identification -/
 

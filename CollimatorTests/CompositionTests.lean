@@ -258,7 +258,7 @@ private def CompanyWithCEO.ceoLens : Lens' CompanyWithCEO (Option Employee) := f
 private def stringToListIso : Iso String String (List Char) (List Char) :=
   iso
     (forward := String.toList)
-    (back := List.asString)
+    (back := String.ofList)
 
 -- Inhabited instances
 private instance : Inhabited Department where

@@ -55,7 +55,7 @@ private def sanitizeName (s : String) : String :=
     if c.isAlphanum then c
     else '_'
   -- Remove leading/trailing underscores and collapse multiple underscores
-  let result := String.mk chars
+  let result := String.ofList chars
   result.splitOn "_" |>.filter (· ≠ "") |>.intersperse "_" |> String.join
 
 /-- Generate a unique test definition name from a description. -/

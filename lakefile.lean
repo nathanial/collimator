@@ -7,7 +7,7 @@ package collimator where
   weakLeanArgs := #["-Dweak.linter.docPrime=false"]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4" @ "v4.25.2"
+  "https://github.com/leanprover-community/mathlib4" @ "v4.26.0"
 
 @[default_target]
 lean_lib Collimator where

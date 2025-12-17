@@ -225,14 +225,14 @@ namespace String
 
 /-- Isomorphism between String and List Char. -/
 @[inline] def chars : Iso' _root_.String (_root_.List Char) :=
-  iso (forward := _root_.String.toList) (back := _root_.String.mk)
+  iso (forward := _root_.String.toList) (back := _root_.String.ofList)
 
 /-- Traversal visiting every character in a string. -/
 @[inline] def traversed : Traversal' _root_.String Char :=
   Collimator.traversal
     (fun {F : Type → Type} [Applicative F]
       (f : Char → F Char) (s : _root_.String) =>
-        Functor.map _root_.String.mk (_root_.List.traverse f s.toList))
+        Functor.map _root_.String.ofList (_root_.List.traverse f s.toList))
 
 /-- Indexed traversal exposing position alongside each character. -/
 @[inline] def itraversed : Traversal' _root_.String (Nat × Char) :=
@@ -246,14 +246,14 @@ namespace String
             pure _root_.List.cons
               <*> Functor.map (fun pair : Nat × Char => pair.2) head
               <*> helper (idx + 1) rest
-        Functor.map _root_.String.mk (helper 0 s.toList))
+        Functor.map _root_.String.ofList (helper 0 s.toList))
 
 private def setCharAt (s : _root_.String) (idx : Nat) (replacement : _root_.Option Char) : _root_.String :=
   let chars := s.toList
   let newChars := match chars[idx]?, replacement with
     | some _, some c => chars.set idx c
     | _, _ => chars  -- No change if index invalid or no replacement
-  _root_.String.mk newChars
+  _root_.String.ofList newChars
 
 /-- Lens exposing a possibly missing character at a given index. -/
 instance instHasAtString : HasAt Nat _root_.String Char where
@@ -272,7 +272,7 @@ instance instHasIxString : HasIx Nat _root_.String Char where
                 pure _root_.List.cons <*> f c <*> helper (idx + 1) rest
               else
                 pure _root_.List.cons <*> pure c <*> helper (idx + 1) rest
-          Functor.map _root_.String.mk (helper 0 s.toList))
+          Functor.map _root_.String.ofList (helper 0 s.toList))
 
 end String
 

@@ -122,7 +122,7 @@ syntax "makeLenses" ident ("(" makeLensesOpt,* ")")? : command
 private def modifyFirstChar (f : Char → Char) (s : String) : String :=
   match s.toList with
   | [] => s
-  | c :: cs => String.mk (f c :: cs)
+  | c :: cs => String.ofList (f c :: cs)
 
 /-- Helper to convert struct name to camelCase (lowercase all leading uppercase letters) -/
 def toLowerFirst (s : String) : String :=
