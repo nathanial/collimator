@@ -1,4 +1,4 @@
-import CollimatorTests.Framework
+import Crucible
 import Collimator.Prelude
 import Collimator.Debug
 import Collimator.Debug.LawCheck
@@ -29,7 +29,7 @@ open Collimator.Debug.LawCheck
 open Collimator.Testing
 open Collimator.Tracing
 open Collimator.Instances.Option
-open CollimatorTests
+open Crucible
 open scoped Collimator.Operators
 
 namespace CollimatorTests.DevTools

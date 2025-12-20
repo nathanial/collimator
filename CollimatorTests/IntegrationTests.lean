@@ -1,4 +1,4 @@
-import CollimatorTests.Framework
+import Crucible
 import Collimator.Prelude
 import Collimator.Integration
 
@@ -12,7 +12,7 @@ open Collimator
 open Collimator.Integration
 open Collimator.Instances.Option
 open Collimator.Instances.List
-open CollimatorTests
+open Crucible
 
 namespace CollimatorTests.IntegrationTests
 

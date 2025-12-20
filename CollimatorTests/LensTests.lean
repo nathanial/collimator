@@ -5,7 +5,7 @@ import Collimator.Theorems.LensLaws
 import Collimator.Combinators
 import Collimator.Operators
 import Collimator.Concrete.FunArrow
-import CollimatorTests.Framework
+import Crucible
 
 namespace CollimatorTests.LensTests
 
@@ -14,7 +14,7 @@ open Collimator.Core
 open Collimator.Concrete
 open Collimator.Theorems
 open Collimator.Combinators
-open CollimatorTests
+open Crucible
 open scoped Collimator.Operators
 
 testSuite "Lens Tests"

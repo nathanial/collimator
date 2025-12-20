@@ -6,7 +6,7 @@ import Collimator.Optics
 import Collimator.Concrete.FunArrow
 import Collimator.Prelude
 import Collimator.Helpers
-import CollimatorTests.Framework
+import Crucible
 
 /-!
 # Consolidated Combinator Tests
@@ -39,7 +39,7 @@ open Collimator.Instances.Option
 open Collimator.Instances.String
 open Collimator.Combinators.Bitraversal
 open Collimator.Combinators
-open CollimatorTests
+open Crucible
 
 open scoped Collimator.Operators
 

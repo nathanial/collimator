@@ -5,7 +5,7 @@ import Collimator.Combinators
 import Collimator.Operators
 import Collimator.Instances
 import Collimator.Concrete.FunArrow
-import CollimatorTests.Framework
+import Crucible
 
 namespace CollimatorTests.PrismTests
 
@@ -13,7 +13,7 @@ open Collimator
 open Collimator.Theorems
 open Collimator.Combinators
 open Collimator.Concrete
-open CollimatorTests
+open Crucible
 open scoped Collimator.Operators
 
 testSuite "Prism Tests"

@@ -5,7 +5,7 @@ import Collimator.Concrete.Tagged
 import Collimator.Concrete.FunArrow
 import Collimator.Concrete.Costar
 import Batteries
-import CollimatorTests.Framework
+import Crucible
 
 /-!
 # Profunctor Tests
@@ -22,7 +22,7 @@ namespace CollimatorTests.ProfunctorTests
 open Batteries
 open Collimator.Core
 open Collimator.Concrete
-open CollimatorTests
+open Crucible
 
 testSuite "Profunctor Tests"
 

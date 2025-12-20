@@ -3,7 +3,7 @@ import Collimator.Optics
 import Collimator.Theorems.IsoLaws
 import Collimator.Theorems.Normalization
 import Collimator.Combinators
-import CollimatorTests.Framework
+import Crucible
 
 /-!
 # Consolidated Iso Tests
@@ -26,7 +26,7 @@ open Collimator
 open Collimator.Core
 open Collimator.Theorems
 open Collimator.Combinators
-open CollimatorTests
+open Crucible
 
 testSuite "Iso Tests"
 

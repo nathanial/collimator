@@ -6,7 +6,7 @@ import Collimator.Concrete.FunArrow
 import Collimator.Theorems.TraversalLaws
 import Collimator.Combinators
 import Collimator.Instances
-import CollimatorTests.Framework
+import Crucible
 import Mathlib.Control.Monad.Writer
 
 /-!
@@ -33,7 +33,7 @@ open Collimator.Fold
 open Collimator.Setter
 open Collimator.AffineTraversalOps
 open Collimator.Instances.List (traversed)
-open CollimatorTests
+open Crucible
 open scoped Collimator.Operators
 
 testSuite "Traversal Tests"

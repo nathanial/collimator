@@ -6,7 +6,7 @@ import Collimator.Instances
 import Collimator.Operators
 import Collimator.Concrete.FunArrow
 import Collimator.Concrete.Forget
-import CollimatorTests.Framework
+import Crucible
 
 /-!
 # Composition Tests for Collimator Optics
@@ -38,7 +38,7 @@ open Collimator.Instances.Option (somePrism somePrism')
 open Collimator.Instances.Sum (left right left' right')
 open Collimator.Fold (toList toListTraversal ofLens composeLensFold composeFold)
 open Collimator.AffineTraversalOps (ofPrism)
-open CollimatorTests
+open Crucible
 open scoped Collimator.Operators
 open scoped Collimator.Fold
 

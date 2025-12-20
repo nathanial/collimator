@@ -1,4 +1,4 @@
-import CollimatorTests.Framework
+import Crucible
 import CollimatorTests.ProfunctorTests
 import CollimatorTests.IsoTests
 import CollimatorTests.LensTests
@@ -16,7 +16,7 @@ import CollimatorTests.DevToolsTests
 Runs all test suites and reports results.
 -/
 
-open CollimatorTests
+open Crucible
 
 def main : IO UInt32 := do
   IO.println "╔════════════════════════════════════════╗"

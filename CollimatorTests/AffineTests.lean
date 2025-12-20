@@ -4,7 +4,7 @@ import Collimator.Theorems.AffineLaws
 import Collimator.Theorems.Subtyping
 import Collimator.Combinators
 import Collimator.Operators
-import CollimatorTests.Framework
+import Crucible
 
 namespace CollimatorTests.AffineTests
 
@@ -12,7 +12,7 @@ open Collimator
 open Collimator.Theorems
 open Collimator.Combinators
 open Collimator.AffineTraversalOps
-open CollimatorTests
+open Crucible
 
 open scoped Collimator.Operators
 
