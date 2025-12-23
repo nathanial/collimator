@@ -7,6 +7,8 @@ import Collimator.Combinators
 
 This module provides optic instances for common Lean types:
 - Array: traversed, itraversed, HasAt, HasIx
+- AssocList: HasAt, HasIx (key-based access)
+- HashMap: HasAt, HasIx (key-based access)
 - List: traversed, itraversed, HasAt, HasIx
 - Option: somePrism, HasAt
 - Prod: first, second, and nested tuple accessors
@@ -326,5 +328,64 @@ right (α := String) (β := Employee) (γ := Employee)
 @[inline] def right' (α β : Type) : Prism' (_root_.Sum α β) β := right
 
 end Sum
+
+/-! ## HashMap Instances -/
+namespace HashMap
+
+variable {k v : Type} [BEq k] [Hashable k]
+
+/-- Lens exposing an optional value at a given key in a HashMap. -/
+instance instHasAtHashMap : HasAt k (Std.HashMap k v) v where
+  focus key :=
+    lens'
+      (fun m => m.get? key)
+      (fun m r? => match r? with
+        | some val => m.insert key val
+        | none => m.erase key)
+
+/-- Traversal focusing the value at a specific key when present. -/
+instance instHasIxHashMap : HasIx k (Std.HashMap k v) v where
+  ix key :=
+    Collimator.traversal
+      (fun {F : Type → Type} [Applicative F] (f : v → F v) (m : Std.HashMap k v) =>
+        match m.get? key with
+        | some val => Functor.map (fun v' => m.insert key v') (f val)
+        | none => pure m)
+
+end HashMap
+
+/-! ## AssocList Instances -/
+namespace AssocList
+
+variable {k v : Type} [BEq k]
+
+/-- Insert or update a key-value pair (avoids double lookup). -/
+private def upsert (xs : AssocList k v) (key : k) (val : v) : AssocList k v :=
+  match xs.find? key with
+  | some _ => xs.replace key val
+  | none => AssocList.cons key val xs
+
+private def setAt? (xs : AssocList k v) (key : k) (r? : Option v) : AssocList k v :=
+  match r? with
+  | some val => upsert xs key val
+  | none => xs.erase key
+
+/-- Lens exposing an optional value at a given key in an AssocList. -/
+instance instHasAtAssocList : HasAt k (AssocList k v) v where
+  focus key :=
+    lens'
+      (fun xs => xs.find? key)
+      (fun xs r? => setAt? xs key r?)
+
+/-- Traversal focusing the value at a specific key when present. -/
+instance instHasIxAssocList : HasIx k (AssocList k v) v where
+  ix key :=
+    Collimator.traversal
+      (fun {F : Type → Type} [Applicative F] (f : v → F v) (xs : AssocList k v) =>
+        match xs.find? key with
+        | some val => Functor.map (fun v' => xs.replace key v') (f val)
+        | none => pure xs)
+
+end AssocList
 
 end Collimator.Instances

@@ -915,6 +915,76 @@ test "rewrite: iterative rewriting" := do
   -- node(leaf 1, leaf 1) should become leaf 1
   ensureEq "rewrite result" (SimpleTree.leaf 1) result
 
+/-! ## HashMap and AssocList Tests -/
+
+open Collimator.Instances.HashMap
+open Collimator.Instances.AssocList
+
+test "HashMap HasAt: lookup existing key" := do
+  let m : Std.HashMap String Nat := (∅ : Std.HashMap String Nat).insert "a" 1 |>.insert "b" 2
+  let result := m ^. atLens (a := Nat) "a"
+  ensureEq "lookup a" (some 1) result
+
+test "HashMap HasAt: lookup missing key" := do
+  let m : Std.HashMap String Nat := (∅ : Std.HashMap String Nat).insert "a" 1
+  let result := m ^. atLens (a := Nat) "b"
+  ensureEq "lookup b" none result
+
+test "HashMap HasAt: update value" := do
+  let m : Std.HashMap String Nat := (∅ : Std.HashMap String Nat).insert "a" 1
+  let m' := m & atLens (a := Nat) "a" .~ some 100
+  ensureEq "update a" (some 100) (m' ^. atLens (a := Nat) "a")
+
+test "HashMap HasAt: insert new key" := do
+  let m : Std.HashMap String Nat := ∅
+  let m' := m & atLens (a := Nat) "new" .~ some 42
+  ensureEq "insert new" (some 42) (m' ^. atLens (a := Nat) "new")
+
+test "HashMap HasAt: delete by setting none" := do
+  let m : Std.HashMap String Nat := (∅ : Std.HashMap String Nat).insert "a" 1
+  let m' := m & atLens (a := Nat) "a" .~ none
+  ensureEq "delete a" none (m' ^. atLens (a := Nat) "a")
+
+test "HashMap HasIx: modify existing" := do
+  let m : Std.HashMap String Nat := (∅ : Std.HashMap String Nat).insert "x" 10
+  let m' := m & ix (a := Nat) "x" %~ (· + 5)
+  ensureEq "modify x" (some 15) (m'.get? "x")
+
+test "HashMap HasIx: no-op on missing" := do
+  let m : Std.HashMap String Nat := (∅ : Std.HashMap String Nat).insert "x" 10
+  let m' := m & ix (a := Nat) "y" %~ (· + 5)
+  ensureEq "size unchanged" 1 m'.size
+
+test "AssocList HasAt: lookup existing key" := do
+  let xs : AssocList String Nat := AssocList.cons "a" 1 (AssocList.cons "b" 2 AssocList.nil)
+  let result := xs ^. atLens (a := Nat) "a"
+  ensureEq "lookup a" (some 1) result
+
+test "AssocList HasAt: lookup missing key" := do
+  let xs : AssocList String Nat := AssocList.cons "a" 1 AssocList.nil
+  let result := xs ^. atLens (a := Nat) "b"
+  ensureEq "lookup b" none result
+
+test "AssocList HasAt: update value" := do
+  let xs : AssocList String Nat := AssocList.cons "a" 1 AssocList.nil
+  let xs' := xs & atLens (a := Nat) "a" .~ some 100
+  ensureEq "update a" (some 100) (xs' ^. atLens (a := Nat) "a")
+
+test "AssocList HasAt: insert new key" := do
+  let xs : AssocList String Nat := AssocList.nil
+  let xs' := xs & atLens (a := Nat) "new" .~ some 42
+  ensureEq "insert new" (some 42) (xs' ^. atLens (a := Nat) "new")
+
+test "AssocList HasIx: modify existing" := do
+  let xs : AssocList String Nat := AssocList.cons "x" 10 AssocList.nil
+  let xs' := xs & ix (a := Nat) "x" %~ (· + 5)
+  ensureEq "modify x" (some 15) (xs'.find? "x")
+
+test "AssocList HasIx: no-op on missing" := do
+  let xs : AssocList String Nat := AssocList.cons "x" 10 AssocList.nil
+  let xs' := xs & ix (a := Nat) "y" %~ (· + 5)
+  ensureEq "size unchanged" 1 xs'.toList.length
+
 #generate_tests
 
 end CollimatorTests.CombinatorTests
