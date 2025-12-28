@@ -73,35 +73,35 @@ test "tracedLens: view returns correct value" := do
   let traced : Lens' TestPoint Int := tracedLens "xLens" testXLens
   let p := TestPoint.mk 10 20
   let result := p ^. traced
-  ensureEq "traced view" 10 result
+  result ≡ 10
 
 test "tracedLens: set returns correct structure" := do
   let traced : Lens' TestPoint Int := tracedLens "xLens" testXLens
   let p := TestPoint.mk 10 20
   let result := p & traced .~ 99
-  ensureEq "traced set x" 99 result.x
-  ensureEq "traced set y unchanged" 20 result.y
+  result.x ≡ 99
+  result.y ≡ 20
 
 test "tracedLens: over modifies correctly" := do
   let traced : Lens' TestPoint Int := tracedLens "xLens" testXLens
   let p := TestPoint.mk 10 20
   let result := p & traced %~ (· + 5)
-  ensureEq "traced over" 15 result.x
+  result.x ≡ 15
 
 test "tracedPrism: preview some returns value" := do
   let traced : Prism' (Option Int) Int := tracedPrism "somePrism" (somePrism' Int)
   let result := (some 42) ^? traced
-  ensureEq "traced preview some" (some 42) result
+  result ≡ (some 42)
 
 test "tracedPrism: preview none returns none" := do
   let traced : Prism' (Option Int) Int := tracedPrism "somePrism" (somePrism' Int)
   let result := (none : Option Int) ^? traced
-  ensureEq "traced preview none" none result
+  result ≡ none
 
 test "tracedPrism: review constructs correctly" := do
   let traced : Prism' (Option Int) Int := tracedPrism "somePrism" (somePrism' Int)
   let result := review' traced 99
-  ensureEq "traced review" (some 99) result
+  result ≡ (some 99)
 
 /-! ## Debug Law Check Tests - Lens -/
 
@@ -173,32 +173,32 @@ test "verifyIsoLaws: batch verification succeeds" := do
 test "viewSafe: returns some for matching optic" := do
   let prism : Prism' (Option Int) Int := somePrism' Int
   let result := (some 42) ^? prism
-  ensureEq "viewSafe some" (some 42) result
+  result ≡ (some 42)
 
 test "viewSafe: returns none for non-matching" := do
   let prism : Prism' (Option Int) Int := somePrism' Int
   let result := (none : Option Int) ^? prism
-  ensureEq "viewSafe none" none result
+  result ≡ none
 
 test "viewOrElse: returns value when present" := do
   let prism : Prism' (Option Int) Int := somePrism' Int
   let result := ((some 42) ^? prism).getD 0
-  ensureEq "viewOrElse some" 42 result
+  result ≡ 42
 
 test "viewOrElse: returns default when missing" := do
   let prism : Prism' (Option Int) Int := somePrism' Int
   let result := ((none : Option Int) ^? prism).getD 999
-  ensureEq "viewOrElse none" 999 result
+  result ≡ 999
 
 test "viewOrElseLazy: returns value when present" := do
   let prism : Prism' (Option Int) Int := somePrism' Int
   let result := ((some 42) ^? prism).getD 0
-  ensureEq "viewOrElseLazy some" 42 result
+  result ≡ 42
 
 test "viewOrElseLazy: calls default when missing" := do
   let prism : Prism' (Option Int) Int := somePrism' Int
   let result := ((none : Option Int) ^? prism).getD 999
-  ensureEq "viewOrElseLazy none" 999 result
+  result ≡ 999
 
 test "hasFocus: returns true when present" := do
   let prism : Prism' (Option Int) Int := somePrism' Int
@@ -310,35 +310,35 @@ test "getCapabilities: Traversal has no view" := do
   ensure caps.traverse "Traversal should support traverse"
 
 test "composeTypes: Lens ∘ Lens = Lens" := do
-  ensureEq "composition" "Lens" (composeTypes "Lens" "Lens")
+  (composeTypes "Lens" "Lens") ≡ "Lens"
 
 test "composeTypes: Lens ∘ Prism = AffineTraversal" := do
-  ensureEq "composition" "AffineTraversal" (composeTypes "Lens" "Prism")
+  (composeTypes "Lens" "Prism") ≡ "AffineTraversal"
 
 test "composeTypes: Lens ∘ Traversal = Traversal" := do
-  ensureEq "composition" "Traversal" (composeTypes "Lens" "Traversal")
+  (composeTypes "Lens" "Traversal") ≡ "Traversal"
 
 test "composeTypes: Prism ∘ Lens = AffineTraversal" := do
-  ensureEq "composition" "AffineTraversal" (composeTypes "Prism" "Lens")
+  (composeTypes "Prism" "Lens") ≡ "AffineTraversal"
 
 test "composeTypes: Prism ∘ Prism = Prism" := do
-  ensureEq "composition" "Prism" (composeTypes "Prism" "Prism")
+  (composeTypes "Prism" "Prism") ≡ "Prism"
 
 test "composeTypes: Traversal ∘ Lens = Traversal" := do
-  ensureEq "composition" "Traversal" (composeTypes "Traversal" "Lens")
+  (composeTypes "Traversal" "Lens") ≡ "Traversal"
 
 test "composeTypes: Traversal ∘ Traversal = Traversal" := do
-  ensureEq "composition" "Traversal" (composeTypes "Traversal" "Traversal")
+  (composeTypes "Traversal" "Traversal") ≡ "Traversal"
 
 test "composeTypes: Iso ∘ X = X (identity)" := do
-  ensureEq "Iso ∘ Lens" "Lens" (composeTypes "Iso" "Lens")
-  ensureEq "Iso ∘ Prism" "Prism" (composeTypes "Iso" "Prism")
-  ensureEq "Iso ∘ Traversal" "Traversal" (composeTypes "Iso" "Traversal")
+  (composeTypes "Iso" "Lens") ≡ "Lens"
+  (composeTypes "Iso" "Prism") ≡ "Prism"
+  (composeTypes "Iso" "Traversal") ≡ "Traversal"
 
 test "composeTypes: X ∘ Iso = X (identity)" := do
-  ensureEq "Lens ∘ Iso" "Lens" (composeTypes "Lens" "Iso")
-  ensureEq "Prism ∘ Iso" "Prism" (composeTypes "Prism" "Iso")
-  ensureEq "Traversal ∘ Iso" "Traversal" (composeTypes "Traversal" "Iso")
+  (composeTypes "Lens" "Iso") ≡ "Lens"
+  (composeTypes "Prism" "Iso") ≡ "Prism"
+  (composeTypes "Traversal" "Iso") ≡ "Traversal"
 
 test "capabilitiesToString: formats correctly" := do
   let caps := getCapabilities "Lens"

@@ -129,14 +129,14 @@ test "Lens GetPut law: view l (set l v s) = v" := do
   let newValue := 42
   let modified := p & xLens .~ newValue
   let viewed := modified ^. xLens
-  ensureEq "GetPut law" newValue viewed
+  viewed ≡ newValue
 
 test "Lens PutGet law: set l (view l s) s = s" := do
   let p : Point := { x := 7, y := 14 }
   let xLens : Lens' Point Int := lens' Point.getLens_x Point.setLens_x
   let currentValue := p ^. xLens
   let unchanged := p & xLens .~ currentValue
-  ensureEq "PutGet law" p unchanged
+  unchanged ≡ p
 
 test "Lens PutPut law: set l v (set l v' s) = set l v s" := do
   let p : Point := { x := 3, y := 9 }
@@ -144,7 +144,7 @@ test "Lens PutPut law: set l v (set l v' s) = set l v s" := do
   let intermediate := p & yLens .~ 100
   let final := intermediate & yLens .~ 200
   let direct := p & yLens .~ 200
-  ensureEq "PutPut law" direct final
+  final ≡ direct
 
 test "Tuple lens _1 satisfies all three laws" := do
   let pair : Nat × String := (42, "test")
@@ -153,18 +153,18 @@ test "Tuple lens _1 satisfies all three laws" := do
   -- GetPut
   let modified1 := pair & firstLens .~ 99
   let viewed1 := modified1 ^. firstLens
-  ensureEq "Tuple _1 GetPut" 99 viewed1
+  viewed1 ≡ 99
 
   -- PutGet
   let current := pair ^. firstLens
   let unchanged := pair & firstLens .~ current
-  ensureEq "Tuple _1 PutGet" pair unchanged
+  unchanged ≡ pair
 
   -- PutPut
   let intermediate := pair & firstLens .~ 11
   let final := intermediate & firstLens .~ 22
   let direct := pair & firstLens .~ 22
-  ensureEq "Tuple _1 PutPut" direct final
+  final ≡ direct
 
 test "Composed lenses satisfy GetPut law" := do
   let r : Rectangle := {
@@ -178,7 +178,7 @@ test "Composed lenses satisfy GetPut law" := do
   let newValue := -50
   let modified := r & composed .~ newValue
   let viewed := modified ^. composed
-  ensureEq "Composed GetPut law" newValue viewed
+  viewed ≡ newValue
 
 test "Composed lenses satisfy PutGet law" := do
   let r : Rectangle := {
@@ -191,7 +191,7 @@ test "Composed lenses satisfy PutGet law" := do
 
   let currentValue := r ^. composed
   let unchanged := r & composed .~ currentValue
-  ensureEq "Composed PutGet law" r unchanged
+  unchanged ≡ r
 
 test "Composed lenses satisfy PutPut law" := do
   let r : Rectangle := {
@@ -205,7 +205,7 @@ test "Composed lenses satisfy PutPut law" := do
   let intermediate := r & composed .~ 777
   let final := intermediate & composed .~ 888
   let direct := r & composed .~ 888
-  ensureEq "Composed PutPut law" direct final
+  final ≡ direct
 
 test "Lens law theorems can be invoked" := do
   -- The theorems themselves are compile-time proofs
@@ -220,9 +220,9 @@ test "Lens law theorems can be invoked" := do
   let test3 := p & xLens .~ 20 & xLens .~ 30
   let test4 := p & xLens .~ 30
 
-  ensureEq "Law theorem GetPut" 10 test1
-  ensureEq "Law theorem PutGet" p test2
-  ensureEq "Law theorem PutPut" test4 test3
+  test1 ≡ 10
+  test2 ≡ p
+  test3 ≡ test4
 
 test "Composition lawfulness instance is usable" := do
   -- The instance composedLens_isLawful proves that composed get/set are lawful
@@ -241,12 +241,12 @@ test "Composition lawfulness instance is usable" := do
   let comp2 : Lens' Rectangle Int := topLeftLens ∘ yLens
 
   -- Verify the compositions work correctly
-  ensureEq "Composed X view" 0 (r ^. comp1)
-  ensureEq "Composed Y view" 0 (r ^. comp2)
+  (r ^. comp1) ≡ 0
+  (r ^. comp2) ≡ 0
 
   let r' := r & comp1 .~ 25
-  ensureEq "Composed X set" 25 (r' ^. comp1)
-  ensureEq "Composed X preserves Y" 0 (r' ^. comp2)
+  (r' ^. comp1) ≡ 25
+  (r' ^. comp2) ≡ 0
 
 /-! ## Getter Tests -/
 

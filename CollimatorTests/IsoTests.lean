@@ -85,25 +85,25 @@ test "Iso Back-Forward law: backward (forward x) = x" := do
   let p := Point.mk 10 20
   let forwarded := isoForward pointIso p
   let restored := isoBackward pointIso forwarded
-  ensureEq "Back-Forward law" p restored
+  restored ≡ p
 
 test "Iso Forward-Back law: forward (backward y) = y" := do
   let pointIso : Iso' Point (Int × Int) := iso Point.toTuple Point.fromTuple
   let tuple := (5, 15)
   let backwarded := isoBackward pointIso tuple
   let restored := isoForward pointIso backwarded
-  ensureEq "Forward-Back law" tuple restored
+  restored ≡ tuple
 
 test "isoForward applies the forward transformation" := do
   let pointIso : Iso' Point (Int × Int) := iso Point.toTuple Point.fromTuple
   let p := Point.mk 42 99
   let result := isoForward pointIso p
-  ensureEq "Forward transformation" (42, 99) result
+  result ≡ (42, 99)
 
 test "isoBackward applies the backward transformation" := do
   let pointIso : Iso' Point (Int × Int) := iso Point.toTuple Point.fromTuple
   let result := isoBackward pointIso (7, 8)
-  ensureEq "Backward transformation" (Point.mk 7 8) result
+  result ≡ (Point.mk 7 8)
 
 test "Tuple swap isomorphism satisfies both laws" := do
   let swapIso : Iso' (Int × String) (String × Int) :=
@@ -112,25 +112,25 @@ test "Tuple swap isomorphism satisfies both laws" := do
   -- Back-Forward
   let p := (42, "hello")
   let swapped := isoForward swapIso p
-  ensureEq "Swapped pair" ("hello", 42) swapped
+  swapped ≡ ("hello", 42)
   let restored := isoBackward swapIso swapped
-  ensureEq "Swap Back-Forward" p restored
+  restored ≡ p
 
   -- Forward-Back
   let p2 := ("world", 99)
   let swappedBack := isoBackward swapIso p2
   let restored2 := isoForward swapIso swappedBack
-  ensureEq "Swap Forward-Back" p2 restored2
+  restored2 ≡ p2
 
 test "Identity iso satisfies both laws" := do
   let idIso : Iso' Int Int := iso (fun x => x) (fun x => x)
 
   let n := 123
   let forwarded := isoForward idIso n
-  ensureEq "Identity forward" n forwarded
+  forwarded ≡ n
 
   let backwarded := isoBackward idIso n
-  ensureEq "Identity backward" n backwarded
+  backwarded ≡ n
 
 test "Bool negation isomorphism satisfies both laws" := do
   let negIso : Iso' Bool Bool := iso not not
@@ -138,15 +138,15 @@ test "Bool negation isomorphism satisfies both laws" := do
   -- Back-Forward
   let b := true
   let negated := isoForward negIso b
-  ensureEq "Negated bool" false negated
+  negated ≡ false
   let restored := isoBackward negIso negated
-  ensureEq "Bool negation Back-Forward" b restored
+  restored ≡ b
 
   -- Forward-Back
   let b2 := false
   let negated2 := isoBackward negIso b2
   let restored2 := isoForward negIso negated2
-  ensureEq "Bool negation Forward-Back" b2 restored2
+  restored2 ≡ b2
 
 test "Composed isos satisfy Back-Forward law" := do
   -- Compose Point <-> (Int × Int) <-> ((Int, Int), Unit)
@@ -160,7 +160,7 @@ test "Composed isos satisfy Back-Forward law" := do
 
   let p := Point.mk 5 10
   let result := composedBackward (composedForward p)
-  ensureEq "Composed Back-Forward law" p result
+  result ≡ p
 
 test "Composed isos satisfy Forward-Back law" := do
   let iso1 : Iso' Point (Int × Int) := iso Point.toTuple Point.fromTuple
@@ -172,7 +172,7 @@ test "Composed isos satisfy Forward-Back law" := do
 
   let target := ((7, 8), ())
   let result := composedForward (composedBackward target)
-  ensureEq "Composed Forward-Back law" target result
+  result ≡ target
 
 test "Iso law theorems can be invoked" := do
   let pointIso : Iso' Point (Int × Int) := iso Point.toTuple Point.fromTuple
@@ -180,12 +180,12 @@ test "Iso law theorems can be invoked" := do
   -- Back-Forward law
   let p := Point.mk 100 200
   let test1 := isoBackward pointIso (isoForward pointIso p)
-  ensureEq "Law theorem Back-Forward" p test1
+  test1 ≡ p
 
   -- Forward-Back law
   let tuple := (50, 75)
   let test2 := isoForward pointIso (isoBackward pointIso tuple)
-  ensureEq "Law theorem Forward-Back" tuple test2
+  test2 ≡ tuple
 
 test "Int negation isomorphism satisfies both laws" := do
   let negIso : Iso' Int Int := iso (fun x => -x) (fun x => -x)
@@ -194,15 +194,15 @@ test "Int negation isomorphism satisfies both laws" := do
   let n : Int := 42
   let negated := isoForward negIso n
   let negExpected : Int := -42
-  ensureEq "Negated int" negExpected negated
+  negated ≡ negExpected
   let restored := isoBackward negIso negated
-  ensureEq "Int negation Back-Forward" n restored
+  restored ≡ n
 
   -- Forward-Back
   let n2 : Int := -17
   let negated2 := isoBackward negIso n2
   let restored2 := isoForward negIso negated2
-  ensureEq "Int negation Forward-Back" n2 restored2
+  restored2 ≡ n2
 
 test "Nested tuple isomorphism (associativity)" := do
   -- Iso between ((a, b), c) and (a, (b, c))
@@ -218,17 +218,17 @@ test "Nested tuple isomorphism (associativity)" := do
   let right := (1, (2, 3))
 
   let forwardResult := isoForward assocIso left
-  ensureEq "Assoc forward" right forwardResult
+  forwardResult ≡ right
 
   let backwardResult := isoBackward assocIso right
-  ensureEq "Assoc backward" left backwardResult
+  backwardResult ≡ left
 
   -- Round trip
   let roundTrip1 := isoBackward assocIso (isoForward assocIso left)
-  ensureEq "Assoc round trip 1" left roundTrip1
+  roundTrip1 ≡ left
 
   let roundTrip2 := isoForward assocIso (isoBackward assocIso right)
-  ensureEq "Assoc round trip 2" right roundTrip2
+  roundTrip2 ≡ right
 
 /-! ## Normalization Tests -/
 

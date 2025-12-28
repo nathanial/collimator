@@ -196,7 +196,7 @@ test "Prism Preview-Review law: preview p (review p b) = some b" := do
   let radius := 42
   let reviewed := review' circlePrism radius
   let previewed := reviewed ^? circlePrism
-  ensureEq "Preview-Review law" (some radius) previewed
+  previewed ≡ (some radius)
 
 test "Prism Review-Preview law: preview p s = some a → review p a = s" := do
   let circlePrism : Prism' Shape Int := prism Shape.buildCircle Shape.splitCircle
@@ -205,13 +205,13 @@ test "Prism Review-Preview law: preview p s = some a → review p a = s" := do
   | none => throw (IO.userError "Expected preview to succeed")
   | some a =>
     let reconstructed := review' circlePrism a
-    ensureEq "Review-Preview law" s reconstructed
+    reconstructed ≡ s
 
 test "Prism preview returns none on non-matching constructor" := do
   let circlePrism : Prism' Shape Int := prism Shape.buildCircle Shape.splitCircle
   let s : Shape := Shape.rectangle 10 20
   let result := s ^? circlePrism
-  ensureEq "Preview on mismatch" none result
+  result ≡ none
 
 test "Rectangle prism satisfies both laws" := do
   let rectPrism : Prism' Shape (Int × Int) := prism Shape.buildRectangle Shape.splitRectangle
@@ -220,7 +220,7 @@ test "Rectangle prism satisfies both laws" := do
   let dims := (15, 25)
   let reviewed1 := review' rectPrism dims
   let previewed1 := reviewed1 ^? rectPrism
-  ensureEq "Rectangle Preview-Review" (some dims) previewed1
+  previewed1 ≡ (some dims)
 
   -- Review-Preview
   let s : Shape := Shape.rectangle 30 40
@@ -228,7 +228,7 @@ test "Rectangle prism satisfies both laws" := do
   | none => throw (IO.userError "Expected preview to succeed")
   | some d =>
     let reconstructed := review' rectPrism d
-    ensureEq "Rectangle Review-Preview" s reconstructed
+    reconstructed ≡ s
 
 test "Composed prisms satisfy Preview-Review law" := do
   let boxPrism : Prism' Container Shape := prism Container.buildBox Container.splitBox
@@ -238,7 +238,7 @@ test "Composed prisms satisfy Preview-Review law" := do
   let radius := 77
   let reviewed := review' composed radius
   let previewed := reviewed ^? composed
-  ensureEq "Composed Preview-Review law" (some radius) previewed
+  previewed ≡ (some radius)
 
 test "Composed prisms satisfy Review-Preview law" := do
   let boxPrism : Prism' Container Shape := prism Container.buildBox Container.splitBox
@@ -250,7 +250,7 @@ test "Composed prisms satisfy Review-Preview law" := do
   | none => throw (IO.userError "Expected preview to succeed")
   | some a =>
     let reconstructed := review' composed a
-    ensureEq "Composed Review-Preview law" c reconstructed
+    reconstructed ≡ c
 
 test "Composed prism preview fails on outer mismatch" := do
   let boxPrism : Prism' Container Shape := prism Container.buildBox Container.splitBox
@@ -259,7 +259,7 @@ test "Composed prism preview fails on outer mismatch" := do
 
   let c : Container := Container.empty
   let result := c ^? composed
-  ensureEq "Composed preview on outer mismatch" none result
+  result ≡ none
 
 test "Composed prism preview fails on inner mismatch" := do
   let boxPrism : Prism' Container Shape := prism Container.buildBox Container.splitBox
@@ -268,7 +268,7 @@ test "Composed prism preview fails on inner mismatch" := do
 
   let c : Container := Container.box (Shape.rectangle 5 10)
   let result := c ^? composed
-  ensureEq "Composed preview on inner mismatch" none result
+  result ≡ none
 
 test "Prism law theorems can be invoked" := do
   -- The theorems themselves are compile-time proofs
@@ -282,8 +282,8 @@ test "Prism law theorems can be invoked" := do
     | some a => review' circlePrism a
     | none => s
 
-  ensureEq "Law theorem Preview-Review" (some 50) test1
-  ensureEq "Law theorem Review-Preview" s test2
+  test1 ≡ (some 50)
+  test2 ≡ s
 
 test "Composition lawfulness instance is usable" := do
   -- The instance composedPrism_isLawful proves that composed build/split are lawful
@@ -294,11 +294,11 @@ test "Composition lawfulness instance is usable" := do
   -- Verify the composition works correctly
   let c := Container.box (Shape.rectangle 8 12)
   let viewed := c ^? composed
-  ensureEq "Composed preview" (some (8, 12)) viewed
+  viewed ≡ (some (8, 12))
 
   let c' := review' composed (20, 30)
   let expected := Container.box (Shape.rectangle 20 30)
-  ensureEq "Composed review" expected c'
+  c' ≡ expected
 
 test "Option some prism satisfies laws" := do
   let somePrism : Prism' (Option Int) Int :=
@@ -309,7 +309,7 @@ test "Option some prism satisfies laws" := do
   -- Preview-Review
   let reviewed := review' somePrism 123
   let previewed := reviewed ^? somePrism
-  ensureEq "Option Preview-Review" (some 123) previewed
+  previewed ≡ (some 123)
 
   -- Review-Preview on Some
   let opt := some 456
@@ -317,11 +317,11 @@ test "Option some prism satisfies laws" := do
   | none => throw (IO.userError "Expected preview to succeed")
   | some a =>
     let reconstructed := review' somePrism a
-    ensureEq "Option Review-Preview" opt reconstructed
+    reconstructed ≡ opt
 
   -- Preview on None
   let result := (none : Option Int) ^? somePrism
-  ensureEq "Option preview on none" none result
+  result ≡ none
 
 /-! ## Advanced Prism Magic Tests -/
 

@@ -152,21 +152,21 @@ test "Affine SetPreview law: preview s ≠ none → preview (set s v) = some v" 
   let newValue := 42
   let modified := Container.set c newValue
   let previewed := Container.preview modified
-  ensureEq "SetPreview law" (some newValue) previewed
+  previewed ≡ (some newValue)
 
 test "Affine SetPreview works when setting into empty container" := do
   let c : Container Int := { value := none }
   let newValue := 99
   let modified := Container.set c newValue
   let previewed := Container.preview modified
-  ensureEq "SetPreview from empty" (some newValue) previewed
+  previewed ≡ (some newValue)
 
 test "Affine PreviewSet law: preview s = some a → set s a = s" := do
   let c : Container Int := { value := some 7 }
   match Container.preview c with
   | some currentValue =>
     let unchanged := Container.set c currentValue
-    ensureEq "PreviewSet law" c unchanged
+    unchanged ≡ c
   | none =>
     ensure false "Should have a value"
 
@@ -175,26 +175,26 @@ test "Affine SetSet law: set (set s v) v' = set s v'" := do
   let intermediate := Container.set c 100
   let final := Container.set intermediate 200
   let direct := Container.set c 200
-  ensureEq "SetSet law" direct final
+  final ≡ direct
 
 test "Option satisfies all three affine traversal laws" := do
   let opt : Option Int := some 42
 
   -- SetPreview: preview (set s v) = some v when s has focus
   let setResult := (fun _ => some 99) opt
-  ensureEq "Option SetPreview" (some 99) setResult
+  setResult ≡ (some 99)
 
   -- PreviewSet: set s a = s when preview s = some a
   let orig : Option Int := some 10
   let unchanged := (fun _ => some 10) orig
   -- Note: For Option as affine, set always produces Some, so this tests the essence
-  ensureEq "Option PreviewSet essence" (some 10) unchanged
+  unchanged ≡ (some 10)
 
   -- SetSet: set (set s v) v' = set s v'
   let first := (fun _ : Option Int => some 1) opt
   let second := (fun _ : Option Int => some 2) first
   let direct := (fun _ : Option Int => some 2) opt
-  ensureEq "Option SetSet" direct second
+  second ≡ direct
 
 test "Composed affine traversals satisfy SetPreview law" := do
   let nc : NestedContainer := {
@@ -218,7 +218,7 @@ test "Composed affine traversals satisfy SetPreview law" := do
   let newValue := 777
   let modified := set_composed nc newValue
   let previewed := preview_composed modified
-  ensureEq "Composed SetPreview" (some newValue) previewed
+  previewed ≡ (some newValue)
 
 test "Composed affine traversals satisfy PreviewSet law" := do
   let nc : NestedContainer := {
@@ -240,7 +240,7 @@ test "Composed affine traversals satisfy PreviewSet law" := do
   match preview_composed nc with
   | some currentValue =>
     let unchanged := set_composed nc currentValue
-    ensureEq "Composed PreviewSet" nc unchanged
+    unchanged ≡ nc
   | none =>
     ensure false "Should have nested value"
 
@@ -259,14 +259,14 @@ test "Composed affine traversals satisfy SetSet law" := do
   let intermediate := set_composed nc 111
   let final := set_composed intermediate 222
   let direct := set_composed nc 222
-  ensureEq "Composed SetSet" direct final
+  final ≡ direct
 
 test "Affine traversal with no focus leaves structure unchanged" := do
   let c : Container Int := { value := none }
 
   -- When there's no focus, preview returns none
   let previewed := Container.preview c
-  ensureEq "No focus preview" (none : Option Int) previewed
+  previewed ≡ (none : Option Int)
 
   -- Note: Our Container.set always sets the value, so we test the concept
   -- with a structure that truly has 0 focus in some cases
@@ -284,7 +284,7 @@ test "Affine traversal with no focus leaves structure unchanged" := do
 
   -- Composed preview of nc.outer.value should be none
   let nestedPreview := preview_composed nc
-  ensureEq "Nested no focus" (none : Option Int) nestedPreview
+  nestedPreview ≡ (none : Option Int)
 
 test "Affine law theorems can be invoked" := do
   let c : Container Int := { value := some 1 }
@@ -295,9 +295,9 @@ test "Affine law theorems can be invoked" := do
   let test3 := Container.set (Container.set c 20) 30
   let test4 := Container.set c 30
 
-  ensureEq "Law theorem SetPreview" (some 10) test1
-  ensureEq "Law theorem PreviewSet" c test2
-  ensureEq "Law theorem SetSet" test4 test3
+  test1 ≡ (some 10)
+  test2 ≡ c
+  test3 ≡ test4
 
 -- ## Test Cases: Affine Wizardry
 
@@ -574,27 +574,27 @@ test "iso_to_lens_preserves_laws: Iso becomes lawful lens" := do
 
   -- Test get
   let tuple := get p
-  ensureEq "Get extracts tuple" (10, 20) tuple
+  tuple ≡ (10, 20)
 
   -- Test set
   let p' := set p (5, 15)
-  ensureEq "Set creates new point" (Point.mk 5 15) p'
+  p' ≡ (Point.mk 5 15)
 
   -- Verify GetPut law: get (set s v) = v
   let v := (7, 8)
   let s := Point.mk 100 200
   let test1 := get (set s v)
-  ensureEq "GetPut law holds" v test1
+  test1 ≡ v
 
   -- Verify PutGet law: set s (get s) = s
   let test2 := set s (get s)
-  ensureEq "PutGet law holds" s test2
+  test2 ≡ s
 
   -- Verify PutPut law: set (set s v) v' = set s v'
   let v' := (9, 10)
   let test3_double := set (set s v) v'
   let test3_single := set s v'
-  ensureEq "PutPut law holds" test3_single test3_double
+  test3_double ≡ test3_single
 
 --Test iso_to_lens with Bool negation isomorphism.
 test "iso_to_lens_preserves_laws: Bool negation iso as lens" := do
@@ -614,15 +614,15 @@ test "iso_to_lens_preserves_laws: Bool negation iso as lens" := do
   let set := fun (_ : Bool) (b : Bool) => back b
 
   -- Test the lens
-  ensureEq "Get negates" false (get true)
-  ensureEq "Get negates 2" true (get false)
+  (get true) ≡ false
+  (get false) ≡ true
 
   -- The lens set ignores the current state (that's the key property)
   -- set ignores first arg and applies 'not' to second arg
-  ensureEq "Set true to false" true (set true false)  -- not false = true
-  ensureEq "Set false to false" true (set false false)  -- not false = true
-  ensureEq "Set true to true" false (set true true)  -- not true = false
-  ensureEq "Set false to true" false (set false true)  -- not true = false
+  (set true false) ≡ true   -- not false = true
+  (set false false) ≡ true  -- not false = true
+  (set true true) ≡ false   -- not true = false
+  (set false true) ≡ false  -- not true = false
 
 --Test that iso_to_prism_preserves_laws can be invoked and produces a lawful prism.
 test "iso_to_prism_preserves_laws: Iso becomes lawful prism" := do
@@ -647,19 +647,19 @@ test "iso_to_prism_preserves_laws: Iso becomes lawful prism" := do
 
   -- Test build
   let p := build (10, 20)
-  ensureEq "Build creates point" (Point.mk 10 20) p
+  p ≡ (Point.mk 10 20)
 
   -- Test split - iso always succeeds
   let s := Point.mk 5 15
   match split s with
   | Sum.inl _ => throw (IO.userError "Split should never fail for iso")
-  | Sum.inr tuple => ensureEq "Split extracts tuple" (5, 15) tuple
+  | Sum.inr tuple => tuple ≡ (5, 15)
 
   -- Verify Preview-Review law: split (build b) = Sum.inr b
   let b := (7, 8)
   match split (build b) with
   | Sum.inl _ => throw (IO.userError "Preview-Review should succeed")
-  | Sum.inr result => ensureEq "Preview-Review law holds" b result
+  | Sum.inr result => result ≡ b
 
   -- Verify Review-Preview law: split s = Sum.inr a → build a = s
   let s2 := Point.mk 100 200
@@ -667,7 +667,7 @@ test "iso_to_prism_preserves_laws: Iso becomes lawful prism" := do
   | Sum.inl _ => throw (IO.userError "Split should always succeed for iso")
   | Sum.inr a => do
     let rebuilt := build a
-    ensureEq "Review-Preview law holds" s2 rebuilt
+    rebuilt ≡ s2
 
 --Test iso_to_prism with Bool negation isomorphism.
 test "iso_to_prism_preserves_laws: Bool negation iso as prism" := do
@@ -689,20 +689,20 @@ test "iso_to_prism_preserves_laws: Bool negation iso as prism" := do
   -- Test that split always succeeds (iso never fails)
   match split true with
   | Sum.inl _ => throw (IO.userError "Split should succeed")
-  | Sum.inr b => ensureEq "Split true gives false" false b
+  | Sum.inr b => b ≡ false
 
   match split false with
   | Sum.inl _ => throw (IO.userError "Split should succeed")
-  | Sum.inr b => ensureEq "Split false gives true" true b
+  | Sum.inr b => b ≡ true
 
   -- Test build
-  ensureEq "Build false gives true" true (build false)
-  ensureEq "Build true gives false" false (build true)
+  (build false) ≡ true
+  (build true) ≡ false
 
   -- Verify round-trip
   match split (build true) with
   | Sum.inl _ => throw (IO.userError "Round-trip should succeed")
-  | Sum.inr result => ensureEq "Round-trip preserves value" true result
+  | Sum.inr result => result ≡ true
 
 --Test that lens_to_affine_preserves_laws can be invoked and produces a lawful affine traversal.
 test "lens_to_affine_preserves_laws: Lens becomes lawful affine traversal" := do
@@ -733,30 +733,30 @@ test "lens_to_affine_preserves_laws: Lens becomes lawful affine traversal" := do
   -- Test preview - should always succeed for lens-derived affine
   match preview p with
   | none => throw (IO.userError "Preview should succeed")
-  | some tuple => ensureEq "Preview extracts tuple" (10, 20) tuple
+  | some tuple => tuple ≡ (10, 20)
 
   -- Test set
   let p' := set_aff p (5, 15)
-  ensureEq "Set creates new point" (Point.mk 5 15) p'
+  p' ≡ (Point.mk 5 15)
 
   -- Verify SetPreview law: preview (set s v) = some v
   let v := (7, 8)
   match preview (set_aff p v) with
   | none => throw (IO.userError "SetPreview should succeed")
-  | some result => ensureEq "SetPreview law holds" v result
+  | some result => result ≡ v
 
   -- Verify PreviewSet law: preview s = some a → set s a = s
   match preview p with
   | none => throw (IO.userError "Preview should succeed")
   | some a => do
     let restored := set_aff p a
-    ensureEq "PreviewSet law holds" p restored
+    restored ≡ p
 
   -- Verify SetSet law: set (set s v) v' = set s v'
   let v' := (9, 10)
   let double := set_aff (set_aff p v) v'
   let single := set_aff p v'
-  ensureEq "SetSet law holds" single double
+  double ≡ single
 
 --Test lens_to_affine with Int negation lens (identity structure).
 test "lens_to_affine_preserves_laws: Simple Int lens as affine" := do
@@ -781,10 +781,10 @@ test "lens_to_affine_preserves_laws: Simple Int lens as affine" := do
   -- Preview always succeeds
   match preview 42 with
   | none => throw (IO.userError "Preview should succeed")
-  | some n => ensureEq "Preview gets value" 42 n
+  | some n => n ≡ 42
 
   -- Set works
-  ensureEq "Set replaces value" 99 (set_aff 42 99)
+  (set_aff 42 99) ≡ 99
 
   -- All three laws hold (tested above in the main test)
 
@@ -813,22 +813,22 @@ test "lens_to_affine_preserves_laws: Field lens (x coordinate) as affine" := do
   -- Preview gets x coordinate
   match preview p with
   | none => throw (IO.userError "Preview should succeed")
-  | some x => ensureEq "Preview gets x" 10 x
+  | some x => x ≡ 10
 
   -- Set updates x
   let p' := set_aff p 99
-  ensureEq "Set updates x" (Point.mk 99 20) p'
+  p' ≡ (Point.mk 99 20)
 
   -- Verify laws
   -- SetPreview: preview (set p v) = some v
   match preview (set_aff p 42) with
   | none => throw (IO.userError "SetPreview should succeed")
-  | some x => ensureEq "SetPreview law" 42 x
+  | some x => x ≡ 42
 
   -- PreviewSet: set p (get p) = p
   match preview p with
   | none => throw (IO.userError "Preview should succeed")
-  | some a => ensureEq "PreviewSet law" p (set_aff p a)
+  | some a => (set_aff p a) ≡ p
 
 -- ## Test Registration
 

@@ -57,11 +57,11 @@ private def scoreLens : Lens' Player Int :=
 
 test "operator syntax view/over/set works for lenses" := do
   let p : Player := { name := "Ada", score := 10 }
-  ensureEq "view" 10 (p ^. scoreLens)
+  (p ^. scoreLens) ≡ 10
   let updated := p & scoreLens %~ (· + 5)
-  ensureEq "over" 15 (updated ^. scoreLens)
+  (updated ^. scoreLens) ≡ 15
   let reset := p & scoreLens .~ 0
-  ensureEq "set" 0 (reset ^. scoreLens)
+  (reset ^. scoreLens) ≡ 0
 
 test "product instances supply convenient lenses" := do
   let pair := (3, true)
@@ -70,14 +70,14 @@ test "product instances supply convenient lenses" := do
   let secondLens : Lens' (Int × Bool) Bool :=
     Collimator.Instances.Prod.second (α := Int) (β := Bool) (γ := Bool)
   let bumpedFirst := pair & firstLens %~ (· + 1)
-  ensureEq "bump first" (4, true) bumpedFirst
+  bumpedFirst ≡ (4, true)
   let toggled := pair & secondLens %~ not
-  ensureEq "toggle second" (3, false) toggled
+  toggled ≡ (3, false)
   let triple : (Int × Int) × Int := ((1, 2), 3)
   let lens : Lens' ((Int × Int) × Int) Int :=
     Collimator.Instances.Prod.firstOfTriple (α := Int) (β := Int) (γ := Int) (δ := Int)
   let incremented := triple & lens %~ (· + 10)
-  ensureEq "first of triple" ((11, 2), 3) incremented
+  incremented ≡ ((11, 2), 3)
 
 test "sum prisms preview and review branches" := do
   let leftPrism : Prism (Sum Int String) (Sum Int String) Int Int :=
@@ -85,40 +85,40 @@ test "sum prisms preview and review branches" := do
       (α := Int) (β := String) (γ := Int)
   let inLeft : Sum Int String := Sum.inl (7 : Int)
   let inRight : Sum Int String := Sum.inr (α := Int) ("optics" : String)
-  ensureEq "preview left" (some (7 : Int)) (inLeft ^? leftPrism)
-  ensureEq "preview right" (none : Option Int) (inRight ^? leftPrism)
+  (inLeft ^? leftPrism) ≡ (some (7 : Int))
+  (inRight ^? leftPrism) ≡ (none : Option Int)
   let expectedReview : Sum Int String := Sum.inl (5 : Int)
-  ensureEq "review" expectedReview (review' leftPrism (5 : Int))
+  (review' leftPrism (5 : Int)) ≡ expectedReview
 
 test "option prisms distinguish some and none" := do
   let somePrism : Prism (Option Int) (Option Int) Int Int :=
     Collimator.Instances.Option.somePrism (α := Int) (β := Int)
-  ensureEq "preview some" (some 9) ((some 9) ^? somePrism)
-  ensureEq "preview none" (none : Option Int) (none ^? somePrism)
-  ensureEq "review some" (some 4) (review' somePrism 4)
+  ((some 9) ^? somePrism) ≡ (some 9)
+  (none ^? somePrism) ≡ (none : Option Int)
+  (review' somePrism 4) ≡ (some 4)
 
 test "list ix updates element at index" := do
   let elements := [10, 20, 30]
   let traversal : Traversal' (List Int) Int :=
     ix (ι := Nat) (s := List Int) (a := Int) 1
   let updated := elements & traversal %~ (· + 7)
-  ensureEq "ix modifies" [10, 27, 30] updated
+  updated ≡ [10, 27, 30]
 
 test "list at lens views optional element" := do
   let xs := ["lean", "optic", "library"]
   let l : Lens' (List String) (Option String) :=
     atLens (ι := Nat) (s := List String) (a := String) 2
-  ensureEq "get existing" (some "library") (xs ^. l)
-  ensureEq "missing" (none : Option String) (["lean"] ^. l)
+  (xs ^. l) ≡ (some "library")
+  (["lean"] ^. l) ≡ (none : Option String)
 
 test "array ix modifies in-bounds value and ignores out-of-bounds" := do
   let arr : Array Int := #[1, 2, 3]
   let traversal : Traversal' (Array Int) Int :=
     ix (ι := Nat) (s := Array Int) (a := Int) 0
   let updated := arr & traversal %~ (· * 2)
-  ensureEq "modify first" #[2, 2, 3] updated
+  updated ≡ #[2, 2, 3]
   let untouched := arr & (ix (ι := Nat) (s := Array Int) (a := Int) 5) %~ (· + 1)
-  ensureEq "oob" #[1, 2, 3] untouched
+  untouched ≡ #[1, 2, 3]
 
 test "filtered traversal only updates predicate matches" := do
   let tr : Traversal' (List Int) Int :=
@@ -126,148 +126,148 @@ test "filtered traversal only updates predicate matches" := do
   let evens : Traversal' (List Int) Int :=
     filtered tr (fun n => n % 2 == 0)
   let result := [1, 2, 3, 4] & evens %~ (· + 1)
-  ensureEq "filtered update" [1, 3, 3, 5] result
+  result ≡ [1, 3, 3, 5]
 
 test "itraversed exposes index during updates" := do
   let base : Traversal' (List Int) (Nat × Int) :=
     Collimator.Instances.List.itraversed
   let bumped := [5, 5, 5] & base %~ (fun | (idx, v) => (idx, v + idx))
-  ensureEq "index applied" [5, 6, 7] bumped
+  bumped ≡ [5, 6, 7]
 
 /-! ## filteredList and ifilteredList Tests -/
 
 test "filteredList: double only positive numbers" := do
   let result := [-1, 2, -3, 4] & filteredList (· > 0) %~ (· * 2)
-  ensureEq "positive doubled" [-1, 4, -3, 8] result
+  result ≡ [-1, 4, -3, 8]
 
 test "filteredList: filter none" := do
   let result := [1, 2, 3] & filteredList (· > 100) %~ (· * 2)
-  ensureEq "none match" [1, 2, 3] result
+  result ≡ [1, 2, 3]
 
 test "filteredList: filter all" := do
   let result := [1, 2, 3] & filteredList (· > 0) %~ (· * 2)
-  ensureEq "all match" [2, 4, 6] result
+  result ≡ [2, 4, 6]
 
 test "filteredList: collect filtered elements" := do
   let result := [-1, 2, -3, 4] ^.. filteredList (· > 0)
-  ensureEq "collect positives" [2, 4] result
+  result ≡ [2, 4]
 
 test "filteredList: empty list" := do
   let result := ([] : List Int) & filteredList (· > 0) %~ (· * 2)
-  ensureEq "empty list unchanged" [] result
+  result ≡ []
 
 test "ifilteredList: modify even indices" := do
   let result := ["a", "b", "c", "d"] & ifilteredList (fun i _ => i % 2 == 0) %~ String.toUpper
-  ensureEq "even indices uppercase" ["A", "b", "C", "d"] result
+  result ≡ ["A", "b", "C", "d"]
 
 test "ifilteredList: filter by index and value" := do
   let result := [-1, 2, 3, -4] ^.. ifilteredList (fun i x => i < 2 && x > 0)
-  ensureEq "index < 2 and value > 0" [2] result
+  result ≡ [2]
 
 /-! ## List Operations: _head, _last, taking, dropping -/
 
 test "_head: preview non-empty" := do
   let result := [1, 2, 3] ^? _head
-  ensureEq "head is 1" (some 1) result
+  result ≡ (some 1)
 
 test "_head: preview empty" := do
   let result := ([] : List Int) ^? _head
-  ensureEq "head is none" (none : Option Int) result
+  result ≡ (none : Option Int)
 
 test "_head: over non-empty" := do
   let result := [1, 2, 3] & _head %~ (· * 10)
-  ensureEq "head modified" [10, 2, 3] result
+  result ≡ [10, 2, 3]
 
 test "_head: over empty" := do
   let result := ([] : List Int) & _head %~ (· * 10)
-  ensureEq "empty unchanged" [] result
+  result ≡ []
 
 test "_head: set value" := do
   let result := [1, 2, 3] & _head .~ 100
-  ensureEq "head set" [100, 2, 3] result
+  result ≡ [100, 2, 3]
 
 test "_last: preview non-empty" := do
   let result := [1, 2, 3] ^? _last
-  ensureEq "last is 3" (some 3) result
+  result ≡ (some 3)
 
 test "_last: preview singleton" := do
   let result := [42] ^? _last
-  ensureEq "single element" (some 42) result
+  result ≡ (some 42)
 
 test "_last: preview empty" := do
   let result := ([] : List Int) ^? _last
-  ensureEq "last is none" (none : Option Int) result
+  result ≡ (none : Option Int)
 
 test "_last: over non-empty" := do
   let result := [1, 2, 3] & _last %~ (· * 10)
-  ensureEq "last modified" [1, 2, 30] result
+  result ≡ [1, 2, 30]
 
 test "taking: first 2 elements" := do
   let result := [1, 2, 3, 4] & taking 2 %~ (· * 10)
-  ensureEq "first 2 modified" [10, 20, 3, 4] result
+  result ≡ [10, 20, 3, 4]
 
 test "taking: take 0" := do
   let result := [1, 2, 3] & taking 0 %~ (· * 10)
-  ensureEq "none modified" [1, 2, 3] result
+  result ≡ [1, 2, 3]
 
 test "taking: take more than length" := do
   let result := [1, 2] & taking 10 %~ (· * 10)
-  ensureEq "all modified" [10, 20] result
+  result ≡ [10, 20]
 
 test "taking: collect" := do
   let result := [1, 2, 3, 4, 5] ^.. taking 2
-  ensureEq "first 2 collected" [1, 2] result
+  result ≡ [1, 2]
 
 test "dropping: skip first 2" := do
   let result := [1, 2, 3, 4] & dropping 2 %~ (· * 10)
-  ensureEq "last 2 modified" [1, 2, 30, 40] result
+  result ≡ [1, 2, 30, 40]
 
 test "dropping: skip 0" := do
   let result := [1, 2, 3] & dropping 0 %~ (· * 10)
-  ensureEq "all modified" [10, 20, 30] result
+  result ≡ [10, 20, 30]
 
 test "dropping: skip more than length" := do
   let result := [1, 2] & dropping 10 %~ (· * 10)
-  ensureEq "none modified" [1, 2] result
+  result ≡ [1, 2]
 
 test "dropping: collect" := do
   let result := [1, 2, 3, 4, 5] ^.. dropping 2
-  ensureEq "last 3 collected" [3, 4, 5] result
+  result ≡ [3, 4, 5]
 
 /-! ## Fold Enhancement Tests with Traversals -/
 
 test "toListTraversal: basic" := do
   let result := [1, 2, 3] ^.. Collimator.Instances.List.traversed
-  ensureEq "collect all" [1, 2, 3] result
+  result ≡ [1, 2, 3]
 
 test "toListTraversal: empty" := do
   let result := ([] : List Int) ^.. Collimator.Instances.List.traversed
-  ensureEq "empty list" [] result
+  result ≡ []
 
 /-! ## Prism Utility Tests -/
 
 test "failing: preview always none" := do
   let failingPrism : Prism' Int String := failing
   let result := (42 : Int) ^? failingPrism
-  ensureEq "always fails" (none : Option String) result
+  result ≡ (none : Option String)
 
 test "failing: over is identity" := do
   let failingPrism : Prism' Int Int := failing
   let result := 42 & failingPrism %~ (· * 2)
-  ensureEq "unchanged" 42 result
+  result ≡ 42
 
 test "prismFromPartial: even numbers" := do
   let evenPrism : Prism' Int Int := prismFromPartial
     (fun n : Int => if n % 2 == 0 then some n else none)
     _root_.id
-  ensureEq "4 is even" (some 4) (4 ^? evenPrism)
-  ensureEq "5 is odd" none (5 ^? evenPrism)
+  (4 ^? evenPrism) ≡ (some 4)
+  (5 ^? evenPrism) ≡ none
 
 test "prismFromPartial: review" := do
   let evenPrism : Prism' Int Int := prismFromPartial
     (fun n : Int => if n % 2 == 0 then some n else none)
     _root_.id
-  ensureEq "review returns value" 10 (review' evenPrism 10)
+  (review' evenPrism 10) ≡ 10
 
 /-! ## orElse Tests -/
 
@@ -275,19 +275,19 @@ test "orElse: first matches" := do
   let p1 : Prism' Int Int := prismFromPartial (fun n : Int => if n > 0 then some n else none) _root_.id
   let p2 : Prism' Int Int := prismFromPartial (fun n : Int => if n < 0 then some n else none) _root_.id
   let combined : AffineTraversal' Int Int := orElse p1 p2
-  ensureEq "positive wins" (some 5) (5 ^? combined)
+  (5 ^? combined) ≡ (some 5)
 
 test "orElse: second matches" := do
   let p1 : Prism' Int Int := prismFromPartial (fun n : Int => if n > 0 then some n else none) _root_.id
   let p2 : Prism' Int Int := prismFromPartial (fun n : Int => if n < 0 then some n else none) _root_.id
   let combined : AffineTraversal' Int Int := orElse p1 p2
-  ensureEq "negative wins" (some (-3)) ((-3) ^? combined)
+  ((-3) ^? combined) ≡ (some (-3))
 
 test "orElse: neither matches" := do
   let p1 : Prism' Int Int := prismFromPartial (fun n : Int => if n > 10 then some n else none) _root_.id
   let p2 : Prism' Int Int := prismFromPartial (fun n : Int => if n < -10 then some n else none) _root_.id
   let combined : AffineTraversal' Int Int := orElse p1 p2
-  ensureEq "zero fails both" (none : Option Int) (0 ^? combined)
+  (0 ^? combined) ≡ (none : Option Int)
 
 /-! ## Monomorphic Operator Tests -/
 
@@ -295,31 +295,31 @@ test "^. operator: view" := do
   let pair := (10, "hello")
   let lens : Lens' (Int × String) Int := _1
   let result := pair ^. lens
-  ensureEq "view first" 10 result
+  result ≡ 10
 
 test ".~ operator: set" := do
   let pair := (10, "hello")
   let lens : Lens' (Int × String) Int := _1
   let setter := lens .~ 99
   let result := setter pair
-  ensureEq "set first" (99, "hello") result
+  result ≡ (99, "hello")
 
 test "%~ operator: over" := do
   let pair := (10, "hello")
   let lens : Lens' (Int × String) Int := _1
   let modifier := lens %~ (· * 2)
   let result := modifier pair
-  ensureEq "double first" (20, "hello") result
+  result ≡ (20, "hello")
 
 test "^? operator: preview some" := do
   let opt : Option Int := some 42
   let result := opt ^? (somePrism' Int)
-  ensureEq "preview some" (some 42) result
+  result ≡ (some 42)
 
 test "^? operator: preview none" := do
   let opt : Option Int := none
   let result := opt ^? (somePrism' Int)
-  ensureEq "preview none" none result
+  result ≡ none
 
 /-! ## Helper Tests -/
 
@@ -332,35 +332,35 @@ test "first': explicit tuple lens" := do
   let pair := (10, "hello")
   let fstLens : Lens' (Int × String) Int := Helpers.first' Int String
   let result := pair ^. fstLens
-  ensureEq "view first" 10 result
+  result ≡ 10
 
 test "second': explicit tuple lens" := do
   let pair := (10, "hello")
   let sndLens : Lens' (Int × String) String := Helpers.second' Int String
   let result := pair ^. sndLens
-  ensureEq "view second" "hello" result
+  result ≡ "hello"
 
 test "some': explicit option prism" := do
   let opt : Option Int := some 42
   let somePrism : Prism' (Option Int) Int := Helpers.some' Int
   let result := opt ^? somePrism
-  ensureEq "preview some" (some 42) result
+  result ≡ (some 42)
 
 test "each': explicit list traversal" := do
   let lst := [1, 2, 3]
   let result := lst ^.. Helpers.each' Int
-  ensureEq "collect all" [1, 2, 3] result
+  result ≡ [1, 2, 3]
 
 test "lensOf: build lens with explicit types" := do
   let xLens : Lens' TestPoint Int := Helpers.lensOf TestPoint Int (·.x) (fun p x => { p with x := x })
   let p := TestPoint.mk 10 20
-  ensureEq "view x" 10 (p ^. xLens)
-  ensureEq "set x" (TestPoint.mk 99 20) (p & xLens .~ 99)
+  (p ^. xLens) ≡ 10
+  (p & xLens .~ 99) ≡ (TestPoint.mk 99 20)
 
 test "prismOf: build prism with explicit types" := do
   let positivePrism : Prism' Int Int := Helpers.prismOf Int Int _root_.id (fun n => if n > 0 then some n else none)
-  ensureEq "positive matches" (some 5) (5 ^? positivePrism)
-  ensureEq "negative fails" (none : Option Int) ((-3) ^? positivePrism)
+  (5 ^? positivePrism) ≡ (some 5)
+  ((-3) ^? positivePrism) ≡ (none : Option Int)
 
 /-! ## Advanced Filtered & Indexed Tests -/
 
@@ -381,34 +381,34 @@ test "Filtered: basic predicate filtering" := do
   -- Filter evens, multiply by 10
   let input1 : List Nat := [1, 2, 3, 4, 5, 6]
   let result1 := input1 & filteredList (fun x => x % 2 == 0) %~ (· * 10)
-  ensureEq "even filter" [1, 20, 3, 40, 5, 60] result1
+  result1 ≡ [1, 20, 3, 40, 5, 60]
 
   -- Filter by range
   let input2 : List Nat := [5, 15, 25, 45, 55, 65]
   let result2 := input2 & filteredList (fun x => x > 10 && x < 50) %~ (· + 1000)
-  ensureEq "range filter" [5, 1015, 1025, 1045, 55, 65] result2
+  result2 ≡ [5, 1015, 1025, 1045, 55, 65]
 
   -- Filter odds
   let result3 := input1 & filteredList (fun x => x % 2 == 1) %~ (· + 100)
-  ensureEq "odd filter" [101, 2, 103, 4, 105, 6] result3
+  result3 ≡ [101, 2, 103, 4, 105, 6]
 
 test "Filtered: edge cases" := do
   let evenFilter : Traversal' (List Nat) Nat := filteredList (fun x => x % 2 == 0)
 
   -- Empty list
-  ensureEq "empty list" ([] : List Nat) (([] : List Nat) & evenFilter %~ (· * 100))
+  (([] : List Nat) & evenFilter %~ (· * 100)) ≡ ([] : List Nat)
 
   -- No matches
   let odds : List Nat := [1, 3, 5, 7]
-  ensureEq "no matches" odds (odds & evenFilter %~ (· * 100))
+  (odds & evenFilter %~ (· * 100)) ≡ odds
 
   -- All match
   let evens : List Nat := [2, 4, 6]
-  ensureEq "all match" [200, 400, 600] (evens & evenFilter %~ (· * 100))
+  (evens & evenFilter %~ (· * 100)) ≡ [200, 400, 600]
 
   -- Single element
-  ensureEq "single match" [52] ([42] & evenFilter %~ (· + 10))
-  ensureEq "single no match" [43] ([43] & evenFilter %~ (· + 10))
+  ([42] & evenFilter %~ (· + 10)) ≡ [52]
+  ([43] & evenFilter %~ (· + 10)) ≡ [43]
 
 test "Filtered: effectful traversals with Option" := do
   let evenFilter : Traversal' (List Nat) Nat := filteredList (fun x => x % 2 == 0)
@@ -427,7 +427,7 @@ test "Filtered: effectful traversals with Option" := do
   let optResult2 := Traversal.traverse' evenFilter failingValidator input2
   match optResult2 with
   | none => throw (IO.userError "Should succeed")
-  | some result => ensureEq "successful validation" [1, 4, 3, 8, 5] result
+  | some result => result ≡ [1, 4, 3, 8, 5]
 
 test "Filtered: composition with lenses" := do
   let inventory : List Product := [
@@ -455,37 +455,37 @@ test "Filtered: composition with lenses" := do
 test "Indexed: access index and value" := do
   -- Modify even indices only
   let result1 := [1, 2, 3, 4, 5, 6] & ifilteredList (fun i _ => i % 2 == 0) %~ (· * 10)
-  ensureEq "even indices" [10, 2, 30, 4, 50, 6] result1
+  result1 ≡ [10, 2, 30, 4, 50, 6]
 
   -- Modify odd indices only
   let result2 := [1, 2, 3, 4, 5, 6] & ifilteredList (fun i _ => i % 2 == 1) %~ (· + 100)
-  ensureEq "odd indices" [1, 102, 3, 104, 5, 106] result2
+  result2 ≡ [1, 102, 3, 104, 5, 106]
 
   -- First 3 elements
   let result3 := [1, 2, 3, 4, 5, 6] & ifilteredList (fun i _ => i < 3) %~ (· * 10)
-  ensureEq "first 3" [10, 20, 30, 4, 5, 6] result3
+  result3 ≡ [10, 20, 30, 4, 5, 6]
 
 test "Indexed: focus single element with ix" := do
   let input : List Nat := [10, 20, 30, 40, 50]
 
   -- Modify element at index 3
   let result1 := input & ix 3 %~ (· * 10)
-  ensureEq "ix modify" [10, 20, 30, 400, 50] result1
+  result1 ≡ [10, 20, 30, 400, 50]
 
   -- Out of bounds (no-op)
   let result2 := input & ix 10 %~ (· * 999)
-  ensureEq "ix out of bounds" input result2
+  result2 ≡ input
 
   -- ix on empty
   let result3 := ([] : List Nat) & ix 0 %~ (· + 100)
-  ensureEq "ix on empty" ([] : List Nat) result3
+  result3 ≡ ([] : List Nat)
 
   -- Multiple ix operations
   let result4 := input
     |> (· & ix 0 %~ (· + 10))
     |> (· & ix 2 %~ (· + 20))
     |> (· & ix 4 %~ (· + 30))
-  ensureEq "multiple ix" [20, 20, 50, 40, 80] result4
+  result4 ≡ [20, 20, 50, 40, 80]
 
 test "Indexed: optional access with atLens" := do
   let input : List Nat := [10, 20, 30, 40, 50]
@@ -495,36 +495,36 @@ test "Indexed: optional access with atLens" := do
   let at1 : Lens' (List Nat) (Option Nat) := atLens 1
 
   -- View at valid/invalid indices
-  ensureEq "view at 2" (some 30) (input ^. at2)
-  ensureEq "view out of bounds" (none : Option Nat) (input ^. at10)
-  ensureEq "view empty" (none : Option Nat) (([] : List Nat) ^. at0)
+  (input ^. at2) ≡ (some 30)
+  (input ^. at10) ≡ (none : Option Nat)
+  (([] : List Nat) ^. at0) ≡ (none : Option Nat)
 
   -- Set at valid index
-  ensureEq "set at 2" [10, 20, 300, 40, 50] (input & at2 .~ some 300)
+  (input & at2 .~ some 300) ≡ [10, 20, 300, 40, 50]
 
   -- Set out of bounds (no-op)
-  ensureEq "set out of bounds" input (input & at10 .~ some 999)
+  (input & at10 .~ some 999) ≡ input
 
   -- Over with Option.map
   let result : List Nat := input & at1 %~ Option.map (· * 10)
-  ensureEq "over" [10, 200, 30, 40, 50] result
+  result ≡ [10, 200, 30, 40, 50]
 
 test "Combined: complex index+value predicates" := do
   let input : List Nat := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
   -- Even values at odd indices
   let result1 := input & ifilteredList (fun i v => i % 2 == 1 && v % 2 == 0) %~ (· * 100)
-  ensureEq "even at odd" [1, 200, 3, 400, 5, 600, 7, 800, 9, 1000] result1
+  result1 ≡ [1, 200, 3, 400, 5, 600, 7, 800, 9, 1000]
 
   -- Values greater than their index
   let input2 : List Nat := [0, 5, 1, 8, 2, 10, 3]
   let result2 := input2 & ifilteredList (fun i v => v > i) %~ (· * 2)
-  ensureEq "value > index" [0, 10, 1, 16, 2, 20, 3] result2
+  result2 ≡ [0, 10, 1, 16, 2, 20, 3]
 
   -- Value == index^2 (perfect squares)
   let squares : List Nat := [0, 1, 4, 9, 16, 25, 36]
   let result3 := squares & ifilteredList (fun i v => v == i * i) %~ (· + 1000)
-  ensureEq "perfect squares" [1000, 1001, 1004, 1009, 1016, 1025, 1036] result3
+  result3 ≡ [1000, 1001, 1004, 1009, 1016, 1025, 1036]
 
 test "Stateful: counting and accumulation" := do
   let input : List Nat := [1, 2, 3, 4, 5, 6]
@@ -536,7 +536,7 @@ test "Stateful: counting and accumulation" := do
     set (count + 1)
     pure x
   let (_, count) := (Traversal.traverse' evens counter input).run 0
-  ensureEq "count evens" 3 count
+  count ≡ 3
 
   -- Accumulate sum
   let accumulator (x : Nat) : StateT Nat Id Nat := do
@@ -544,7 +544,7 @@ test "Stateful: counting and accumulation" := do
     set (sum + x)
     pure x
   let (_, sum) := (Traversal.traverse' evens accumulator input).run 0
-  ensureEq "sum evens" 12 sum
+  sum ≡ 12
 
   -- Running sum (using unfiltered list)
   let input2 : List Nat := [1, 2, 3, 4, 5]
@@ -555,7 +555,7 @@ test "Stateful: counting and accumulation" := do
     set newSum
     pure newSum
   let (result, _) := (Traversal.traverse' tr runningSum input2).run 0
-  ensureEq "running sum" [1, 3, 6, 10, 15] result
+  result ≡ [1, 3, 6, 10, 15]
 
   -- Assign IDs only to filtered elements
   let input3 : List Nat := [1, 2, 3, 4, 5, 6, 7, 8]
@@ -564,22 +564,22 @@ test "Stateful: counting and accumulation" := do
     set (id + 1)
     pure id
   let (result3, _) := (Traversal.traverse' evens idAssigner input3).run 100
-  ensureEq "assign IDs" [1, 100, 3, 101, 5, 102, 7, 103] result3
+  result3 ≡ [1, 100, 3, 101, 5, 102, 7, 103]
 
 test "Real-world: selective array updates" := do
   -- Increment at even positions
   let result1 := [1, 2, 3, 4, 5, 6, 7, 8] & ifilteredList (fun i _ => i % 2 == 0) %~ (· + 10)
-  ensureEq "even positions" [11, 2, 13, 4, 15, 6, 17, 8] result1
+  result1 ≡ [11, 2, 13, 4, 15, 6, 17, 8]
 
   -- Zero out negatives
   let input2 : List Int := [-5, 10, -3, 0, 7, -2, 15]
   let result2 := input2 & filteredList (fun x : Int => x < 0) %~ (fun _ => 0)
-  ensureEq "zero negatives" [0, 10, 0, 0, 7, 0, 15] result2
+  result2 ≡ [0, 10, 0, 0, 7, 0, 15]
 
   -- Clamp large values
   let input3 : List Nat := [10, 150, 30, 200, 50, 180]
   let result3 := input3 & filteredList (fun x : Nat => x > 100) %~ (fun _ => 100)
-  ensureEq "clamp large" [10, 100, 30, 100, 50, 100] result3
+  result3 ≡ [10, 100, 30, 100, 50, 100]
 
 test "Real-world: conditional batch operations" := do
   let inventory : List Product := [
@@ -609,15 +609,15 @@ test "Real-world: sparse array operations" := do
   let nonZero : Traversal' (List Nat) Nat := filteredList (fun x => x != 0)
 
   -- Double non-zero elements
-  ensureEq "double" [0, 10, 0, 0, 6, 0, 14, 0] (input & nonZero %~ (· * 2))
+  (input & nonZero %~ (· * 2)) ≡ [0, 10, 0, 0, 6, 0, 14, 0]
 
   -- Normalize to 1
-  ensureEq "normalize" [0, 1, 0, 0, 1, 0, 1, 0] (input & nonZero %~ (fun _ => 1))
+  (input & nonZero %~ (fun _ => 1)) ≡ [0, 1, 0, 0, 1, 0, 1, 0]
 
   -- Non-zero at even indices
   let input2 : List Nat := [0, 5, 10, 0, 20, 0, 30, 0]
   let result := input2 & ifilteredList (fun i v => v != 0 && i % 2 == 0) %~ (· + 1000)
-  ensureEq "non-zero even idx" [0, 5, 1010, 0, 1020, 0, 1030, 0] result
+  result ≡ [0, 5, 1010, 0, 1020, 0, 1030, 0]
 
 test "Performance: short-circuiting with Option" := do
   let tr : Traversal' (List Nat) Nat := Instances.List.traversed
@@ -634,33 +634,33 @@ test "Performance: short-circuiting with Option" := do
   let valid : List Nat := [2, 4, 6, 8, 10]
   match Traversal.traverse' tr evenValidator valid with
   | none => throw (IO.userError "Should succeed")
-  | some r => ensureEq "valid unchanged" valid r
+  | some r => r ≡ valid
 
   -- Combined filter
   let input : List Nat := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
   let evenLarge : Traversal' (List Nat) Nat := ifilteredList (fun _ v => v % 2 == 0 && v > 5)
   let result := input & evenLarge %~ (· * 10)
-  ensureEq "fused filters" [1, 2, 3, 4, 5, 60, 7, 80, 9, 100] result
+  result ≡ [1, 2, 3, 4, 5, 60, 7, 80, 9, 100]
 
 test "Composition: reusable and higher-order filters" := do
   let input : List Nat := [1, 2, 3, 4, 5, 6]
 
   -- Reusable evens filter with different transforms
   let evens : Traversal' (List Nat) Nat := filteredList (fun x => x % 2 == 0)
-  ensureEq "evens * 2" [1, 4, 3, 8, 5, 12] (input & evens %~ (· * 2))
-  ensureEq "evens + 100" [1, 102, 3, 104, 5, 106] (input & evens %~ (· + 100))
+  (input & evens %~ (· * 2)) ≡ [1, 4, 3, 8, 5, 12]
+  (input & evens %~ (· + 100)) ≡ [1, 102, 3, 104, 5, 106]
 
   -- Negated filter (NOT even = odd)
   let notEven : Traversal' (List Nat) Nat := filteredList (fun x => x % 2 != 0)
-  ensureEq "negated filter" [11, 2, 13, 4, 15, 6] (input & notEven %~ (· + 10))
+  (input & notEven %~ (· + 10)) ≡ [11, 2, 13, 4, 15, 6]
 
   -- Union: even OR > 4
   let union : Traversal' (List Nat) Nat := filteredList (fun x => x % 2 == 0 || x > 4)
-  ensureEq "union" [1, 20, 3, 40, 50, 60] (input & union %~ (· * 10))
+  (input & union %~ (· * 10)) ≡ [1, 20, 3, 40, 50, 60]
 
   -- Intersection: even AND > 3
   let intersection : Traversal' (List Nat) Nat := filteredList (fun x => x % 2 == 0 && x > 3)
-  ensureEq "intersection" [1, 2, 3, 104, 5, 106] (input & intersection %~ (· + 100))
+  (input & intersection %~ (· + 100)) ≡ [1, 2, 3, 104, 5, 106]
 
 /-! ## String Optics Tests -/
 
@@ -668,90 +668,90 @@ test "String.chars: iso to List Char" := do
   let s := "hello"
   let charsIso : Iso' String (List Char) := chars
   let cs := s ^. charsIso
-  ensureEq "chars forward" ['h', 'e', 'l', 'l', 'o'] cs
+  cs ≡ ['h', 'e', 'l', 'l', 'o']
   let s' := review' charsIso ['w', 'o', 'r', 'l', 'd']
-  ensureEq "chars backward" "world" s'
+  s' ≡ "world"
 
 test "String.traversed: modify all characters" := do
   let s := "abc"
   let result := s & Collimator.Instances.String.traversed %~ Char.toUpper
-  ensureEq "toUpper all" "ABC" result
+  result ≡ "ABC"
 
 test "String.traversed: collect characters" := do
   let s := "xyz"
   let cs := s ^.. Collimator.Instances.String.traversed
-  ensureEq "collect chars" ['x', 'y', 'z'] cs
+  cs ≡ ['x', 'y', 'z']
 
 test "String.itraversed: indexed access" := do
   let s := "abc"
   let indexed := s ^.. Collimator.Instances.String.itraversed
-  ensureEq "indexed chars" [(0, 'a'), (1, 'b'), (2, 'c')] indexed
+  indexed ≡ [(0, 'a'), (1, 'b'), (2, 'c')]
 
 test "String HasAt: valid index" := do
   let s := "hello"
   let c := s ^. atLens (ι := Nat) (s := String) (a := Char) 1
-  ensureEq "char at 1" (some 'e') c
+  c ≡ (some 'e')
 
 test "String HasAt: invalid index" := do
   let s := "hi"
   let c := s ^. atLens (ι := Nat) (s := String) (a := Char) 10
-  ensureEq "char at 10" none c
+  c ≡ none
 
 test "String HasIx: modify at index" := do
   let s := "cat"
   let result := s & ix (ι := Nat) (s := String) (a := Char) 1 %~ (fun _ => 'o')
-  ensureEq "modify char" "cot" result
+  result ≡ "cot"
 
 test "String HasIx: out of bounds is no-op" := do
   let s := "dog"
   let result := s & ix (ι := Nat) (s := String) (a := Char) 100 %~ (fun _ => 'x')
-  ensureEq "no-op" "dog" result
+  result ≡ "dog"
 
 /-! ## Bifunctor Traversal Tests -/
 
 test "both: traverse both components of pair" := do
   let pair := (3, 5)
   let result := pair & both %~ (· * 2)
-  ensureEq "double both" (6, 10) result
+  result ≡ (6, 10)
 
 test "both: collect both values" := do
   let pair := ("a", "b")
   let result := pair ^.. both
-  ensureEq "collect both" ["a", "b"] result
+  result ≡ ["a", "b"]
 
 test "both': monomorphic version" := do
   let pair := (10, 20)
   let result := pair & both' Int %~ (· + 1)
-  ensureEq "both' increment" (11, 21) result
+  result ≡ (11, 21)
 
 test "chosen: traverse left branch" := do
   let s : Sum Int Int := Sum.inl 42
   let result := s & chosen %~ (· * 2)
-  ensureEq "double left" (Sum.inl 84) result
+  result ≡ (Sum.inl 84)
 
 test "chosen: traverse right branch" := do
   let s : Sum Int Int := Sum.inr 99
   let result := s & chosen %~ (· + 1)
-  ensureEq "increment right" (Sum.inr 100) result
+  result ≡ (Sum.inr 100)
 
 test "chosen: collect from either branch" := do
   let left : Sum String String := Sum.inl "hello"
   let right : Sum String String := Sum.inr "world"
   let l := left ^.. chosen
   let r := right ^.. chosen
-  ensureEq "left value" ["hello"] l
-  ensureEq "right value" ["world"] r
+  l ≡ ["hello"]
+  r ≡ ["world"]
 
 test "chosen': monomorphic version" := do
   let s : Sum Int Int := Sum.inl 5
   let result := s & chosen' Int %~ (· * 10)
-  ensureEq "chosen' scale" (Sum.inl 50) result
+  result ≡ (Sum.inl 50)
 
 test "swapped: swap pair components" := do
   let pair := (1, 2)
   let swappedIso : Iso' (Int × Int) (Int × Int) := swapped
   let result := pair ^. swappedIso
-  ensureEq "swapped" (2, 1) result
+  result ≡ (2, 1)
 
 test "swappedSum: swap sum branches" := do
   let left : Sum Int Int := Sum.inl 42
@@ -759,29 +759,29 @@ test "swappedSum: swap sum branches" := do
   let swappedSumIso : Iso' (Sum Int Int) (Sum Int Int) := swappedSum
   let l' := left ^. swappedSumIso
   let r' := right ^. swappedSumIso
-  ensureEq "swap left" (Sum.inr 42) l'
-  ensureEq "swap right" (Sum.inl 99) r'
+  l' ≡ (Sum.inr 42)
+  r' ≡ (Sum.inl 99)
 
 test "beside: traverse both sides of pair" := do
   let pair := ([1, 2], [3, 4])
   let listTrav : Traversal' (List Int) Int := Collimator.Instances.List.traversed
   let t : Traversal' (List Int × List Int) Int := beside listTrav listTrav
   let result := pair & t %~ (· + 1)
-  ensureEq "increment both lists" ([2, 3], [4, 5]) result
+  result ≡ ([2, 3], [4, 5])
 
 test "beside: collect from both sides" := do
   let pair := (["a", "b"], ["c"])
   let listTrav : Traversal' (List String) String := Collimator.Instances.List.traversed
   let t : Traversal' (List String × List String) String := beside listTrav listTrav
   let result := pair ^.. t
-  ensureEq "collect all strings" ["a", "b", "c"] result
+  result ≡ ["a", "b", "c"]
 
 test "beside': monomorphic version" := do
   let pair := ([10, 20], [30])
   let listTrav : Traversal' (List Int) Int := Collimator.Instances.List.traversed
   let t : Traversal' (List Int × List Int) Int := beside' listTrav listTrav
   let result := pair & t %~ (· * 2)
-  ensureEq "double all" ([20, 40], [60]) result
+  result ≡ ([20, 40], [60])
 
 test "beside: heterogeneous source types" := do
   -- Left is Option, right is List
@@ -794,7 +794,7 @@ test "beside: heterogeneous source types" := do
   let listTrav : Traversal' (List Int) Int := Collimator.Instances.List.traversed
   let t : Traversal' (Option Int × List Int) Int := beside optTrav listTrav
   let result := pair & t %~ (· + 10)
-  ensureEq "traverse option and list" (some 15, [11, 12]) result
+  result ≡ (some 15, [11, 12])
 
 /-! ## Plated Tests -/
 
@@ -820,30 +820,30 @@ test "Plated List: children of list" := do
   let xs := [1, 2, 3, 4]
   let cs := childrenOf xs
   -- List's plate focuses on the tail
-  ensureEq "list children" [[2, 3, 4]] cs
+  cs ≡ [[2, 3, 4]]
 
 test "Plated List: overChildren" := do
   let xs := [1, 2, 3]
   -- Reverse the tail
   let result := overChildren List.reverse xs
-  ensureEq "reverse tail" [1, 3, 2] result
+  result ≡ [1, 3, 2]
 
 test "Plated Option: no children" := do
   let x : Option Int := some 42
   let cs := childrenOf x
-  ensureEq "option has no children" ([] : List (Option Int)) cs
+  cs ≡ ([] : List (Option Int))
 
 test "Plated SimpleTree: children of node" := do
   let leaf1 := SimpleTree.leaf 1
   let leaf2 := SimpleTree.leaf 2
   let tree := SimpleTree.node leaf1 leaf2
   let cs := childrenOf tree
-  ensureEq "tree children count" 2 cs.length
+  cs.length ≡ 2
 
 test "Plated SimpleTree: children of leaf" := do
   let leaf := SimpleTree.leaf 42
   let cs := childrenOf leaf
-  ensureEq "leaf has no children" ([] : List SimpleTree) cs
+  cs ≡ ([] : List SimpleTree)
 
 test "transform: bottom-up transformation" := do
   let leaf1 := SimpleTree.leaf 1
@@ -854,7 +854,7 @@ test "transform: bottom-up transformation" := do
     | SimpleTree.leaf n => SimpleTree.leaf (n * 2)
     | t => t
   let result := transform doubleLeaves tree
-  ensureEq "transform sum" 6 (sumLeaves result)  -- (1*2) + (2*2) = 6
+  (sumLeaves result) ≡ 6  -- (1*2) + (2*2) = 6
 
 test "universeList: collect all nodes" := do
   let leaf1 := SimpleTree.leaf 1
@@ -862,7 +862,7 @@ test "universeList: collect all nodes" := do
   let tree := SimpleTree.node leaf1 leaf2
   let all := universeList tree
   -- Should include root + 2 leaves = 3 nodes
-  ensureEq "universe count" 3 all.length
+  all.length ≡ 3
 
 test "cosmosCount: count all nodes" := do
   let leaf1 := SimpleTree.leaf 1
@@ -870,15 +870,15 @@ test "cosmosCount: count all nodes" := do
   let inner := SimpleTree.node leaf1 leaf2
   let tree := SimpleTree.node inner (SimpleTree.leaf 3)
   -- Tree structure: node(node(leaf, leaf), leaf) = 5 nodes
-  ensureEq "cosmos count" 5 (cosmosCount tree)
+  (cosmosCount tree) ≡ 5
 
 test "depth: measure tree depth" := do
   let leaf := SimpleTree.leaf 1
-  ensureEq "leaf depth" 1 (depth leaf)
+  (depth leaf) ≡ 1
   let shallow := SimpleTree.node leaf leaf
-  ensureEq "shallow depth" 2 (depth shallow)
+  (depth shallow) ≡ 2
   let deep := SimpleTree.node shallow leaf
-  ensureEq "deep depth" 3 (depth deep)
+  (depth deep) ≡ 3
 
 test "allOf: check all nodes" := do
   let tree := SimpleTree.node (SimpleTree.leaf 2) (SimpleTree.leaf 4)
@@ -913,7 +913,7 @@ test "rewrite: iterative rewriting" := do
     | _ => none
   let result := rewrite simplify tree
   -- node(leaf 1, leaf 1) should become leaf 1
-  ensureEq "rewrite result" (SimpleTree.leaf 1) result
+  result ≡ (SimpleTree.leaf 1)
 
 /-! ## HashMap and AssocList Tests -/
 
@@ -923,67 +923,67 @@ open Collimator.Instances.AssocList
 test "HashMap HasAt: lookup existing key" := do
   let m : Std.HashMap String Nat := (∅ : Std.HashMap String Nat).insert "a" 1 |>.insert "b" 2
   let result := m ^. atLens (a := Nat) "a"
-  ensureEq "lookup a" (some 1) result
+  result ≡ (some 1)
 
 test "HashMap HasAt: lookup missing key" := do
   let m : Std.HashMap String Nat := (∅ : Std.HashMap String Nat).insert "a" 1
   let result := m ^. atLens (a := Nat) "b"
-  ensureEq "lookup b" none result
+  result ≡ none
 
 test "HashMap HasAt: update value" := do
   let m : Std.HashMap String Nat := (∅ : Std.HashMap String Nat).insert "a" 1
   let m' := m & atLens (a := Nat) "a" .~ some 100
-  ensureEq "update a" (some 100) (m' ^. atLens (a := Nat) "a")
+  (m' ^. atLens (a := Nat) "a") ≡ (some 100)
 
 test "HashMap HasAt: insert new key" := do
   let m : Std.HashMap String Nat := ∅
   let m' := m & atLens (a := Nat) "new" .~ some 42
-  ensureEq "insert new" (some 42) (m' ^. atLens (a := Nat) "new")
+  (m' ^. atLens (a := Nat) "new") ≡ (some 42)
 
 test "HashMap HasAt: delete by setting none" := do
   let m : Std.HashMap String Nat := (∅ : Std.HashMap String Nat).insert "a" 1
   let m' := m & atLens (a := Nat) "a" .~ none
-  ensureEq "delete a" none (m' ^. atLens (a := Nat) "a")
+  (m' ^. atLens (a := Nat) "a") ≡ none
 
 test "HashMap HasIx: modify existing" := do
   let m : Std.HashMap String Nat := (∅ : Std.HashMap String Nat).insert "x" 10
   let m' := m & ix (a := Nat) "x" %~ (· + 5)
-  ensureEq "modify x" (some 15) (m'.get? "x")
+  (m'.get? "x") ≡ (some 15)
 
 test "HashMap HasIx: no-op on missing" := do
   let m : Std.HashMap String Nat := (∅ : Std.HashMap String Nat).insert "x" 10
   let m' := m & ix (a := Nat) "y" %~ (· + 5)
-  ensureEq "size unchanged" 1 m'.size
+  m'.size ≡ 1
 
 test "AssocList HasAt: lookup existing key" := do
   let xs : AssocList String Nat := AssocList.cons "a" 1 (AssocList.cons "b" 2 AssocList.nil)
   let result := xs ^. atLens (a := Nat) "a"
-  ensureEq "lookup a" (some 1) result
+  result ≡ (some 1)
 
 test "AssocList HasAt: lookup missing key" := do
   let xs : AssocList String Nat := AssocList.cons "a" 1 AssocList.nil
   let result := xs ^. atLens (a := Nat) "b"
-  ensureEq "lookup b" none result
+  result ≡ none
 
 test "AssocList HasAt: update value" := do
   let xs : AssocList String Nat := AssocList.cons "a" 1 AssocList.nil
   let xs' := xs & atLens (a := Nat) "a" .~ some 100
-  ensureEq "update a" (some 100) (xs' ^. atLens (a := Nat) "a")
+  (xs' ^. atLens (a := Nat) "a") ≡ (some 100)
 
 test "AssocList HasAt: insert new key" := do
   let xs : AssocList String Nat := AssocList.nil
   let xs' := xs & atLens (a := Nat) "new" .~ some 42
-  ensureEq "insert new" (some 42) (xs' ^. atLens (a := Nat) "new")
+  (xs' ^. atLens (a := Nat) "new") ≡ (some 42)
 
 test "AssocList HasIx: modify existing" := do
   let xs : AssocList String Nat := AssocList.cons "x" 10 AssocList.nil
   let xs' := xs & ix (a := Nat) "x" %~ (· + 5)
-  ensureEq "modify x" (some 15) (xs'.find? "x")
+  (xs'.find? "x") ≡ (some 15)
 
 test "AssocList HasIx: no-op on missing" := do
   let xs : AssocList String Nat := AssocList.cons "x" 10 AssocList.nil
   let xs' := xs & ix (a := Nat) "y" %~ (· + 5)
-  ensureEq "size unchanged" 1 xs'.toList.length
+  xs'.toList.length ≡ 1
 
 #generate_tests
 
