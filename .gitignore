@@ -1,5 +1,4 @@
 # Lake build artifacts
-.lake/
 lake-packages/
 
 # Build outputs
@@ -22,4 +21,6 @@ build/
 
 # Lake manifest lock (optional - some prefer to commit this)
 # lake-manifest.json
-scratch/
+scratch/lake-manifest.json
+.lake
+lake-manifest.json
