@@ -16,6 +16,7 @@ thanks to automatic coercion to concrete optic types.
 |----------|------|-------|------------|
 | `^.` | view | `s ^. lens` | Lens |
 | `^?` | preview | `s ^? prism` | Prism, AffineTraversal |
+| `^??` | previewOrElse | `s ^?? prism \| def` | Prism, AffineTraversal |
 | `^..` | toList | `s ^.. trav` | Traversal, Fold |
 | `%~` | over | `optic %~ f` | Lens, Traversal, Prism, AffineTraversal |
 | `.~` | set | `optic .~ v` | Lens, Traversal, Prism, AffineTraversal |
@@ -160,6 +161,10 @@ def viewU {s a : Type} (getter : AGetter s a) (x : s) : a :=
 def previewU {s a : Type} (previewer : APreview s a) (x : s) : Option a :=
   previewer some x
 
+/-- Preview through a prism or affine, returning a default if no focus. -/
+def previewOrElseU {s a : Type} (previewer : APreview s a) (x : s) (default : a) : a :=
+  (previewer some x).getD default
+
 /-- Collect all foci through a traversal. -/
 def toListU {s a : Type} [Inhabited (List a)] (tr : Traversal' s a) (x : s) : List a :=
   Fold.toListTraversal tr x
@@ -212,6 +217,28 @@ none ^? somePrism'         -- none
 scoped syntax:60 term:61 " ^? " term:61 : term
 scoped macro_rules
   | `($s ^? $p) => `(previewU $p $s)
+
+/--
+Preview through a prism or affine traversal with a default value.
+
+Returns the focused value if present, otherwise returns the default.
+This eliminates the need for pattern matching on `Option` after preview.
+
+```lean
+(some 42) ^?? somePrism' | 0     -- 42
+none ^?? somePrism' | 0          -- 0
+
+-- Safe indexed access with default
+[1, 2, 3] ^?? _head | 99         -- 1
+[] ^?? _head | 99                -- 99
+
+-- HashMap access with default
+world ^?? chunkAt pos | defaultChunk
+```
+-/
+scoped syntax:60 term:61 " ^?? " term:61 " | " term:61 : term
+scoped macro_rules
+  | `($s ^?? $p | $default) => `(previewOrElseU $p $s $default)
 
 /--
 Collect all foci through a traversal as a list.

@@ -830,6 +830,78 @@ test "lens_to_affine_preserves_laws: Field lens (x coordinate) as affine" := do
   | none => throw (IO.userError "Preview should succeed")
   | some a => (set_aff p a) ≡ p
 
+-- ## Test Cases: PreviewOrElse Operator (^??)
+
+/-
+**PreviewOrElse Operator**: Demonstrates ^?? for preview with default value.
+
+The ^?? operator eliminates pattern matching on Option by providing a default
+value when the focus is absent.
+-/
+test "PreviewOrElse (^??) returns value when focus present" := do
+  let opt : Option Int := some 42
+  let result := opt ^?? somePrism Int | 0
+  result ≡ 42
+
+test "PreviewOrElse (^??) returns default when focus absent" := do
+  let opt : Option Int := none
+  let result := opt ^?? somePrism Int | 99
+  result ≡ 99
+
+test "PreviewOrElse (^??) works with affine traversals" := do
+  let user := UserRecord.mk 1 "alice"
+    (some "alice@example.com")
+    (some (ProfileData.mk "Alice" (some "Bio") (some 28)))
+
+  let userNoEmail := UserRecord.mk 2 "bob" none none
+
+  let emailAffine := optic% userEmailLens ∘ somePrism String : AffineTraversal' UserRecord String
+
+  -- Has email - returns email
+  let email1 := user ^?? emailAffine | "no-email"
+  email1 ≡ "alice@example.com"
+
+  -- No email - returns default
+  let email2 := userNoEmail ^?? emailAffine | "no-email"
+  email2 ≡ "no-email"
+
+test "PreviewOrElse (^??) works with composed optics through nested optionals" := do
+  let user := UserRecord.mk 1 "alice"
+    (some "alice@example.com")
+    (some (ProfileData.mk "Alice" (some "Engineering lead") (some 28)))
+
+  let userNoBio := UserRecord.mk 2 "bob"
+    (some "bob@example.com")
+    (some (ProfileData.mk "Bob" none (some 25)))
+
+  let userNoProfile := UserRecord.mk 3 "carol" (some "carol@example.com") none
+
+  let bioAffine := optic%
+    (userProfileLens ∘ somePrism ProfileData) ∘ (profileBioLens ∘ somePrism String)
+    : AffineTraversal' UserRecord String
+
+  -- Has bio
+  let bio1 := user ^?? bioAffine | "No bio available"
+  bio1 ≡ "Engineering lead"
+
+  -- Has profile but no bio
+  let bio2 := userNoBio ^?? bioAffine | "No bio available"
+  bio2 ≡ "No bio available"
+
+  -- No profile at all
+  let bio3 := userNoProfile ^?? bioAffine | "No bio available"
+  bio3 ≡ "No bio available"
+
+test "PreviewOrElse (^??) with _head combinator" := do
+  let nonEmpty := [1, 2, 3]
+  let empty : List Int := []
+
+  let head1 := nonEmpty ^?? _head | 0
+  head1 ≡ 1
+
+  let head2 := empty ^?? _head | 0
+  head2 ≡ 0
+
 -- ## Test Registration
 
 #generate_tests
