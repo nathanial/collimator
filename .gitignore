@@ -20,7 +20,4 @@ build/
 *.o
 
 # Lake manifest lock (optional - some prefer to commit this)
-# lake-manifest.json
-scratch/lake-manifest.json
 .lake
-lake-manifest.json
