@@ -7,7 +7,9 @@ import Collimator.Theorems.TraversalLaws
 import Collimator.Combinators
 import Collimator.Instances
 import Crucible
-import Mathlib.Control.Monad.Writer
+import Collimator.Control.WriterT
+
+open Collimator.Control (WriterT tell)
 
 /-!
 # Traversal Tests

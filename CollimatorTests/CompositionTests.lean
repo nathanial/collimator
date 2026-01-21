@@ -434,9 +434,10 @@ test "Deep: Traversal ∘ Prism with Sum (Skip Left errors, process Right values
     let newSalaries := raised ^.. finalTraversal
     newSalaries ≡ [110000, 121000]
 
-    match raised[1]! with
-    | Sum.inl msg => msg ≡ "Error: Employee not found"
-    | Sum.inr _ => ensure false "Expected error at index 1"
+    match raised[1]? with
+    | some (Sum.inl msg) => msg ≡ "Error: Employee not found"
+    | some (Sum.inr _) => ensure false "Expected error at index 1"
+    | none => ensure false "Expected element at index 1"
 
 test "Deep: AffineTraversal for safe head access" := do
     let emp1 : Employee := {

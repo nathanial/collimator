@@ -1,6 +1,5 @@
 import Collimator.Core
-import Mathlib.Control.Functor
-import Mathlib.Control.Applicative
+import Collimator.Control.Const
 
 namespace Collimator.Concrete
 
@@ -52,6 +51,6 @@ instance instWanderingForget (R : Type u₃) [Inhabited R] [One R] [Mul R] :
   wander := by
     intro α β σ τ walk p s
     -- Since Const R β = R definitionally, walk will use Const R as the applicative
-    exact walk (F := Functor.Const R) p s
+    exact walk (F := Collimator.Control.Const R) p s
 
 end Collimator.Concrete

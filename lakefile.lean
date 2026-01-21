@@ -6,8 +6,7 @@ package collimator where
   -- Disable docPrime linter (warns about primed names like Lens')
   weakLeanArgs := #["-Dweak.linter.docPrime=false"]
 
-require mathlib from git
-  "https://github.com/leanprover-community/mathlib4" @ "v4.26.0"
+require batteries from git "https://github.com/leanprover-community/batteries" @ "v4.26.0"
 
 require crucible from git "https://github.com/nathanial/crucible" @ "v0.0.8"
 
