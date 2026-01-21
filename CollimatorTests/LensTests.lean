@@ -331,43 +331,43 @@ test "Getter: practical use cases" := do
 
 /-! ### Random Value Generation -/
 
-/-- Generate a pseudo-random Int from a seed -/
-private def randomInt (seed : Nat) : Int :=
-  let h := seed * 1103515245 + 12345
+/-- Generate a pseudo-random Int from a rngSeed -/
+private def randomInt (rngSeed : Nat) : Int :=
+  let h := rngSeed * 1103515245 + 12345
   ((h / 65536) % 32768 : Nat) - 16384
 
-/-- Generate a pseudo-random Point from a seed -/
-private def randomPoint (seed : Nat) : Point :=
-  { x := randomInt seed, y := randomInt (seed + 1) }
+/-- Generate a pseudo-random Point from a rngSeed -/
+private def randomPoint (rngSeed : Nat) : Point :=
+  { x := randomInt rngSeed, y := randomInt (rngSeed + 1) }
 
-/-- Generate a pseudo-random Rectangle from a seed -/
-private def randomRectangle (seed : Nat) : Rectangle :=
-  { topLeft := randomPoint seed, bottomRight := randomPoint (seed + 2) }
+/-- Generate a pseudo-random Rectangle from a rngSeed -/
+private def randomRectangle (rngSeed : Nat) : Rectangle :=
+  { topLeft := randomPoint rngSeed, bottomRight := randomPoint (rngSeed + 2) }
 
 /-! ### Lens Laws Properties -/
 
 /--
 GetPut law: view l (set l v s) = v
 -/
-private def lens_getPut_prop (seed : Nat) : Bool :=
-  let s := randomPoint seed
-  let v := randomInt (seed + 100)
+private def lens_getPut_prop (rngSeed : Nat) : Bool :=
+  let s := randomPoint rngSeed
+  let v := randomInt (rngSeed + 100)
   (s & Point.xLens .~ v) ^. Point.xLens == v
 
 /--
 PutGet law: set l (view l s) s = s
 -/
-private def lens_putGet_prop (seed : Nat) : Bool :=
-  let s := randomPoint seed
+private def lens_putGet_prop (rngSeed : Nat) : Bool :=
+  let s := randomPoint rngSeed
   (s & Point.xLens .~ (s ^. Point.xLens)) == s
 
 /--
 PutPut law: set l v (set l v' s) = set l v s
 -/
-private def lens_putPut_prop (seed : Nat) : Bool :=
-  let s := randomPoint seed
-  let v := randomInt (seed + 100)
-  let v' := randomInt (seed + 200)
+private def lens_putPut_prop (rngSeed : Nat) : Bool :=
+  let s := randomPoint rngSeed
+  let v := randomInt (rngSeed + 100)
+  let v' := randomInt (rngSeed + 200)
   (s & Point.xLens .~ v' & Point.xLens .~ v) == (s & Point.xLens .~ v)
 
 /-! ### Composed Lens Laws Properties -/
@@ -375,27 +375,27 @@ private def lens_putPut_prop (seed : Nat) : Bool :=
 /--
 Composed lenses satisfy GetPut law
 -/
-private def composed_getPut_prop (seed : Nat) : Bool :=
-  let r := randomRectangle seed
-  let v := randomInt (seed + 100)
+private def composed_getPut_prop (rngSeed : Nat) : Bool :=
+  let r := randomRectangle rngSeed
+  let v := randomInt (rngSeed + 100)
   let composed : Lens' Rectangle Int := Rectangle.topLeftLens ∘ Point.xLens
   (r & composed .~ v) ^. composed == v
 
 /--
 Composed lenses satisfy PutGet law
 -/
-private def composed_putGet_prop (seed : Nat) : Bool :=
-  let r := randomRectangle seed
+private def composed_putGet_prop (rngSeed : Nat) : Bool :=
+  let r := randomRectangle rngSeed
   let composed : Lens' Rectangle Int := Rectangle.topLeftLens ∘ Point.xLens
   (r & composed .~ (r ^. composed)) == r
 
 /--
 Composed lenses satisfy PutPut law
 -/
-private def composed_putPut_prop (seed : Nat) : Bool :=
-  let r := randomRectangle seed
-  let v := randomInt (seed + 100)
-  let v' := randomInt (seed + 200)
+private def composed_putPut_prop (rngSeed : Nat) : Bool :=
+  let r := randomRectangle rngSeed
+  let v := randomInt (rngSeed + 100)
+  let v' := randomInt (rngSeed + 200)
   let composed : Lens' Rectangle Int := Rectangle.topLeftLens ∘ Point.xLens
   (r & composed .~ v' & composed .~ v) == (r & composed .~ v)
 

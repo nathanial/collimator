@@ -9,7 +9,7 @@ package collimator where
 require mathlib from git
   "https://github.com/leanprover-community/mathlib4" @ "v4.26.0"
 
-require crucible from git "https://github.com/nathanial/crucible" @ "v0.0.7"
+require crucible from git "https://github.com/nathanial/crucible" @ "v0.0.8"
 
 @[default_target]
 lean_lib Collimator where

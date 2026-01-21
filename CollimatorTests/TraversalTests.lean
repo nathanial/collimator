@@ -146,34 +146,34 @@ private def optionPrism : Prism (Option Int) (Option Int) Int Int :=
 
 /-! ## Random Value Generation for Property Tests -/
 
-/-- Generate a pseudo-random Int from a seed -/
-private def randomInt (seed : Nat) : Int :=
-  let h := seed * 1103515245 + 12345
+/-- Generate a pseudo-random Int from a rngSeed -/
+private def randomInt (rngSeed : Nat) : Int :=
+  let h := rngSeed * 1103515245 + 12345
   ((h / 65536) % 32768 : Nat) - 16384
 
-/-- Generate a pseudo-random Point from a seed -/
-private def randomPoint (seed : Nat) : Point :=
-  { x := randomInt seed, y := randomInt (seed + 1) }
+/-- Generate a pseudo-random Point from a rngSeed -/
+private def randomPoint (rngSeed : Nat) : Point :=
+  { x := randomInt rngSeed, y := randomInt (rngSeed + 1) }
 
-/-- Generate a pseudo-random Rectangle from a seed -/
-private def randomRectangle (seed : Nat) : Rectangle :=
-  { topLeft := randomPoint seed, bottomRight := randomPoint (seed + 2) }
+/-- Generate a pseudo-random Rectangle from a rngSeed -/
+private def randomRectangle (rngSeed : Nat) : Rectangle :=
+  { topLeft := randomPoint rngSeed, bottomRight := randomPoint (rngSeed + 2) }
 
 /-! ## Property Test Functions -/
 
 /--
 Identity law: over t id s = s
 -/
-private def traversal_identity_prop (seed : Nat) : Bool :=
-  let xs : List Int := (List.range ((seed % 10) + 1)).map (Int.ofNat ·)
+private def traversal_identity_prop (rngSeed : Nat) : Bool :=
+  let xs : List Int := (List.range ((rngSeed % 10) + 1)).map (Int.ofNat ·)
   let tr : Traversal' (List Int) Int := Traversal.eachList
   (xs & tr %~ id) == xs
 
 /--
 Traversal preserves list length
 -/
-private def traversal_length_prop (seed : Nat) : Bool :=
-  let xs : List Int := (List.range ((seed % 20) + 1)).map (Int.ofNat ·)
+private def traversal_length_prop (rngSeed : Nat) : Bool :=
+  let xs : List Int := (List.range ((rngSeed % 20) + 1)).map (Int.ofNat ·)
   let tr : Traversal' (List Int) Int := Traversal.eachList
   (xs & tr %~ (· + 1)).length == xs.length
 

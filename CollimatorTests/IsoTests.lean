@@ -69,14 +69,14 @@ instance {α β : Type} : LawfulIso (@swapPair α β) (@swapPair β α) where
 
 /-! ## Random Value Generation (for property tests) -/
 
-/-- Generate a pseudo-random Int from a seed -/
-private def randomInt (seed : Nat) : Int :=
-  let h := seed * 1103515245 + 12345
+/-- Generate a pseudo-random Int from a rngSeed -/
+private def randomInt (rngSeed : Nat) : Int :=
+  let h := rngSeed * 1103515245 + 12345
   ((h / 65536) % 32768 : Nat) - 16384
 
-/-- Generate a pseudo-random Point from a seed -/
-private def randomPoint (seed : Nat) : Point :=
-  { x := randomInt seed, y := randomInt (seed + 1) }
+/-- Generate a pseudo-random Point from a rngSeed -/
+private def randomPoint (rngSeed : Nat) : Point :=
+  { x := randomInt rngSeed, y := randomInt (rngSeed + 1) }
 
 /-! ## Iso Law Tests -/
 
@@ -253,8 +253,8 @@ test "Identity composition" := do
 /--
 Back-Forward law for Point ↔ Tuple
 -/
-private def iso_backForward_prop (seed : Nat) : Bool :=
-  let p := randomPoint seed
+private def iso_backForward_prop (rngSeed : Nat) : Bool :=
+  let p := randomPoint rngSeed
   let forward := fun (p : Point) => (p.x, p.y)
   let backward := fun (xy : Int × Int) => { x := xy.1, y := xy.2 : Point }
   backward (forward p) == p
@@ -262,8 +262,8 @@ private def iso_backForward_prop (seed : Nat) : Bool :=
 /--
 Forward-Back law for Point ↔ Tuple
 -/
-private def iso_forwardBack_prop (seed : Nat) : Bool :=
-  let xy := (randomInt seed, randomInt (seed + 1))
+private def iso_forwardBack_prop (rngSeed : Nat) : Bool :=
+  let xy := (randomInt rngSeed, randomInt (rngSeed + 1))
   let forward := fun (p : Point) => (p.x, p.y)
   let backward := fun (xy : Int × Int) => { x := xy.1, y := xy.2 : Point }
   forward (backward xy) == xy
@@ -271,15 +271,15 @@ private def iso_forwardBack_prop (seed : Nat) : Bool :=
 /--
 Bool negation is self-inverse
 -/
-private def iso_boolNeg_prop (seed : Nat) : Bool :=
-  let b := seed % 2 == 0
+private def iso_boolNeg_prop (rngSeed : Nat) : Bool :=
+  let b := rngSeed % 2 == 0
   !!b == b
 
 /--
 Tuple swap composed twice is identity
 -/
-private def iso_tupleSwap_prop (seed : Nat) : Bool :=
-  let ab := (randomInt seed, randomInt (seed + 1))
+private def iso_tupleSwap_prop (rngSeed : Nat) : Bool :=
+  let ab := (randomInt rngSeed, randomInt (rngSeed + 1))
   let swap := fun (a, b) => (b, a)
   swap (swap ab) == ab
 

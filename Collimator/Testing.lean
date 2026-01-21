@@ -44,7 +44,7 @@ open Collimator
 
 /-- Simple random state -/
 structure RandState where
-  seed : UInt64
+  rngSeed : UInt64
 deriving Inhabited
 
 /-- Get next random value -/
@@ -52,7 +52,7 @@ def RandState.next (r : RandState) : UInt64 × RandState :=
   -- Simple LCG: x' = (a * x + c) mod m
   let a : UInt64 := 6364136223846793005
   let c : UInt64 := 1442695040888963407
-  let next := a * r.seed + c
+  let next := a * r.rngSeed + c
   (next, ⟨next⟩)
 
 /-- Get a random Int in a range -/
