@@ -440,6 +440,4 @@ test "Stress: Deep lens composition (5 levels)" := do
   nested ^. composed ≡ 1
   (nested & composed .~ 99) ^. composed ≡ 99
 
-#generate_tests
-
 end CollimatorTests.LensTests

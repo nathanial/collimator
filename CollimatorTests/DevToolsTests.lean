@@ -356,6 +356,4 @@ test "printOpticInfo: runs without error" := do
   printOpticInfo "Lens"
   pure ()
 
-#generate_tests
-
 end CollimatorTests.DevTools

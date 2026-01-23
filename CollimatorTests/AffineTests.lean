@@ -904,6 +904,4 @@ test "PreviewOrElse (^??) with _head combinator" := do
 
 -- ## Test Registration
 
-#generate_tests
-
 end CollimatorTests.AffineTests

@@ -1168,6 +1168,4 @@ test "Stress: Large list (1000 elements) traversal" := do
   result.length ≡ 1000
   result.head? ≡? 1
 
-#generate_tests
-
 end CollimatorTests.TraversalTests

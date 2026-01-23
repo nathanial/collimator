@@ -8,7 +8,7 @@ package collimator where
 
 require batteries from git "https://github.com/leanprover-community/batteries" @ "v4.26.0"
 
-require crucible from git "https://github.com/nathanial/crucible" @ "v0.0.8"
+require crucible from git "https://github.com/nathanial/crucible" @ "v0.0.9"
 
 @[default_target]
 lean_lib Collimator where

@@ -194,6 +194,4 @@ test "traverseOption: short-circuits on failure" := do
     nums
   result ≡ (none : Option (List Int))
 
-#generate_tests
-
 end CollimatorTests.IntegrationTests

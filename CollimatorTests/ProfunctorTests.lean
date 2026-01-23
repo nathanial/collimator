@@ -326,6 +326,4 @@ test "Costar Option: extracts value from option" := do
   someResult ≡ 42
   noneResult ≡ 0
 
-#generate_tests
-
 end CollimatorTests.ProfunctorTests

@@ -562,6 +562,4 @@ test "Sum and Option type prisms" := do
 
     IO.println "✓ Sum/Option: Sum left/right prisms (from library)"
 
-#generate_tests
-
 end CollimatorTests.PrismTests

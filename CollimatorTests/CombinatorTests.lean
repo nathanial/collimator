@@ -985,6 +985,4 @@ test "AssocList HasIx: no-op on missing" := do
   let xs' := xs & ix (a := Nat) "y" %~ (· + 5)
   xs'.toList.length ≡ 1
 
-#generate_tests
-
 end CollimatorTests.CombinatorTests

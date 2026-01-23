@@ -299,6 +299,4 @@ test "Property: Tuple swap twice is identity (100 samples)" := do
   for i in [:100] do
     ensure (iso_tupleSwap_prop i) s!"Tuple swap failed for seed {i}"
 
-#generate_tests
-
 end CollimatorTests.IsoTests
